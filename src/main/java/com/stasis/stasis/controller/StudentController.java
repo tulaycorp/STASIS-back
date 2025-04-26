@@ -23,8 +23,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class StudentController {
 
-    // Constructor-based dependency injection
-
     private final StudentService studentService;
 
     @GetMapping
@@ -49,7 +47,12 @@ public class StudentController {
         Student updated = studentService.updateStudent(id, student);
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
-
+    
+    @PutMapping("/{id}/promote")
+    public ResponseEntity<Student> promoteStudent(@PathVariable Long id) {
+        Student promoted = studentService.promoteStudent(id);
+        return promoted != null ? ResponseEntity.ok(promoted) : ResponseEntity.notFound().build();
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
         studentService.deleteStudent(id);
