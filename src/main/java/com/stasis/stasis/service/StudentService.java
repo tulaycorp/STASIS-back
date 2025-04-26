@@ -39,7 +39,14 @@ public class StudentService {
                 })
                 .orElse(null);
     }
-
+    public Student promoteStudent(Long id) {
+        return studentRepository.findById(id)
+                .map(student -> {
+                    student.setGrade_level(student.getGrade_level() + 1); // Move up a grade
+                    return studentRepository.save(student);
+                })
+                .orElse(null);
+    }
     public void deleteStudent(Long id) {
         studentRepository.deleteById(id);
     }
