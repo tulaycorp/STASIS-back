@@ -1,6 +1,6 @@
 package com.stasis.stasis.controller;
 
-import com.stasis.stasis.model.User;
+import com.stasis.stasis.model.Users;
 import com.stasis.stasis.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,24 +18,24 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<Users> createUser(@RequestBody Users user) {
         return ResponseEntity.ok(userService.createUser(user));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<Users> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<Users>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseEntity<Users> updateUser(@PathVariable Long id, @RequestBody Users user) {
         user.setUserID(id);
         return ResponseEntity.ok(userService.updateUser(user));
     }

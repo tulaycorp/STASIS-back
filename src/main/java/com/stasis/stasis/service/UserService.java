@@ -1,6 +1,6 @@
 package com.stasis.stasis.service;
 
-import com.stasis.stasis.model.User;
+import com.stasis.stasis.model.Users;
 import com.stasis.stasis.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +16,19 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public User createUser(User user) {
+    public Users createUser(Users user) {
         return userRepository.save(user);
     }
 
-    public Optional<User> getUserById(Long id) {
+    public Optional<Users> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
-    public List<User> getAllUsers() {
+    public List<Users> getAllUsers() {
         return userRepository.findAll();
     }
 
-    public User updateUser(User user) {
+    public Users updateUser(Users user) {
         return userRepository.save(user);
     }
 
