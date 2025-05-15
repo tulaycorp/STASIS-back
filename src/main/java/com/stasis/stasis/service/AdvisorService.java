@@ -4,7 +4,6 @@ import com.stasis.stasis.model.Advisor;
 import com.stasis.stasis.model.Faculty;
 import com.stasis.stasis.model.Student;
 import com.stasis.stasis.repository.AdvisorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,7 +14,7 @@ public class AdvisorService {
     
     private final AdvisorRepository advisorRepository;
 
-    @Autowired
+
     public AdvisorService(AdvisorRepository advisorRepository) {
         this.advisorRepository = advisorRepository;
     }

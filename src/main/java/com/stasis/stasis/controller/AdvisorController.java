@@ -2,7 +2,6 @@ package com.stasis.stasis.controller;
 
 import com.stasis.stasis.model.Advisor;
 import com.stasis.stasis.service.AdvisorService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +12,7 @@ import java.util.List;
 public class AdvisorController {
 
     private final AdvisorService advisorService;
-    @Autowired
+
     public AdvisorController(AdvisorService advisorService) {
         this.advisorService = advisorService;
     }
