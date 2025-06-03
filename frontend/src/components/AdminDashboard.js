@@ -106,7 +106,19 @@ const AdminDashboard = () => {
   const showSection = (section) => {
     switch(section){
         case 'curriculum':
-            window.location.href = '/curricullum-management';
+            window.location.href = '/curriculum-management';
+                break;
+        case 'Students':
+            window.location.href = '/students';
+                break;
+        case 'Schedule':
+            window.location.href = '/schedule';
+                break;
+        case 'Faculty':
+            window.location.href = '/faculty';
+                break;
+        case 'Courses':
+            window.location.href = '/courses';
                 break;
         default:
             alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
