@@ -1,0 +1,427 @@
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+  font-size: 14px;
+}
+
+.dashboard-sidebar {
+  width: 180px;
+  background: white;
+  border-right: 1px solid #e9ecef;
+  padding: 0;
+  position: relative;
+}
+
+.dashboard-logo {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #f1f3f4;
+  margin-bottom: 10px;
+}
+
+.dashboard-logo-icon {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.dashboard-nav-section {
+  margin-bottom: 25px;
+}
+
+.dashboard-nav-title {
+  color: #6c757d;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  margin-bottom: 5px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-nav-item {
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.dashboard-nav-item:hover {
+  background: rgba(220, 53, 69, 0.05);
+}
+
+.dashboard-nav-item-active {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.dashboard-user-info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.dashboard-main-content {
+  flex: 1;
+  padding: 25px 30px;
+}
+
+.dashboard-header {
+  margin-bottom: 25px;
+}
+
+.dashboard-welcome-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: #212529;
+  margin: 0;
+}
+
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 25px;
+}
+
+.dashboard-stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.dashboard-stat-title {
+  color: #6c757d;
+  font-size: 13px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.dashboard-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.dashboard-stat-change {
+  font-size: 11px;
+  color: #28a745;
+  font-weight: 400;
+}
+
+.dashboard-content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 25px;
+}
+
+.dashboard-main-section {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.dashboard-right-sidebar {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-section-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.dashboard-section-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+}
+
+.dashboard-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+}
+
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+.dashboard-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 20px;
+}
+
+.dashboard-action-btn {
+  padding: 25px 20px;
+  border: 1px dashed #dee2e6;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fdfdfe;
+  position: relative;
+}
+
+.dashboard-action-btn:hover {
+  background: #f8f9fa;
+  border-color: #dc3545;
+}
+
+.dashboard-action-title {
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.dashboard-action-desc {
+  font-size: 11px;
+  color: #6c757d;
+  line-height: 1.3;
+}
+
+.dashboard-activity-list {
+  padding: 20px;
+  min-height: 200px;
+}
+
+.dashboard-activity-item {
+  padding: 16px 0;
+  border-bottom: 1px solid #f1f3f4;
+  display: flex;
+  align-items: flex-start;
+}
+
+.dashboard-activity-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-activity-content {
+  flex: 1;
+}
+
+.dashboard-activity-message {
+  color: #212529;
+  font-size: 13px;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.dashboard-activity-time {
+  color: #6c757d;
+  font-size: 11px;
+}
+
+.dashboard-calendar-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.dashboard-calendar-header-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+  text-align: left;
+}
+
+.dashboard-calendar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+}
+
+.dashboard-calendar-content {
+  padding: 20px;
+}
+
+.dashboard-calendar-month {
+  text-align: center;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.dashboard-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dashboard-calendar-day-header {
+  text-align: center;
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.dashboard-calendar-day {
+  text-align: center;
+  padding: 8px 4px;
+  font-size: 12px;
+  color: #adb5bd;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s;
+  min-height: 32px;
+  width: 32px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-calendar-day:hover {
+  background: #f8f9fa;
+}
+
+.dashboard-calendar-day-current-month {
+  color: #495057;
+}
+
+.dashboard-calendar-day-selected {
+  background: #dc3545;
+  color: white;
+  font-weight: 600;
+}
+
+.dashboard-calendar-day-today {
+  background: #fff3cd;
+  color: #856404;
+  font-weight: 500;
+}
+
+.dashboard-schedule-header-section {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+}
+
+.dashboard-schedule-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+}
+
+.dashboard-schedule-content {
+  padding: 20px;
+  min-height: 150px;
+}
+
+.dashboard-schedule-item {
+  padding: 12px 20px;
+  border-left: 3px solid #dc3545;
+  margin-bottom: 12px;
+  background: rgba(220, 53, 69, 0.02);
+  position: relative;
+  border-radius: 0 4px 4px 0;
+}
+
+.dashboard-schedule-item-blue {
+  border-left-color: #007bff;
+  background: rgba(0, 123, 255, 0.02);
+}
+
+.dashboard-schedule-item-green {
+  border-left-color: #28a745;
+  background: rgba(40, 167, 69, 0.02);
+}
+
+.dashboard-schedule-time {
+  font-size: 11px;
+  color: #6c757d;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.dashboard-schedule-subject {
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+
+.dashboard-schedule-room {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.dashboard-schedule-today-badge {
+  position: absolute;
+  top: 8px;
+  right: 15px;
+  background: #ffc107;
+  color: #212529;
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .dashboard-content-wrapper {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-right-sidebar {
+    width: 100%;
+  }
+  
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+  
+  .dashboard-sidebar {
+    width: 100%;
+    position: relative;
+  }
+  
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}

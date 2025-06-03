@@ -4,6 +4,8 @@ import { Routes, Route } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import StudentLoginForm from './components/StudentLoginForm';
 import FacultyLoginForm from './components/FacultyLoginForm';
+import AdminDashboard from './components/AdminDashboard';
+import CurricullumManagement from './components/CurricullumManagement';
 import './index.css'; // Global styles
 
 function App() {
@@ -19,6 +21,11 @@ function App() {
 
         {/* Route for the Faculty login form */}
         <Route path="/login/faculty" element={<FacultyLoginForm />} />
+
+        {/* Route for the admin dashboard form */}
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
+        <Route path="/curricullum-management" element={<CurricullumManagement />} />
 
         {/* Add other routes for dashboards etc. later */}
         {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}
