@@ -122,10 +122,11 @@
   line-height: 1;
 }
 
-.dashboard-stat-change {
+.dashboard-stat-change { 
   font-size: 11px;
   color: #28a745;
   font-weight: 400;
+  display: none;
 }
 
 .dashboard-content-wrapper {
