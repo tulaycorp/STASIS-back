@@ -25,7 +25,6 @@ const FacultyLoginForm = () => {
         // Temporary hardcoded login check
         if (username === 'faculty123' && password === 'pass123') {
             setLoading(false);
-            alert('Welcome Faculty User! Login successful. Redirecting...');
             window.location.href = '/admin-dashboard';
             return;
         }

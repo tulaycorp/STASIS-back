@@ -1,29 +1,75 @@
 import React, { useState, useEffect } from 'react';
 import './AdminDashboard.css';
 
-
 const AdminDashboard = () => {
   const [dashboardData, setAdminDashboardData] = useState({
     stats: {
-      totalStudents: 2453,
-      totalFaculty: 156,
-      activeCourses: 48,
-      studentGrowth: 7.2,
-      facultyGrowth: 1.3,
-      courseGrowth: 0
+      totalStudents: '',
+      totalFaculty: '',
+      activeCourses: '',
+      studentGrowth: '',
+      facultyGrowth: '',
+      courseGrowth: ''
     },
     recentActivities: [
-    //recent activities
+    /*
+      {
+        id: 1,
+        message: "New student John Doe registered for CS101",
+        time: "2 hours ago"
+      },
+      {
+        id: 2,
+        message: "Faculty meeting scheduled for tomorrow",
+        time: "4 hours ago"
+      },
+      {
+        id: 3,
+        message: "Course schedule updated for Spring 2025",
+        time: "1 day ago"
+      }
+    */
     ]
   });
 
   const [selectedDate, setSelectedDate] = useState(11);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [studentForm, setStudentForm] = useState({
+    studentId: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    middleName: '',
+    birthday: ''
+  });
+
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
 
   // Schedule data for the selected date
   const scheduleData = [
-    //schedule data here
+  /*{
+      id: 1,
+      time: "9:00 AM",
+      subject: "Computer Science Meeting",
+      room: "Room 201",
+      type: "red"
+    },
+    {
+      id: 2,
+      time: "2:00 PM",
+      subject: "Faculty Review",
+      room: "Admin Office",
+      type: "blue"
+    },
+    {
+      id: 3,
+      time: "4:00 PM",
+      subject: "Student Orientation",
+      room: "Auditorium",
+      type: "green"
+    }
+  */
   ];
 
   // Generate calendar days for March 2025
@@ -54,17 +100,44 @@ const AdminDashboard = () => {
     return days;
   };
 
-  // Quick action functions
+  // Modal functions
   const showAddStudentForm = () => {
-    const name = prompt('Enter student name:');
-    const email = prompt('Enter student email:');
-    const course = prompt('Enter course:');
-    
-    if (name && email && course) {
-      addStudent({ name, email, course });
-    }
+    setShowAddStudentModal(true);
   };
 
+  const closeAddStudentModal = () => {
+    setShowAddStudentModal(false);
+    setStudentForm({
+      studentId: '',
+      email: '',
+      firstName: '',
+      lastName: '',
+      middleName: '',
+      birthday: ''
+    });
+  };
+
+  const handleStudentFormChange = (field, value) => {
+    setStudentForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddStudent = () => {
+    // Validate required fields
+    if (!studentForm.studentId || !studentForm.email || !studentForm.firstName || !studentForm.lastName) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Here you would typically send to API
+    console.log('Adding student:', studentForm);
+    alert('Student added successfully!');
+    closeAddStudentModal();
+  };
+
+  // Other quick action functions
   const showAddFacultyForm = () => {
     const name = prompt('Enter faculty name:');
     const email = prompt('Enter faculty email:');
@@ -90,10 +163,6 @@ const AdminDashboard = () => {
   };
 
   // API functions
-  const addStudent = async (studentData) => {
-    alert('Student data saved locally (demo mode)');
-  };
-
   const addFaculty = async (facultyData) => {
     alert('Faculty data saved locally (demo mode)');
   };
@@ -108,16 +177,16 @@ const AdminDashboard = () => {
         case 'curriculum':
             window.location.href = '/curriculum-management';
                 break;
-        case 'Students':
+        case 'students':
             window.location.href = '/students';
                 break;
-        case 'Schedule':
+        case 'schedule':
             window.location.href = '/schedule';
                 break;
-        case 'Faculty':
+        case 'faculty':
             window.location.href = '/faculty';
                 break;
-        case 'Courses':
+        case 'courses':
             window.location.href = '/courses';
                 break;
         default:
@@ -171,23 +240,18 @@ const AdminDashboard = () => {
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Total Students</div>
             <div className="dashboard-stat-value">{dashboardData.stats.totalStudents.toLocaleString()}</div>
-            <div className="dashboard-stat-change">+{dashboardData.stats.studentGrowth}% from last month</div>
           </div>
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Total Faculty</div>
             <div className="dashboard-stat-value">{dashboardData.stats.totalFaculty}</div>
-            <div className="dashboard-stat-change">+{dashboardData.stats.facultyGrowth}% from last month</div>
           </div>
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Active Courses</div>
             <div className="dashboard-stat-value">{dashboardData.stats.activeCourses}</div>
-            <div className="dashboard-stat-change" style={{color: '#6c757d'}}>
-              Same as last month
-            </div>
           </div>
         </div>
 
-        {/* Content Wrapper with Three Columns */}
+        {/* Content Wrapper */}
         <div className="dashboard-content-wrapper">
           {/* Main Left Section */}
           <div className="dashboard-main-section">
@@ -236,9 +300,9 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Right Sidebar Section */}
+          {/* Right Sidebar */}
           <div className="dashboard-right-sidebar">
-            {/* Calendar in Upper Right */}
+            {/* Calendar */}
             <div className="dashboard-calendar-section">
               <div className="dashboard-calendar-header-section">
                 <h2 className="dashboard-calendar-title">Calendar</h2>
@@ -259,7 +323,7 @@ const AdminDashboard = () => {
                     if (dayObj.isSelected) {
                       dayClasses.push('dashboard-calendar-day-selected');
                     }
-                    if (dayObj.isToday) {
+                    if (dayObj.isToday && !dayObj.isSelected) {
                       dayClasses.push('dashboard-calendar-day-today');
                     }
                     
@@ -283,31 +347,119 @@ const AdminDashboard = () => {
                 <h2 className="dashboard-schedule-title">Upcoming Schedule</h2>
               </div>
               <div className="dashboard-schedule-content">
-                {scheduleData.map((item) => {
-                  let scheduleClasses = ['dashboard-schedule-item'];
-                  
-                  if (item.type === 'blue') {
-                    scheduleClasses.push('dashboard-schedule-item-blue');
-                  } else if (item.type === 'green') {
-                    scheduleClasses.push('dashboard-schedule-item-green');
-                  }
-                  
-                  return (
-                    <div key={item.id} className={scheduleClasses.join(' ')}>
-                      {item.isToday && (
-                        <div className="dashboard-schedule-today-badge">Today</div>
-                      )}
-                      <div className="dashboard-schedule-time">{item.time}</div>
-                      <div className="dashboard-schedule-subject">{item.subject}</div>
-                      <div className="dashboard-schedule-room">{item.room}</div>
-                    </div>
-                  );
-                })}
+                {scheduleData.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className={`dashboard-schedule-item ${item.type === 'blue' ? 'dashboard-schedule-item-blue' : item.type === 'green' ? 'dashboard-schedule-item-green' : ''}`}
+                  >
+                    <div className="dashboard-schedule-time">{item.time}</div>
+                    <div className="dashboard-schedule-subject">{item.subject}</div>
+                    <div className="dashboard-schedule-room">{item.room}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add Student Modal */}
+      {showAddStudentModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h2 className="modal-title">Add New Student</h2>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="modal-body">
+              <div className="modal-grid">
+                {/* Student ID */}
+                <div className="form-group">
+                  <label className="form-label">Student ID</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Student ID"
+                    value={studentForm.studentId}
+                    onChange={(e) => handleStudentFormChange('studentId', e.target.value)}
+                  />
+                </div>
+                
+                {/* Email */}
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    placeholder="Enter Student Email"
+                    value={studentForm.email}
+                    onChange={(e) => handleStudentFormChange('email', e.target.value)}
+                  />
+                </div>
+                
+                {/* First Name */}
+                <div className="form-group">
+                  <label className="form-label">First Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter First Name"
+                    value={studentForm.firstName}
+                    onChange={(e) => handleStudentFormChange('firstName', e.target.value)}
+                  />
+                </div>
+                
+                {/* Last Name */}
+                <div className="form-group">
+                  <label className="form-label">Last Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Last Name"
+                    value={studentForm.lastName}
+                    onChange={(e) => handleStudentFormChange('lastName', e.target.value)}
+                  />
+                </div>
+                
+                {/* Middle Name */}
+                <div className="form-group">
+                  <label className="form-label">Middle Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Middle Name"
+                    value={studentForm.middleName}
+                    onChange={(e) => handleStudentFormChange('middleName', e.target.value)}
+                  />
+                </div>
+                
+                {/* Birthday */}
+                <div className="form-group">
+                  <label className="form-label">Birthday</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={studentForm.birthday}
+                    onChange={(e) => handleStudentFormChange('birthday', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeAddStudentModal}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleAddStudent}>
+                Add Student
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
