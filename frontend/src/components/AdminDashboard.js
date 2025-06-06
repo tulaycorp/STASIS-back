@@ -11,29 +11,13 @@ const AdminDashboard = () => {
       facultyGrowth: '',
       courseGrowth: ''
     },
-    recentActivities: [
-    /*
-      {
-        id: 1,
-        message: "New student John Doe registered for CS101",
-        time: "2 hours ago"
-      },
-      {
-        id: 2,
-        message: "Faculty meeting scheduled for tomorrow",
-        time: "4 hours ago"
-      },
-      {
-        id: 3,
-        message: "Course schedule updated for Spring 2025",
-        time: "1 day ago"
-      }
-    */
-    ]
+    recentActivities: []
   });
 
   const [selectedDate, setSelectedDate] = useState(11);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
+  
   const [studentForm, setStudentForm] = useState({
     studentId: '',
     email: '',
@@ -43,33 +27,52 @@ const AdminDashboard = () => {
     birthday: ''
   });
 
+  const [facultyForm, setFacultyForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    department: '',
+    position: '',
+    employmentStatus: ''
+  });
+
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
 
   // Schedule data for the selected date
-  const scheduleData = [
-  /*{
-      id: 1,
-      time: "9:00 AM",
-      subject: "Computer Science Meeting",
-      room: "Room 201",
-      type: "red"
-    },
-    {
-      id: 2,
-      time: "2:00 PM",
-      subject: "Faculty Review",
-      room: "Admin Office",
-      type: "blue"
-    },
-    {
-      id: 3,
-      time: "4:00 PM",
-      subject: "Student Orientation",
-      room: "Auditorium",
-      type: "green"
-    }
-  */
+  const scheduleData = [];
+
+  // Department options for faculty
+  const departmentOptions = [
+    'Computer Science',
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'English',
+    'History',
+    'Psychology',
+    'Business Administration',
+    'Engineering'
+  ];
+
+  // Position options for faculty
+  const positionOptions = [
+    'Professor',
+    'Associate Professor',
+    'Assistant Professor',
+    'Lecturer',
+    'Instructor',
+    'Department Head',
+    'Dean'
+  ];
+
+  // Employment status options
+  const employmentStatusOptions = [
+    'Full-time',
+    'Part-time',
+    'Contract',
+    'Adjunct'
   ];
 
   // Generate calendar days for March 2025
@@ -100,7 +103,7 @@ const AdminDashboard = () => {
     return days;
   };
 
-  // Modal functions
+  // Student Modal functions
   const showAddStudentForm = () => {
     setShowAddStudentModal(true);
   };
@@ -137,17 +140,44 @@ const AdminDashboard = () => {
     closeAddStudentModal();
   };
 
-  // Other quick action functions
+  // Faculty Modal functions
   const showAddFacultyForm = () => {
-    const name = prompt('Enter faculty name:');
-    const email = prompt('Enter faculty email:');
-    const department = prompt('Enter department:');
-    
-    if (name && email && department) {
-      addFaculty({ name, email, department });
-    }
+    setShowAddFacultyModal(true);
   };
 
+  const closeAddFacultyModal = () => {
+    setShowAddFacultyModal(false);
+    setFacultyForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      department: '',
+      position: '',
+      employmentStatus: ''
+    });
+  };
+
+  const handleFacultyFormChange = (field, value) => {
+    setFacultyForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddFaculty = () => {
+    // Validate required fields
+    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email || !facultyForm.department) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Here you would typically send to API
+    console.log('Adding faculty:', facultyForm);
+    alert('Faculty added successfully!');
+    closeAddFacultyModal();
+  };
+
+  // Other quick action functions
   const showAddCourseForm = () => {
     const name = prompt('Enter course name:');
     const code = prompt('Enter course code:');
@@ -163,10 +193,6 @@ const AdminDashboard = () => {
   };
 
   // API functions
-  const addFaculty = async (facultyData) => {
-    alert('Faculty data saved locally (demo mode)');
-  };
-
   const addCourse = async (courseData) => {
     alert('Course data saved locally (demo mode)');
   };
@@ -178,7 +204,7 @@ const AdminDashboard = () => {
             window.location.href = '/curriculum-management';
                 break;
         case 'students':
-            window.location.href = '/students';
+            window.location.href = '/student-management';
                 break;
         case 'schedule':
             window.location.href = '/schedule';
@@ -455,6 +481,111 @@ const AdminDashboard = () => {
               </button>
               <button className="btn btn-primary" onClick={handleAddStudent}>
                 Add Student
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Faculty Modal */}
+      {showAddFacultyModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h2 className="modal-title">Add New Faculty</h2>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="modal-body">
+              <div className="modal-grid">
+                {/* First Name */}
+                <div className="form-group">
+                  <label className="form-label">First Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter First Name"
+                    value={facultyForm.firstName}
+                    onChange={(e) => handleFacultyFormChange('firstName', e.target.value)}
+                  />
+                </div>
+                
+                {/* Last Name */}
+                <div className="form-group">
+                  <label className="form-label">Last Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Last Name"
+                    value={facultyForm.lastName}
+                    onChange={(e) => handleFacultyFormChange('lastName', e.target.value)}
+                  />
+                </div>
+                
+                {/* Email */}
+                <div className="form-group">
+                  <label className="form-label">Email *</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    placeholder="Enter Email Address"
+                    value={facultyForm.email}
+                    onChange={(e) => handleFacultyFormChange('email', e.target.value)}
+                  />
+                </div>
+                
+                {/* Department */}
+                <div className="form-group">
+                  <label className="form-label">Department *</label>
+                  <select
+                    className="form-input" value={facultyForm.department}
+                    onChange={(e) => handleFacultyFormChange('department', e.target.value)}
+                  >
+                    <option value="">Select department</option>
+                    {departmentOptions.map((dept) => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Position */}
+                <div className="form-group">
+                  <label className="form-label">Position</label>
+                  <select
+                    className="form-input" value={facultyForm.position}
+                    onChange={(e) => handleFacultyFormChange('position', e.target.value)}
+                  >
+                    <option value="">Select position</option>
+                    {positionOptions.map((pos) => (
+                      <option key={pos} value={pos}>{pos}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Employment Status */}
+                <div className="form-group">
+                  <label className="form-label">Employment Status</label>
+                  <select
+                    className="form-input" value={facultyForm.employmentStatus}
+                    onChange={(e) => handleFacultyFormChange('employmentStatus', e.target.value)}
+                  >
+                    <option value="">Select status</option>
+                    {employmentStatusOptions.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeAddFacultyModal}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleAddFaculty}>
+                Add Faculty
               </button>
             </div>
           </div>

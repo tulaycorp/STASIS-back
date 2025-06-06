@@ -192,7 +192,7 @@ const CurriculumManagement = () => {
             window.location.href = '/admin-dashboard';
                 break;
         case 'Students':
-            window.location.href = '/students';
+            window.location.href = '/student-management';
                 break;
         case 'Schedule':
             window.location.href = '/schedule';

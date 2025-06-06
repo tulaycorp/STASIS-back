@@ -6,6 +6,7 @@ import StudentLoginForm from './components/StudentLoginForm';
 import FacultyLoginForm from './components/FacultyLoginForm';
 import AdminDashboard from './components/AdminDashboard';
 import CurriculumManagement from './components/CurriculumManagement';
+import StudentManagement from './components/StudentManagement';
 import './index.css'; // Global styles
 
 function App() {
@@ -26,6 +27,8 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
 
         <Route path="/curriculum-management" element={<CurriculumManagement />} />
+
+        <Route path="/student-management" element={<StudentManagement />} />
 
         {/* Add other routes for dashboards etc. later */}
         {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}
