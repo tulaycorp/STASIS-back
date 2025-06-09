@@ -6,104 +6,19 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Program Sidebar */
-.program-sidebar {
-  width: 280px;
-  background: #ffffff;
-  border-right: 1px solid #e9ecef;
-  position: fixed;
-  left: 256px;
-  height: 100vh;
-  overflow-y: auto;
-  z-index: 999;
-}
-
-.program-sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.program-sidebar-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #212529;
-}
-
-.program-list {
-  padding: 10px 0;
-}
-
-.program-item {
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #495057;
-  font-size: 13px;
-  font-weight: 500;
-  border-bottom: 1px solid #f8f9fa;
-}
-
-.program-item:hover {
-  background: rgba(220, 53, 69, 0.05);
-}
-
-.program-item.active {
-  background: rgba(220, 53, 69, 0.1);
-  color: #dc3545;
-  font-weight: 500;
-}
-
-.program-sidebar-actions {
-  padding: 20px;
-  border-top: 1px solid #e9ecef;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.btn-add-section {
-  width: 100%;
-  padding: 10px 16px;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-add-section:hover {
-  background-color: #c82333;
-}
-
-.program-info {
-  padding: 20px;
-}
-
-.program-info-item {
-  margin-bottom: 15px;
-}
-
-.program-info-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6c757d;
-  margin-bottom: 5px;
-}
-
-.program-info-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: #212529;
-}
-
-/* Main Content */
+/* Main Content - Use padding instead of margin to create proper spacing */
 .main-content {
   flex: 1;
-  margin-left: 536px;
-  padding: 20px;
+  padding-left: calc(536px + 20px); /* 536px for sidebars + 20px content padding */
+  padding-right: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
   overflow-y: auto;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  min-width: 0;
+  box-sizing: border-box;
+  /* Remove position and z-index */
 }
 
 .dashboard-header {
@@ -379,83 +294,33 @@
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .program-sidebar {
-    width: 250px;
-  }
-  
   .main-content {
-    margin-left: 506px;
-  }
-}
-
-@media (max-width: 992px) {  
-  .program-sidebar {
-    left: 0;
-    width: 280px;
-  }
-  .main-content {
-    margin-left: 280px;
-  }
-  
-  .modal-grid {
-    grid-template-columns: 1fr;
+    padding-left: calc(506px + 20px); /* 506px for smaller sidebars + 20px content padding */
   }
 }
 
 @media (max-width: 768px) {
-  .program-sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s;
-  }
   .main-content {
-    margin-left: 0;
-    padding: 15px;
+    padding-left: 20px; /* No sidebars - just content padding */
   }
-  
-  .dashboard-header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
-  }
-  
-  .course-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .course-search-group,
-  .course-filter-group {
-    min-width: auto;
-  }
-  
-  .course-table-container {
-    font-size: 12px;
-  }
-  
-  .course-table th,
-  .course-table td {
-    padding: 8px;
-  }
-  
-  .modal-content {
-    width: 95%;
-    margin: 20px;
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px;
   }
 }
 
 /* Print Styles */
 @media print {
   .program-sidebar,
-  .course-header-actions,
-  .course-filters,  .btn-action {
+  .btn,
+  .btn-action {
     display: none;
   }
   
   .main-content {
-    margin-left: 0;
-  }
-  
-  .course-table {
-    font-size: 12px;
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 }

@@ -3,11 +3,13 @@
   width: 280px;
   background: #ffffff;
   border-right: 1px solid #e9ecef;
+  position: fixed;
+  left: 256px; /* Position it right after the main sidebar */
+  top: 0;
   height: 100vh;
   overflow-y: auto;
-  z-index: 999;
-  flex-shrink: 0;
-  margin-left: 256px;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.1);
+  /* Remove z-index completely */
 }
 
 .program-sidebar-header {
@@ -94,15 +96,6 @@
 @media (max-width: 1200px) {
   .program-sidebar {
     width: 250px;
-    margin-left: 256px;
-  }
-}
-
-@media (max-width: 992px) {  
-  .program-sidebar {
-    left: 0;
-    width: 280px;
-    margin-left: 0;
   }
 }
 
@@ -110,6 +103,5 @@
   .program-sidebar {
     transform: translateX(-100%);
     transition: transform 0.3s;
-    margin-left: 0;
   }
 }
