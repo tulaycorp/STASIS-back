@@ -341,7 +341,7 @@ const ScheduleManagement = () => {
     }
   };
   return (
-    <div className="schedule-container">
+    <div className="dashboard-container">
       {/* Sidebar */}
       <Sidebar 
         activePage="Schedule" 

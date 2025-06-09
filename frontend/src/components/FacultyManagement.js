@@ -252,7 +252,7 @@ const FacultyManagement = () => {
     }
   };
   return (
-    <div className="faculty-container">
+    <div className="dashboard-container">
       {/* Sidebar */}
       <Sidebar 
         activePage="Faculty" 

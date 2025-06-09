@@ -372,8 +372,8 @@ const Student = () => {
     setSelectedSection('All Sections');
   };
   return (
-    <div className="container">
-      {/* Main Sidebar */}
+    <div className="dashboard-container">
+      {/* Sidebar */}
       <Sidebar 
         activePage="Students" 
         onNavigate={showSection}
@@ -400,7 +400,8 @@ const Student = () => {
             ]
           }
         ]}
-      />      {/* Program Sidebar */}
+      />
+      {/* Program Sidebar */}
       <ProgramSidebar
         programs={courses}
         selectedProgram={selectedProgram}
@@ -412,93 +413,95 @@ const Student = () => {
 
       {/* Main Content */}
       <div className="main-content">
-        <div className="dashboard-header">
-          <h1 className="dashboard-welcome-title">Student Management</h1>
-          <div className="program-indicator">
-            {selectedProgram}
-          </div>
-        </div>
-
-        {/* Student Management Section */}
-        <div className="dashboard-section-card">
-          <div className="dashboard-section-header">
-            <h2 className="dashboard-section-title">Students</h2>
-            <div className="student-header-actions">
-              <button className="btn btn-primary" onClick={showAddStudentForm}>
-                Add Student
-              </button>
-            </div>
-          </div>
-          
-          {/* Search and Filter */}
-          <div className="student-filters">
-            <div className="student-search-group">
-              <input
-                type="text"
-                className="form-input student-search-input"
-                placeholder="Search students..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="student-filter-group">
-              <select
-                className="form-input student-filter-select"
-                value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-              >
-                {sections.map((section) => (
-                  <option key={section} value={section}>{section}</option>
-                ))}
-              </select>
+        <div className="content-wrapper">
+          <div className="dashboard-header">
+            <h1 className="dashboard-welcome-title">Student Management</h1>
+            <div className="program-indicator">
+              {selectedProgram}
             </div>
           </div>
 
-          {/* Students Table */}
-          <div className="student-table-container">
-            <table className="student-table">
-              <thead>
-                <tr>
-                  <th>Student ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Birthday</th>
-                  <th>Section</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStudents.map((student) => (
-                  <tr key={student.id}>
-                    <td className="student-id">{student.studentId}</td>
-                    <td className="student-name">{student.name}</td>
-                    <td className="student-email">{student.email}</td>
-                    <td className="student-birthday">{student.birthday}</td>
-                    <td className="student-section">{student.section}</td>
-                    <td>
-                      <span className={`student-status ${student.status.toLowerCase()}`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className="btn-action"
-                        onClick={() => showEditStudentForm(student)}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            
-            {filteredStudents.length === 0 && (
-              <div className="no-students">
-                <p>No students found matching your criteria.</p>
+          {/* Student Management Section */}
+          <div className="dashboard-section-card">
+            <div className="dashboard-section-header">
+              <h2 className="dashboard-section-title">Students</h2>
+              <div className="student-header-actions">
+                <button className="btn btn-primary" onClick={showAddStudentForm}>
+                  Add Student
+                </button>
               </div>
-            )}
+            </div>
+            
+            {/* Search and Filter */}
+            <div className="student-filters">
+              <div className="student-search-group">
+                <input
+                  type="text"
+                  className="form-input student-search-input"
+                  placeholder="Search students..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="student-filter-group">
+                <select
+                  className="form-input student-filter-select"
+                  value={selectedSection}
+                  onChange={(e) => setSelectedSection(e.target.value)}
+                >
+                  {sections.map((section) => (
+                    <option key={section} value={section}>{section}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Students Table */}
+            <div className="student-table-container">
+              <table className="student-table">
+                <thead>
+                  <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Birthday</th>
+                    <th>Section</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student) => (
+                    <tr key={student.id}>
+                      <td className="student-id">{student.studentId}</td>
+                      <td className="student-name">{student.name}</td>
+                      <td className="student-email">{student.email}</td>
+                      <td className="student-birthday">{student.birthday}</td>
+                      <td className="student-section">{student.section}</td>
+                      <td>
+                        <span className={`student-status ${student.status.toLowerCase()}`}>
+                          {student.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button 
+                          className="btn-action"
+                          onClick={() => showEditStudentForm(student)}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {filteredStudents.length === 0 && (
+                <div className="no-students">
+                  <p>No students found matching your criteria.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

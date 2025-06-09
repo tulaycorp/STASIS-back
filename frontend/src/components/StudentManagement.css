@@ -1,5 +1,5 @@
 /* Container and Layout */
-.container {
+.dashboard-container {
   display: flex;
   min-height: 100vh;
   background-color: #f8f9fa;
@@ -9,9 +9,51 @@
 /* Main Content */
 .main-content {
   flex: 1;
-  margin-left: 536px;
+  margin-left: 256px;
+  min-height: 100vh;
   padding: 20px;
-  overflow-y: auto;
+  max-width: 1200px;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.content-wrapper {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 1200px) {
+  .main-content {
+    padding: 20px 12px;
+    max-width: 1000px;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-content {
+    margin-left: 0;
+    padding: 20px 8px;
+    max-width: 100vw;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: 15px;
+    max-width: 100vw;
+  }
+  .content-wrapper {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 8px;
+  }
 }
 
 .dashboard-header {
@@ -297,7 +339,9 @@
     width: 250px;
   }
   .main-content {
-    margin-left: 506px;
+    margin-left: 256px;
+    padding: 20px 12px;
+    max-width: 1000px;
   }
 }
 
@@ -307,7 +351,9 @@
     width: 280px;
   }
   .main-content {
-    margin-left: 280px;
+    margin-left: 0;
+    padding: 20px 8px;
+    max-width: 100vw;
   }
   
   .modal-grid {
@@ -323,6 +369,7 @@
   .main-content {
     margin-left: 0;
     padding: 15px;
+    max-width: 100vw;
   }
   
   .dashboard-header {

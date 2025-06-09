@@ -3,15 +3,15 @@
   width: 280px;
   background: #ffffff;
   border-right: 1px solid #e9ecef;
-  position: fixed;
-  left: 256px;
   height: 100vh;
   overflow-y: auto;
   z-index: 999;
+  flex-shrink: 0;
+  margin-left: 256px;
 }
 
 .program-sidebar-header {
-  padding: 20px;
+  padding: 12px;
   border-bottom: 1px solid #e9ecef;
 }
 
@@ -23,11 +23,11 @@
 }
 
 .program-list {
-  padding: 10px 0;
+  padding: 6px 0;
 }
 
 .program-item {
-  padding: 12px 20px;
+  padding: 8px 12px;
   cursor: pointer;
   transition: all 0.2s;
   color: #495057;
@@ -47,14 +47,14 @@
 }
 
 .program-sidebar-actions {
-  padding: 20px;
+  padding: 12px;
   border-top: 1px solid #e9ecef;
   border-bottom: 1px solid #e9ecef;
 }
 
 .btn-add-section {
   width: 100%;
-  padding: 10px 16px;
+  padding: 8px 12px;
   background-color: #dc3545;
   color: white;
   border: none;
@@ -70,11 +70,11 @@
 }
 
 .program-info {
-  padding: 20px;
+  padding: 12px;
 }
 
 .program-info-item {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .program-info-label {
@@ -94,6 +94,7 @@
 @media (max-width: 1200px) {
   .program-sidebar {
     width: 250px;
+    margin-left: 256px;
   }
 }
 
@@ -101,6 +102,7 @@
   .program-sidebar {
     left: 0;
     width: 280px;
+    margin-left: 0;
   }
 }
 
@@ -108,5 +110,6 @@
   .program-sidebar {
     transform: translateX(-100%);
     transition: transform 0.3s;
+    margin-left: 0;
   }
 }
