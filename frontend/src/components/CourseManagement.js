@@ -272,7 +272,8 @@ const Course = () => {
                 break;
         case 'Students':
             window.location.href = '/student-management';
-                break;        case 'Curriculum':
+                break;        
+        case 'Curriculum':
             window.location.href = '/curriculum-management';
                 break;
         case 'Schedule':

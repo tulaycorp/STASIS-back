@@ -1,3 +1,4 @@
+
 import React from 'react';
 import './Sidebar.css'; // You can extract sidebar styles here
 
@@ -59,8 +60,20 @@ const Sidebar = ({ activePage, onNavigate }) => (
       </div>
     </div>
     <div className="sidebar-footer">
-      <div className="user-name">David Anderson</div>
-      <div className="user-role">Schedule Admin</div>
+      <button className="logout-button" onClick={() => {
+        if (window.confirm('Are you sure you want to log out?')) {
+          window.location.href = '/';
+        }
+      }}>
+          🚪 Log Out
+      </button>
+      <div className="user-profile">
+        <div className="user-avatar">DA</div>
+        <div className="user-info">
+          <div className="user-name">David Anderson</div>
+          <div className="user-role">Schedule Admin</div>
+        </div>
+      </div>
     </div>
   </div>
 );

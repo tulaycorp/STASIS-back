@@ -45,6 +45,17 @@ const AdminDashboard = () => {
     status: 'Active'
   });
 
+  const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({
+    course: '',
+    section: '',
+    instructor: '',
+    room: '',
+    day: '',
+    timeFrom: '',
+    timeTo: ''
+  });
+
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
 
@@ -91,6 +102,37 @@ const AdminDashboard = () => {
     'Adjunct'
   ];
 
+  // Course options for schedule
+  const courseOptions = [
+    'Computer Programming I',
+    'Computer Programming II', 
+    'Database Management',
+    'Data Structures',
+    'Network Administration',
+    'Web Development',
+    'Software Engineering'
+  ];
+
+  // Instructor options for schedule
+  const instructorOptions = [
+    'Emily Thompson',
+    'James Chen', 
+    'Sarah Martinez',
+    'Michael Roberts',
+    'Rachel Williams'
+  ];
+
+  // Room options for schedule
+  const roomOptions = [
+    'Room 101', 'Room 102', 'Room 201', 'Room 202', 'Room 301',
+    'Lab 101', 'Lab 201', 'Lab 301', 'Auditorium A'
+  ];
+
+  // Day options for schedule
+  const dayOptions = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  ];
+
   // Generate calendar days for March 2025
   const generateCalendarDays = () => {
     const days = [];
@@ -118,6 +160,46 @@ const AdminDashboard = () => {
     
     return days;
   };
+
+  // Schedule Modal functions
+const closeAddScheduleModal = () => {
+  setShowAddScheduleModal(false);
+  setScheduleForm({
+    course: '',
+    section: '',
+    instructor: '',
+    room: '',
+    day: '',
+    timeFrom: '',
+    timeTo: ''
+  });
+};
+
+const handleScheduleFormChange = (field, value) => {
+  setScheduleForm(prev => ({
+    ...prev,
+    [field]: value
+  }));
+};
+
+const handleAddSchedule = () => {
+  // Validate required fields
+  if (!scheduleForm.course || !scheduleForm.section || !scheduleForm.instructor || 
+      !scheduleForm.room || !scheduleForm.day || !scheduleForm.timeFrom || !scheduleForm.timeTo) {
+    alert('Please fill in all required fields');
+    return;
+  }
+
+  // Validate time
+  if (scheduleForm.timeFrom >= scheduleForm.timeTo) {
+    alert('End time must be after start time');
+    return;
+  }
+  
+  console.log('Adding schedule:', scheduleForm);
+  alert('Schedule added successfully!');
+  closeAddScheduleModal();
+};
 
   // Student Modal functions
   const showAddStudentForm = () => {
@@ -234,8 +316,9 @@ const AdminDashboard = () => {
   };
 
   const showScheduleManager = () => {
-    alert('Schedule manager functionality would be implemented here.');
+    setShowAddScheduleModal(true);
   };
+
   // Navigation
   const showSection = (section) => {
     switch(section){
@@ -693,6 +776,114 @@ const AdminDashboard = () => {
               </button>
               <button className="btn btn-primary" onClick={handleAddCourse}>
                 Add Course
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add Schedule Modal */}
+      {showAddScheduleModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Add New Schedule</h2>
+              </div>
+      
+            <div className="modal-body">
+              <div className="modal-grid">
+                <div className="form-group">
+                  <label className="form-label">Course *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.course}
+                    onChange={(e) => handleScheduleFormChange('course', e.target.value)}
+                  >
+                    <option value="">Select course</option>
+                    {courseOptions.map((course) => (
+                      <option key={course} value={course}>{course}</option>
+                    ))}
+                  </select>
+                </div>
+          
+                <div className="form-group">
+                  <label className="form-label">Section *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g., CS-101-A"
+                    value={scheduleForm.section}
+                    onChange={(e) => handleScheduleFormChange('section', e.target.value)}
+                  />
+                </div>
+          
+                <div className="form-group">
+                  <label className="form-label">Instructor *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.instructor}
+                    onChange={(e) => handleScheduleFormChange('instructor', e.target.value)}
+                  >
+                    <option value="">Select instructor</option>
+                    {instructorOptions.map((instructor) => (
+                      <option key={instructor} value={instructor}>{instructor}</option>
+                    ))}
+                  </select>
+                </div>
+          
+                <div className="form-group">
+                  <label className="form-label">Room *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.room}
+                    onChange={(e) => handleScheduleFormChange('room', e.target.value)}
+                  >
+                    <option value="">Select room</option>
+                    {roomOptions.map((room) => (
+                      <option key={room} value={room}>{room}</option>
+                    ))}
+                  </select>
+                </div>
+          
+                <div className="form-group">
+                  <label className="form-label">Day *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.day}
+                    onChange={(e) => handleScheduleFormChange('day', e.target.value)}
+                  >
+                    <option value="">Select day</option>
+                    {dayOptions.map((day) => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+          
+                <div className="form-group">
+                  <label className="form-label">Time Period *</label>
+                  <div style={{display: 'flex', gap: '10px'}}>
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={scheduleForm.timeFrom}
+                      onChange={(e) => handleScheduleFormChange('timeFrom', e.target.value)}
+                    />
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={scheduleForm.timeTo}
+                      onChange={(e) => handleScheduleFormChange('timeTo', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+      
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeAddScheduleModal}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleAddSchedule}>
+                Add Schedule
               </button>
             </div>
           </div>
