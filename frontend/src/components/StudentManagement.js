@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import './StudentManagement.css';
 
 const Student = () => {
@@ -352,13 +352,13 @@ const Student = () => {
             window.location.href = '/Curriculum-management';
                 break;
         case 'Schedule':
-            window.location.href = '/schedule';
+            window.location.href = '/schedule-management';
                 break;
         case 'Faculty':
-            window.location.href = '/faculty';
+            window.location.href = '/faculty-management';
                 break;
         case 'Courses':
-            window.location.href = '/courses';
+            window.location.href = '/course-management';
                 break;
         default:
             alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
@@ -377,7 +377,6 @@ const Student = () => {
       <div className="sidebar">
         <div className="logo">
           <div className="logo-icon">📊</div>
-          <span style={{fontWeight: 600}}>Admin Panel</span>
         </div>
         
         <div className="nav-section">

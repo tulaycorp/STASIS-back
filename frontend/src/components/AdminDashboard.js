@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -36,11 +36,26 @@ const AdminDashboard = () => {
     employmentStatus: ''
   });
 
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [courseForm, setCourseForm] = useState({
+    courseCode: '',
+    courseName: '',
+    program: '',
+    status: 'Active'
+  });
+
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
 
   // Schedule data for the selected date
   const scheduleData = [];
+
+  const programs = [
+    'BS Computer Science',
+    'BS Information Technology', 
+    'BS Information Systems',
+    'BS Entertainment and Multimedia Computing'
+  ];
 
   // Department options for faculty
   const departmentOptions = [
@@ -177,24 +192,48 @@ const AdminDashboard = () => {
     closeAddFacultyModal();
   };
 
-  // Other quick action functions
+  // Course Modal functions
   const showAddCourseForm = () => {
-    const name = prompt('Enter course name:');
-    const code = prompt('Enter course code:');
-    const description = prompt('Enter course description:');
-    
-    if (name && code && description) {
-      addCourse({ name, code, description });
+    setCourseForm({
+      courseCode: '',
+      courseName: '',
+      program: '',
+      status: 'Active'
+    });
+    setShowAddCourseModal(true);
+  };
+
+  const closeAddCourseModal = () => {
+    setShowAddCourseModal(false);
+    setCourseForm({
+      courseCode: '',
+      courseName: '',
+      program: '',
+      status: 'Active'
+    });
+  };
+
+  const handleCourseFormChange = (field, value) => {
+    setCourseForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddCourse = () => {
+    // Validate required fields
+    if (!courseForm.courseCode || !courseForm.courseName || !courseForm.program) {
+      alert('Please fill in all required fields');
+      return;
     }
+    
+    console.log('Adding course:', courseForm);
+    alert('Course added successfully!');
+    closeAddCourseModal();
   };
 
   const showScheduleManager = () => {
     alert('Schedule manager functionality would be implemented here.');
-  };
-
-  // API functions
-  const addCourse = async (courseData) => {
-    alert('Course data saved locally (demo mode)');
   };
 
   // Navigation
@@ -207,13 +246,13 @@ const AdminDashboard = () => {
             window.location.href = '/student-management';
                 break;
         case 'schedule':
-            window.location.href = '/schedule';
+            window.location.href = '/schedule-management';
                 break;
         case 'faculty':
-            window.location.href = '/faculty';
+            window.location.href = '/faculty-management';
                 break;
         case 'courses':
-            window.location.href = '/courses';
+            window.location.href = '/course-management';
                 break;
         default:
             alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
@@ -586,6 +625,78 @@ const AdminDashboard = () => {
               </button>
               <button className="btn btn-primary" onClick={handleAddFaculty}>
                 Add Faculty
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Course Modal */}
+      {showAddCourseModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Add New Course</h2>
+            </div>
+            
+            <div className="modal-body">
+              <div className="modal-grid">
+                <div className="form-group">
+                  <label className="form-label">Course Code *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Course Code (e.g., CS101)"
+                    value={courseForm.courseCode}
+                    onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Course Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Course Name"
+                    value={courseForm.courseName}
+                    onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Program *</label>
+                  <select
+                    className="form-input"
+                    value={courseForm.program}
+                    onChange={(e) => handleCourseFormChange('program', e.target.value)}
+                  >
+                    <option value="">Select Program</option>
+                    {programs.map((program) => (
+                      <option key={program} value={program}>{program}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Status</label>
+                  <select
+                    className="form-input"
+                    value={courseForm.status}
+                    onChange={(e) => handleCourseFormChange('status', e.target.value)}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeAddCourseModal}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleAddCourse}>
+                Add Course
               </button>
             </div>
           </div>

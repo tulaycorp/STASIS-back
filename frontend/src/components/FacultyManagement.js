@@ -1,8 +1,11 @@
+//FacultyManagement.js
 import React, { useState } from 'react';
 import './FacultyManagement.css';
 
 const FacultyManagement = () => {
   const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
+  const [showEditFacultyModal, setShowEditFacultyModal] = useState(false);
+  const [editingFaculty, setEditingFaculty] = useState(null);
   const [facultyForm, setFacultyForm] = useState({
     firstName: '',
     lastName: '',
@@ -108,13 +111,45 @@ const FacultyManagement = () => {
     return matchesSearch && matchesDepartment;
   });
 
-  // Faculty Modal functions
+  // Add Faculty Modal functions
   const showAddFacultyForm = () => {
     setShowAddFacultyModal(true);
   };
 
   const closeAddFacultyModal = () => {
     setShowAddFacultyModal(false);
+    setFacultyForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      department: '',
+      position: '',
+      employmentStatus: ''
+    });
+  };
+
+  // Edit Faculty Modal functions
+  const showEditFacultyForm = (faculty) => {
+    setEditingFaculty(faculty);
+    // Split the name into first and last name
+    const nameParts = faculty.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    setFacultyForm({
+      firstName: firstName,
+      lastName: lastName,
+      email: faculty.email,
+      department: faculty.department,
+      position: faculty.position,
+      employmentStatus: faculty.status
+    });
+    setShowEditFacultyModal(true);
+  };
+
+  const closeEditFacultyModal = () => {
+    setShowEditFacultyModal(false);
+    setEditingFaculty(null);
     setFacultyForm({
       firstName: '',
       lastName: '',
@@ -159,38 +194,92 @@ const FacultyManagement = () => {
     closeAddFacultyModal();
   };
 
+  const handleEditFaculty = () => {
+    // Validate required fields
+    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email || !facultyForm.department) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Create updated faculty object
+    const updatedFaculty = {
+      ...editingFaculty,
+      name: `${facultyForm.firstName} ${facultyForm.lastName}`,
+      position: facultyForm.position || 'Assistant Professor',
+      department: facultyForm.department,
+      email: facultyForm.email,
+      status: facultyForm.employmentStatus || 'Full-time'
+    };
+    
+    // Update faculty list
+    setFacultyList(prev => 
+      prev.map(faculty => 
+        faculty.id === editingFaculty.id ? updatedFaculty : faculty
+      )
+    );
+    
+    alert('Faculty updated successfully!');
+    closeEditFacultyModal();
+  };
+
+  const handleDeleteFaculty = (facultyId) => {
+    if (window.confirm('Are you sure you want to delete this faculty member?')) {
+      setFacultyList(prev => prev.filter(faculty => faculty.id !== facultyId));
+      alert('Faculty deleted successfully!');
+    }
+  };
+
+  // Navigation
+  const showSection = (section) => {
+    switch(section){
+        case 'Dashboard':
+            window.location.href = '/admin-dashboard';
+                break;
+        case 'Students':
+            window.location.href = '/student-management';
+                break;
+        case 'Schedule':
+            window.location.href = '/schedule-management';
+                break;
+        case 'Curriculum':
+            window.location.href = '/curriculum-management';
+                break;
+        case 'Courses':
+            window.location.href = '/course-management';
+                break;
+        default:
+            alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
+    }
+  };
+
   return (
     <div className="faculty-container">
       {/* Sidebar */}
       <div className="sidebar">
-        <div className="sidebar-header">
-          <div className="logo">
-            📊
-          </div>
+        <div className="logo">
+          <div className="logo-icon">📊</div>
         </div>
         
-        <div className="sidebar-content">
-          <div className="nav-section">
-            <div className="nav-item active">Dashboard</div>
+        <div className="nav-section">
+          <div className="nav-item" onClick={() => showSection('Dashboard')}> Dashboard </div>
+        </div>
+
+        <div className="nav-section">
+          <div className="nav-title">Management</div>
+          <div className="nav-item" onClick={() => showSection('Students')}> Students </div>
+          <div className="nav-item" onClick={() => showSection('Curriculum')}>Curriculum</div>
+          <div className="nav-item" onClick={() => showSection('Schedule')}> Schedule </div>
+          <div className="nav-item active" onClick={() => showSection('Faculty')}> Faculty </div>
+          <div className="nav-item" onClick={() => showSection('Courses')}> Courses </div>
+        </div>
+        
+        <div className="nav-section">
+          <div className="nav-title">System</div>
+          <div className="nav-item">
+            Settings
           </div>
-          
-          <div className="nav-section">
-            <div className="nav-label">Management</div>
-            <div className="nav-items">
-              <div className="nav-item">Students</div>
-              <div className="nav-item">Curriculum</div>
-              <div className="nav-item">Schedule</div>
-              <div className="nav-item active-page">Faculty</div>
-              <div className="nav-item">Courses</div>
-            </div>
-          </div>
-          
-          <div className="nav-section">
-            <div className="nav-label">System</div>
-            <div className="nav-items">
-              <div className="nav-item">Settings</div>
-              <div className="nav-item">Admin Tools</div>
-            </div>
+          <div className="nav-item">
+            Admin Tools
           </div>
         </div>
         
@@ -203,10 +292,6 @@ const FacultyManagement = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="content-wrapper">
-          {/* Breadcrumb */}
-          <div className="breadcrumb">
-            Home > Faculty
-          </div>
           
           {/* Header */}
           <div className="page-header">
@@ -296,8 +381,18 @@ const FacultyManagement = () => {
                         </span>
                       </td>
                       <td className="action-buttons">
-                        <button className="btn-edit">Edit</button>
-                        <button className="btn-delete">Delete</button>
+                        <button 
+                          className="btn-edit"
+                          onClick={() => showEditFacultyForm(faculty)}
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          className="btn-delete"
+                          onClick={() => handleDeleteFaculty(faculty.id)}
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -428,6 +523,120 @@ const FacultyManagement = () => {
                 onClick={handleAddFaculty}
               >
                 Add Faculty
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Faculty Modal */}
+      {showEditFacultyModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h2 className="modal-title">Edit Faculty</h2>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="modal-content">
+              <div className="form-grid">
+                {/* First Name */}
+                <div className="form-group">
+                  <label className="form-label">First Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter First Name"
+                    value={facultyForm.firstName}
+                    onChange={(e) => handleFacultyFormChange('firstName', e.target.value)}
+                  />
+                </div>
+                
+                {/* Last Name */}
+                <div className="form-group">
+                  <label className="form-label">Last Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Last Name"
+                    value={facultyForm.lastName}
+                    onChange={(e) => handleFacultyFormChange('lastName', e.target.value)}
+                  />
+                </div>
+                
+                {/* Email */}
+                <div className="form-group">
+                  <label className="form-label">Email *</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    placeholder="Enter Email Address"
+                    value={facultyForm.email}
+                    onChange={(e) => handleFacultyFormChange('email', e.target.value)}
+                  />
+                </div>
+                
+                {/* Department */}
+                <div className="form-group">
+                  <label className="form-label">Department *</label>
+                  <select
+                    className="form-input"
+                    value={facultyForm.department}
+                    onChange={(e) => handleFacultyFormChange('department', e.target.value)}
+                  >
+                    <option value="">Select department</option>
+                    {departmentOptions.map((dept) => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Position */}
+                <div className="form-group">
+                  <label className="form-label">Position</label>
+                  <select
+                    className="form-input"
+                    value={facultyForm.position}
+                    onChange={(e) => handleFacultyFormChange('position', e.target.value)}
+                  >
+                    <option value="">Select position</option>
+                    {positionOptions.map((pos) => (
+                      <option key={pos} value={pos}>{pos}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Employment Status */}
+                <div className="form-group">
+                  <label className="form-label">Employment Status</label>
+                  <select
+                    className="form-input"
+                    value={facultyForm.employmentStatus}
+                    onChange={(e) => handleFacultyFormChange('employmentStatus', e.target.value)}
+                  >
+                    <option value="">Select status</option>
+                    {employmentStatusOptions.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={closeEditFacultyModal}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={handleEditFaculty}
+              >
+                Update Faculty
               </button>
             </div>
           </div>

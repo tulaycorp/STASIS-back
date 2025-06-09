@@ -1,3 +1,4 @@
+/*AdminDashboard.css*/
 .dashboard-container {
   display: flex;
   min-height: 100vh;
@@ -25,7 +26,6 @@
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid #f1f3f4;
-  margin-bottom: 10px;
 }
 
 .dashboard-logo-icon {

@@ -11,7 +11,7 @@ body {
 }
 
 /* Main Container */
-.faculty-container {
+.schedule-container {
   min-height: 100vh;
   background-color: #f9fafb;
   display: flex;
@@ -232,8 +232,8 @@ body {
   color: #111827;
 }
 
-/* Faculty List Container */
-.faculty-list-container {
+/* Schedule List Container */
+.schedule-list-container {
   background-color: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
@@ -311,16 +311,16 @@ body {
   overflow-x: auto;
 }
 
-.faculty-table {
+.schedule-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.faculty-table thead {
+.schedule-table thead {
   background-color: #f9fafb;
 }
 
-.faculty-table th {
+.schedule-table th {
   padding: 16px 24px;
   text-align: left;
   font-size: 12px;
@@ -331,24 +331,24 @@ body {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.faculty-table tbody {
+.schedule-table tbody {
   background-color: white;
 }
 
-.faculty-table tbody tr {
+.schedule-table tbody tr {
   border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s ease;
 }
 
-.faculty-table tbody tr:hover {
+.schedule-table tbody tr:hover {
   background-color: #f9fafb;
 }
 
-.faculty-table tbody tr:last-child {
+.schedule-table tbody tr:last-child {
   border-bottom: none;
 }
 
-.faculty-table td {
+.schedule-table td {
   padding: 16px 24px;
   font-size: 14px;
   color: #111827;
@@ -356,18 +356,34 @@ body {
   vertical-align: middle;
 }
 
-.faculty-info {
+.schedule-info {
   display: flex;
   flex-direction: column;
 }
 
-.faculty-name {
+.schedule-course {
   font-weight: 500;
   color: #111827;
   margin-bottom: 2px;
 }
 
-.faculty-position {
+.schedule-section {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.time-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-period {
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.day-info {
   font-size: 13px;
   color: #6b7280;
 }
@@ -381,14 +397,19 @@ body {
   display: inline-block;
 }
 
-.status-fulltime {
+.status-active {
   background-color: #dcfce7;
   color: #166534;
 }
 
-.status-parttime {
-  background-color: #fef3c7;
-  color: #a16207;
+.status-cancelled {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.status-completed {
+  background-color: #f0f9ff;
+  color: #1e40af;
 }
 
 /* Action Buttons */
@@ -546,6 +567,10 @@ body {
   flex-direction: column;
 }
 
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
 .form-label {
   font-size: 14px;
   font-weight: 600;
@@ -571,6 +596,12 @@ body {
 
 .form-input::placeholder {
   color: #9ca3af;
+}
+
+.time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .modal-footer {
@@ -630,13 +661,17 @@ body {
     grid-template-columns: 1fr;
   }
   
+  .time-inputs {
+    grid-template-columns: 1fr;
+  }
+  
   .table-footer {
     flex-direction: column;
     align-items: stretch;
     text-align: center;
   }
   
-  .faculty-table td {
+  .schedule-table td {
     padding: 12px 16px;
   }
 }
