@@ -12,106 +12,20 @@ Global Reset */
   min-height: 100vh;
 }
 
-/* Sidebar Styles */
-.sidebar {
-  width: 250px;
-  background: white;
-  border-right: 1px solid #e9ecef;
-  padding: 0;
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-  z-index: 1000;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #f1f3f4;
-}
-
-.logo-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #dc3545, #c82333);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 14px;
-  font-weight: bold;
-  margin-right: 10px;
-}
-
-/* Navigation Sections */
-.nav-section {
-  margin-bottom: 25px;
-}
-
-.nav-title {
-  color: #6c757d;
-  font-size: 11px;
-  text-transform: uppercase;
-  padding: 8px 20px;
-  margin-bottom: 5px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.nav-item {
-  padding: 10px 20px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #495057;
-  font-size: 13px;
-  font-weight: 400;
-}
-
-.nav-item:hover {
-  background: rgba(220, 53, 69, 0.05);
-}
-
-.nav-item.active {
-  background: rgba(220, 53, 69, 0.1);
-  color: #dc3545;
-  font-weight: 500;
-}
-
-.nav-item-icon {
-  margin-right: 10px;
-  font-size: 16px;
-}
-
-/* User Info */
-.user-info {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  font-size: 11px;
-  color: #6c757d;
-}
-
-/* Main Content - Updated for centering */
+/* Main Content */
 .main-content {
   flex: 1;
-  margin-left: 250px;
+  margin-left: 256px;
   padding: 25px 30px;
   background-color: #f8f9fa;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: calc(100vw - 250px);
 }
 
 /* Content wrapper to control max width */
 .content-wrapper {
   width: 100%;
-  max-width: 1400px; /* Increased max width for wider content */
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* Header */
@@ -539,14 +453,9 @@ Global Reset */
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    position: relative;
-    height: auto;
-  }
-
   .main-content {
     margin-left: 0;
+    padding: 15px;
     max-width: 100vw;
   }
 

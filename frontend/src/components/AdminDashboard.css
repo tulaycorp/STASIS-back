@@ -82,10 +82,10 @@
   color: #6c757d;
 }
 
-.dashboard-main-content {
+.main-content {
   flex: 1;
   padding: 25px 30px;
-  margin-left: 250px;
+  margin-left: 256px;
 }
 
 .dashboard-header {
@@ -550,18 +550,9 @@
 }
 
 @media (max-width: 768px) {
-  .dashboard-container {
-    flex-direction: column;
-  }
-  
-  .dashboard-sidebar {
-    width: 100%;
-    position: relative;
-    height: auto;
-  }
-  
-  .dashboard-main-content {
+  .main-content {
     margin-left: 0;
+    padding: 15px;
   }
   
   .dashboard-stats-grid {

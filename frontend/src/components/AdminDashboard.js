@@ -1,5 +1,6 @@
 import React, { useState} from 'react';
 import './AdminDashboard.css';
+import Sidebar from './Sidebar';
 
 const AdminDashboard = () => {
   const [dashboardData, setAdminDashboardData] = useState({
@@ -235,23 +236,22 @@ const AdminDashboard = () => {
   const showScheduleManager = () => {
     alert('Schedule manager functionality would be implemented here.');
   };
-
   // Navigation
   const showSection = (section) => {
     switch(section){
-        case 'curriculum':
+        case 'Curriculum':
             window.location.href = '/curriculum-management';
                 break;
-        case 'students':
+        case 'Students':
             window.location.href = '/student-management';
                 break;
-        case 'schedule':
+        case 'Schedule':
             window.location.href = '/schedule-management';
                 break;
-        case 'faculty':
+        case 'Faculty':
             window.location.href = '/faculty-management';
                 break;
-        case 'courses':
+        case 'Courses':
             window.location.href = '/course-management';
                 break;
         default:
@@ -260,42 +260,38 @@ const AdminDashboard = () => {
   };
 
   const calendarDays = generateCalendarDays();
-
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <div className="dashboard-sidebar">
-        <div className="dashboard-logo">
-          <div className="dashboard-logo-icon">📊</div>
-        </div>
-        
-        <div className="dashboard-nav-section">
-          <div className="dashboard-nav-item dashboard-nav-item-active">Dashboard</div>
-        </div>
-        
-        <div className="dashboard-nav-section">
-          <div className="dashboard-nav-title">Management</div>
-          <div className="dashboard-nav-item" onClick={() => showSection('students')}>Students</div>
-          <div className="dashboard-nav-item" onClick={() => showSection('curriculum')}>Curriculum</div>
-          <div className="dashboard-nav-item" onClick={() => showSection('schedule')}>Schedule</div>
-          <div className="dashboard-nav-item" onClick={() => showSection('faculty')}>Faculty</div>
-          <div className="dashboard-nav-item" onClick={() => showSection('courses')}>Courses</div>
-        </div>
-        
-        <div className="dashboard-nav-section">
-          <div className="dashboard-nav-title">System</div>
-          <div className="dashboard-nav-item">Settings</div>
-          <div className="dashboard-nav-item">Admin Tools</div>
-        </div>
-        
-        <div className="dashboard-user-info">
-          <strong>Admin Name</strong><br />
-          Faculty Admin
-        </div>
-      </div>
+      <Sidebar 
+        activePage="Dashboard" 
+        onNavigate={showSection}
+        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}        sections={[
+          {
+            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+          },
+          {
+            label: 'Management',
+            items: [
+              { id: 'Students', label: 'Students', icon: '👥' },
+              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+              { id: 'Schedule', label: 'Schedule', icon: '📅' },
+              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+              { id: 'Courses', label: 'Courses', icon: '📖' }
+            ]
+          },
+          {
+            label: 'System',
+            items: [
+              { id: 'Settings', label: 'Settings', icon: '⚙️', clickable: false },
+              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧', clickable: false }
+            ]
+          }
+        ]}
+      />
 
       {/* Main Content */}
-      <div className="dashboard-main-content">
+      <div className="main-content">
         <div className="dashboard-header">
           <h1 className="dashboard-welcome-title">Welcome back, Admin</h1>
         </div>

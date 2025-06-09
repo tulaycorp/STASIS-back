@@ -1,5 +1,7 @@
 import React, { useState} from 'react';
 import './CourseManagement.css';
+import Sidebar from './Sidebar';
+import ProgramSidebar from './ProgramSidebar';
 
 const Course = () => {
   const [coursesData, setCoursesData] = useState([
@@ -270,9 +272,8 @@ const Course = () => {
                 break;
         case 'Students':
             window.location.href = '/student-management';
-                break;
-        case 'Curriculum':
-            window.location.href = '/Curriculum-management';
+                break;        case 'Curriculum':
+            window.location.href = '/curriculum-management';
                 break;
         case 'Schedule':
             window.location.href = '/schedule-management';
@@ -290,78 +291,47 @@ const Course = () => {
     setSelectedProgram(program);
     setSelectedSection('All Sections');
   };
-
   return (
     <div className="container">
       {/* Main Sidebar */}
-      <div className="sidebar">
-        <div className="logo">
-          <div className="logo-icon">📊</div>
-        </div>
-        
-        <div className="nav-section">
-          <div className="nav-item" onClick={() => showSection('Dashboard')}> Dashboard </div>
-        </div>
-
-        <div className="nav-section">
-          <div className="nav-title">Management</div>
-          <div className="nav-item" onClick={() => showSection('Students')}> Students </div>
-          <div className="nav-item" onClick={() => showSection('Curriculum')}>Curriculum</div>
-          <div className="nav-item" onClick={() => showSection('Schedule')}> Schedule </div>
-          <div className="nav-item" onClick={() => showSection('Faculty')}> Faculty </div>
-          <div className="nav-item active"> Courses </div>
-        </div>
-        
-        <div className="nav-section">
-          <div className="nav-title">System</div>
-          <div className="nav-item">
-            Settings
-          </div>
-          <div className="nav-item">
-            Admin Tools
-          </div>
-        </div>
-        
-        <div className="dashboard-user-info">
-          <strong>Admin Name</strong><br />
-          Faculty Admin
-        </div>
-      </div>
-
-      {/* Program Sidebar */}
-      <div className="program-sidebar">
-        <div className="program-sidebar-header">
-          <h3>Programs</h3>
-        </div>
-        
-        <div className="program-list">
-          {programs.map((program) => (
-            <div
-              key={program}
-              className={`program-item ${selectedProgram === program ? 'active' : ''}`}
-              onClick={() => handleProgramSelect(program)}
-            >
-              {program}
-            </div>
-          ))}
-        </div>
-
-        <div className="program-sidebar-actions">
-          <button className="btn-add-section" onClick={showAddSectionForm}>
-            Add New Section
-          </button>
-        </div>
-
-        <div className="program-info">
-          <div className="program-info-item">
-            <div className="program-info-label">{selectedProgram}</div>
-            <div className="program-info-value">Total Courses: {filteredCourses.length}</div>
-          </div>
-        </div>
-      </div>
+      <Sidebar 
+        activePage="Courses" 
+        onNavigate={showSection}
+        userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+        sections={[
+          {
+            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+          },
+          {
+            label: 'Management',
+            items: [
+              { id: 'Students', label: 'Students', icon: '👥' },
+              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+              { id: 'Schedule', label: 'Schedule', icon: '📅' },
+              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+              { id: 'Courses', label: 'Courses', icon: '📖' }
+            ]
+          },
+          {
+            label: 'System',
+            items: [
+              { id: 'Settings', label: 'Settings', icon: '⚙️', clickable: false },
+              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧', clickable: false }
+            ]
+          }
+        ]}
+      />      {/* Program Sidebar */}
+      <ProgramSidebar
+        programs={programs}
+        selectedProgram={selectedProgram}
+        onProgramSelect={handleProgramSelect}
+        onAddSection={showAddSectionForm}
+        totalCount={filteredCourses.length}
+        countLabel="Courses"
+      />
 
       {/* Main Content */}
-      <div className="dashboard-main-content">
+      <div className="main-content">
         <div className="dashboard-header">
           <h1 className="dashboard-welcome-title">Course Management</h1>
           <div className="program-indicator">

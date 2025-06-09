@@ -1,6 +1,6 @@
-//FacultyManagement.js
 import React, { useState } from 'react';
 import './FacultyManagement.css';
+import Sidebar from './Sidebar';
 
 const FacultyManagement = () => {
   const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
@@ -251,43 +251,36 @@ const FacultyManagement = () => {
             alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
     }
   };
-
   return (
     <div className="faculty-container">
       {/* Sidebar */}
-      <div className="sidebar">
-        <div className="logo">
-          <div className="logo-icon">📊</div>
-        </div>
-        
-        <div className="nav-section">
-          <div className="nav-item" onClick={() => showSection('Dashboard')}> Dashboard </div>
-        </div>
-
-        <div className="nav-section">
-          <div className="nav-title">Management</div>
-          <div className="nav-item" onClick={() => showSection('Students')}> Students </div>
-          <div className="nav-item" onClick={() => showSection('Curriculum')}>Curriculum</div>
-          <div className="nav-item" onClick={() => showSection('Schedule')}> Schedule </div>
-          <div className="nav-item active" onClick={() => showSection('Faculty')}> Faculty </div>
-          <div className="nav-item" onClick={() => showSection('Courses')}> Courses </div>
-        </div>
-        
-        <div className="nav-section">
-          <div className="nav-title">System</div>
-          <div className="nav-item">
-            Settings
-          </div>
-          <div className="nav-item">
-            Admin Tools
-          </div>
-        </div>
-        
-        <div className="sidebar-footer">
-          <div className="user-name">David Anderson</div>
-          <div className="user-role">Faculty Admin</div>
-        </div>
-      </div>
+      <Sidebar 
+        activePage="Faculty" 
+        onNavigate={showSection}
+        userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+        sections={[
+          {
+            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+          },
+          {
+            label: 'Management',
+            items: [
+              { id: 'Students', label: 'Students', icon: '👥' },
+              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+              { id: 'Schedule', label: 'Schedule', icon: '📅' },
+              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+              { id: 'Courses', label: 'Courses', icon: '📖' }
+            ]
+          },
+          {
+            label: 'System',
+            items: [
+              { id: 'Settings', label: 'Settings', icon: '⚙️', clickable: false },
+              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧', clickable: false }
+            ]
+          }
+        ]}
+      />
 
       {/* Main Content */}
       <div className="main-content">
