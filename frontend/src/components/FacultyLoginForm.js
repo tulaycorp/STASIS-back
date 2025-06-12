@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // Basic styling (can share CSS later)
 const formStyle = {
@@ -17,6 +17,7 @@ const FacultyLoginForm = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
      const handleSubmit = async (event) => {
         event.preventDefault();
@@ -25,7 +26,7 @@ const FacultyLoginForm = () => {
         // Temporary hardcoded login check
         if (username === 'faculty123' && password === 'pass123') {
             setLoading(false);
-            window.location.href = '/admin-dashboard';
+            navigate('/admin-dashboard');
             return;
         }
 

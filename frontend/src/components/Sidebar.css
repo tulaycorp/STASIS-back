@@ -38,13 +38,7 @@
   margin-bottom: 24px;
 }
 
-.nav-section:first-child .nav-item {
-  padding: 8px 12px;
-  color: #ef4444;
-  font-weight: 500;
-  background-color: #fef2f2;
-  border-radius: 8px;
-}
+/* Removed the selector that was highlighting Dashboard regardless of active state */
 
 .nav-label {
   font-size: 12px;
@@ -76,10 +70,12 @@
   color: #374151;
 }
 
+/* Make active page styling more specific and distinctive */
 .nav-item.active-page {
-  color: #ef4444;
-  background-color: #fef2f2;
+  color: #ef4444 !important;
+  background-color: #fef2f2 !important;
   font-weight: 500;
+  border-radius: 8px;
 }
 
 /* Non-clickable items */
@@ -101,22 +97,22 @@
 }
 
 .logout-button {
+  width: 100%;
   padding: 8px 12px;
+  background-color: #dc3545;
   color: white;
+  border: none;
   border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 14px;
+  transition: background-color 0.2s;
   margin-bottom: 12px;
   text-align: center;
-  border: 1px solid #e5e7eb;
-  background-color: #ef4444;
 }
 
 .logout-button:hover {
-  background-color: #fef2f2;
-  color: #ef4444;
-  border-color: #fecaca;
+  background-color: #c82333;
 }
 
 .user-profile {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './FacultyManagement.css';
 import Sidebar from './Sidebar';
 
@@ -230,32 +231,33 @@ const FacultyManagement = () => {
   };
 
   // Navigation
+  const navigate = useNavigate();
   const showSection = (section) => {
     switch(section){
-        case 'Dashboard':
-            window.location.href = '/admin-dashboard';
-                break;
-        case 'Students':
-            window.location.href = '/student-management';
-                break;
-        case 'Schedule':
-            window.location.href = '/schedule-management';
-                break;
-        case 'Curriculum':
-            window.location.href = '/curriculum-management';
-                break;
-        case 'Courses':
-            window.location.href = '/course-management';
-                break;
-        default:
-            alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Curriculum':
+        navigate('/curriculum-management');
+        break;
+      case 'Students':
+        navigate('/student-management');
+        break;      case 'Schedule':
+        navigate('/schedule-management');
+        break;
+      case 'Faculty':
+        navigate('/faculty-management');
+        break;
+      case 'Courses':
+        navigate('/course-management');
+        break;
+      default:
+        // No action for unknown sections
     }
   };
   return (
-    <div className="dashboard-container">
-      {/* Sidebar */}
+    <div className="dashboard-container">      {/* Sidebar */}
       <Sidebar 
-        activePage="Faculty" 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
         sections={[
@@ -291,7 +293,7 @@ const FacultyManagement = () => {
             <h1 className="page-title">Faculty Management</h1>
             <button 
               onClick={showAddFacultyForm}
-              className="btn btn-primary"
+              className="add-faculty-btn"
             >
               + Add New Faculty
             </button>
@@ -378,13 +380,11 @@ const FacultyManagement = () => {
                           className="btn-edit"
                           onClick={() => showEditFacultyForm(faculty)}
                         >
-                          Edit
                         </button>
                         <button 
                           className="btn-delete"
                           onClick={() => handleDeleteFaculty(faculty.id)}
                         >
-                          Delete
                         </button>
                       </td>
                     </tr>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './CurriculumManagement.css';
 import Sidebar from './Sidebar';
 
@@ -187,32 +188,33 @@ const CurriculumManagement = () => {
   }, [searchTerm]);
 
   // Navigation
-  const showSection = (section) => {
+  const navigate = useNavigate();  const showSection = (section) => {
     switch(section){
-        case 'Dashboard':
-            window.location.href = '/admin-dashboard';
-                break;
-        case 'Students':
-            window.location.href = '/student-management';
-                break;
-        case 'Schedule':
-            window.location.href = '/schedule-management';
-                break;
-        case 'Faculty':
-            window.location.href = '/faculty-management';
-                break;
-        case 'Courses':
-            window.location.href = '/course-management';
-                break;
-        default:
-            alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Students':
+        navigate('/student-management');
+        break;
+      case 'Curriculum':
+        navigate('/curriculum-management');
+        break;
+      case 'Schedule':
+        navigate('/schedule-management');
+        break;
+      case 'Faculty':
+        navigate('/faculty-management');
+        break;
+      case 'Courses':
+        navigate('/course-management');
+        break;
+      default:
+        // No action for unknown sections
     }
   };
   return (
-    <div className="container">
-      {/* Sidebar */}
+    <div className="container">      {/* Sidebar */}
       <Sidebar 
-        activePage="Curriculum" 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
         sections={[
@@ -314,20 +316,17 @@ const CurriculumManagement = () => {
                     </td>
                     <td>{formatDate(curriculum.lastUpdated)}</td>
                     <td>
-                      <div className="action-buttons">
-                        <button 
+                      <div className="action-buttons">                        <button 
                           className="action-btn edit-btn" 
                           onClick={() => editCurriculum(curriculum.id)}
                           title="Edit"
                         >
-                          ✏️
                         </button>
                         <button 
                           className="action-btn delete-btn" 
                           onClick={() => deleteCurriculum(curriculum.id)}
                           title="Delete"
                         >
-                          🗑️
                         </button>
                       </div>
                     </td>

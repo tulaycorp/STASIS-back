@@ -134,6 +134,37 @@ body {
   border-color: #9ca3af;
 }
 
+/* Add New Faculty Button - Updated to match CurriculumManagement styling */
+.add-faculty-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  outline: none;
+  gap: 8px;
+}
+
+.add-faculty-btn:hover {
+  background: #c82333;
+}
+
+.add-faculty-btn:focus {
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.add-faculty-btn:active {
+  transform: translateY(0);
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -335,35 +366,55 @@ body {
 }
 
 .btn-edit {
-  color: #2563eb;
-  background: none;
+  padding: 6px 8px;
+  background-color: #28a745;
+  color: white;
   border: none;
-  cursor: pointer;
+  border-radius: 3px;
   font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
 }
 
 .btn-edit:hover {
-  color: #1d4ed8;
-  background-color: #eff6ff;
+  background-color: #1e7e34;
+}
+
+.btn-edit::before {
+  content: "✏️";
+  font-size: 14px;
 }
 
 .btn-delete {
-  color: #dc2626;
-  background: none;
+  padding: 6px 8px;
+  background-color: #dc3545;
+  color: white;
   border: none;
-  cursor: pointer;
+  border-radius: 3px;
   font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
 }
 
 .btn-delete:hover {
-  color: #b91c1c;
-  background-color: #fef2f2;
+  background-color: #c82333;
+}
+
+.btn-delete::before {
+  content: "🗑️";
+  font-size: 14px;
 }
 
 /* Table Footer */
@@ -523,6 +574,39 @@ body {
 .modal-footer .btn {
   padding: 12px 24px;
   font-weight: 600;
+}
+
+/* Modal Footer Buttons - Updated to match design consistency */
+.modal-footer .btn-primary {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-footer .btn-primary:hover {
+  background: #c82333;
+}
+
+.modal-footer .btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-footer .btn-secondary:hover {
+  background: #545b62;
 }
 
 /* Responsive Design */

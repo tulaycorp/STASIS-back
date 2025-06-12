@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from './Sidebar';
 
@@ -318,33 +319,31 @@ const ScheduleManagement = () => {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  // Navigation
+// Navigation
+  const navigate = useNavigate();
   const showSection = (section) => {
     switch(section){
-        case 'Dashboard':
-            window.location.href = '/admin-dashboard';
-                break;
-        case 'Students':
-            window.location.href = '/student-management';
-                break;
-        case 'Faculty':
-            window.location.href = '/faculty-management';
-                break;
-        case 'Curriculum':
-            window.location.href = '/curriculum-management';
-                break;
-        case 'Courses':
-            window.location.href = '/course-management';
-                break;
-        default:
-            alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Students':
+        navigate('/student-management');
+        break;
+      case 'Faculty':
+        navigate('/faculty-management');
+        break;
+      case 'Curriculum':
+        navigate('/curriculum-management');
+        break;
+      case 'Courses':        navigate('/course-management');
+        break;
+      default:
+        // No action for unknown sections
     }
   };
   return (
-    <div className="dashboard-container">
-      {/* Sidebar */}
+    <div className="dashboard-container">      {/* Sidebar */}
       <Sidebar 
-        activePage="Schedule" 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Schedule Admin" }}
         sections={[
@@ -383,7 +382,7 @@ const ScheduleManagement = () => {
             <h1 className="page-title">Schedule Management</h1>
             <button 
               onClick={showAddScheduleForm}
-              className="btn btn-primary"
+              className="add-schedule-btn"
             >
               + Add New Schedule
             </button>
@@ -483,13 +482,11 @@ const ScheduleManagement = () => {
                           className="btn-edit"
                           onClick={() => showEditScheduleForm(schedule)}
                         >
-                          Edit
                         </button>
                         <button 
                           className="btn-delete"
                           onClick={() => handleDeleteSchedule(schedule.id)}
                         >
-                          Delete
                         </button>
                       </td>
                     </tr>

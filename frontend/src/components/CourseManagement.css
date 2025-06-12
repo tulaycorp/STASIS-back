@@ -120,6 +120,124 @@
   background-color: #166828;
 }
 
+/* Add Course Button - Updated to match CurriculumManagement styling */
+.add-course-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  outline: none;
+  gap: 8px;
+}
+
+.add-course-btn:hover {
+  background: #c82333;
+}
+
+.add-course-btn:focus {
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.add-course-btn:active {
+  transform: translateY(0);
+}
+
+/* Modal Footer Buttons - Updated to match design consistency */
+.modal-footer .btn-primary {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-footer .btn-primary:hover {
+  background: #c82333;
+}
+
+.modal-footer .btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-footer .btn-secondary:hover {
+  background: #545b62;
+}
+
+/* Edit Button */
+.btn-edit {
+  padding: 6px 8px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.btn-edit:hover {
+  background-color: #1e7e34;
+}
+
+.btn-edit::before {
+  content: "✏️";
+  font-size: 14px;
+}
+
+/* Delete Button */
+.btn-delete {
+  padding: 6px 8px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.btn-delete::before {
+  content: "🗑️";
+  font-size: 14px;
+}
+
 /* Course Filters */
 .course-filters {
   padding: 20px;

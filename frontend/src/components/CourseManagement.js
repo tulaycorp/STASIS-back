@@ -1,4 +1,5 @@
 import React, { useState} from 'react';
+import { useNavigate } from 'react-router-dom';
 import './CourseManagement.css';
 import Sidebar from './Sidebar';
 import ProgramSidebar from './ProgramSidebar';
@@ -263,27 +264,27 @@ const Course = () => {
     alert(`Section "${newSectionName}" created successfully!`);
     closeAddSectionModal();
   };
-
   // Navigation
+  const navigate = useNavigate();
   const showSection = (section) => {
     switch(section){
         case 'Dashboard':
-            window.location.href = '/admin-dashboard';
-                break;
+            navigate('/admin-dashboard');
+            break;
         case 'Students':
-            window.location.href = '/student-management';
-                break;        
+            navigate('/student-management');
+            break;        
         case 'Curriculum':
-            window.location.href = '/curriculum-management';
-                break;
+            navigate('/curriculum-management');
+            break;
         case 'Schedule':
-            window.location.href = '/schedule-management';
-                break;
+            navigate('/schedule-management');
+            break;
         case 'Faculty':
-            window.location.href = '/faculty-management';
-                break;
+            navigate('/faculty-management');
+            break;
         default:
-            alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
+            // No action for unknown sections
     }
   };
 
@@ -293,10 +294,8 @@ const Course = () => {
     setSelectedSection('All Sections');
   };
   return (
-    <div className="container">
-      {/* Main Sidebar */}
+    <div className="container">      {/* Main Sidebar */}
       <Sidebar 
-        activePage="Courses" 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
         sections={[
@@ -345,8 +344,8 @@ const Course = () => {
           <div className="dashboard-section-header">
             <h2 className="dashboard-section-title">Courses</h2>
             <div className="course-header-actions">
-              <button className="btn btn-primary" onClick={showAddCourseForm}>
-                Add Course
+              <button className="add-course-btn" onClick={showAddCourseForm}>
+                + Add New Course
               </button>
             </div>
           </div>
@@ -387,12 +386,10 @@ const Course = () => {
                         {course.status}
                       </span>
                     </td>
-                    <td>
-                      <button 
+                    <td>                      <button 
                         className="btn-action"
                         onClick={() => showEditCourseForm(course)}
                       >
-                        Edit
                       </button>
                     </td>
                   </tr>

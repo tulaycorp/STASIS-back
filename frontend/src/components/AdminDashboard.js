@@ -1,8 +1,10 @@
-import React, { useState} from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './Sidebar';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [dashboardData, setAdminDashboardData] = useState({
     stats: {
       totalStudents: '',
@@ -15,7 +17,6 @@ const AdminDashboard = () => {
     recentActivities: []
   });
 
-  const [selectedDate, setSelectedDate] = useState(11);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
   
@@ -56,109 +57,60 @@ const AdminDashboard = () => {
     timeTo: ''
   });
 
-  const currentDate = new Date();
-  const currentDay = currentDate.getDate();
+  const today = new Date();
+  const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
+  const [calendarYear, setCalendarYear] = useState(today.getFullYear());
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
 
-  // Schedule data for the selected date
-  const scheduleData = [];
-
-  const programs = [
-    'BS Computer Science',
-    'BS Information Technology', 
-    'BS Information Systems',
-    'BS Entertainment and Multimedia Computing'
-  ];
-
-  // Department options for faculty
-  const departmentOptions = [
-    'Computer Science',
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'English',
-    'History',
-    'Psychology',
-    'Business Administration',
-    'Engineering'
-  ];
-
-  // Position options for faculty
-  const positionOptions = [
-    'Professor',
-    'Associate Professor',
-    'Assistant Professor',
-    'Lecturer',
-    'Instructor',
-    'Department Head',
-    'Dean'
-  ];
-
-  // Employment status options
-  const employmentStatusOptions = [
-    'Full-time',
-    'Part-time',
-    'Contract',
-    'Adjunct'
-  ];
-
-  // Course options for schedule
-  const courseOptions = [
-    'Computer Programming I',
-    'Computer Programming II', 
-    'Database Management',
-    'Data Structures',
-    'Network Administration',
-    'Web Development',
-    'Software Engineering'
-  ];
-
-  // Instructor options for schedule
-  const instructorOptions = [
-    'Emily Thompson',
-    'James Chen', 
-    'Sarah Martinez',
-    'Michael Roberts',
-    'Rachel Williams'
-  ];
-
-  // Room options for schedule
-  const roomOptions = [
-    'Room 101', 'Room 102', 'Room 201', 'Room 202', 'Room 301',
-    'Lab 101', 'Lab 201', 'Lab 301', 'Auditorium A'
-  ];
-
-  // Day options for schedule
-  const dayOptions = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-  ];
-
-  // Generate calendar days for March 2025
+  // Generate calendar days for the selected month/year
   const generateCalendarDays = () => {
     const days = [];
-    const firstDay = new Date(2025, 2, 1).getDay(); // March 1, 2025
-    const daysInMonth = new Date(2025, 2 + 1, 0).getDate(); // Days in March
-    
+    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(calendarYear, calendarMonth, 0).getDate();
+
     // Previous month's ending days
-    const prevMonthDays = new Date(2025, 2, 0).getDate();
     for (let i = firstDay - 1; i >= 0; i--) {
       days.push({
         day: prevMonthDays - i,
         isCurrentMonth: false
       });
     }
-    
+
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
       days.push({
-        day: day,
+        day,
         isCurrentMonth: true,
-        isSelected: day === selectedDate,
-        isToday: day === currentDay && currentDate.getMonth() === 2 && currentDate.getFullYear() === 2025
+        isSelected: day === selectedDate && calendarMonth === today.getMonth() && calendarYear === today.getFullYear(),
+        isToday: day === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear()
       });
     }
-    
+
     return days;
+  };
+
+  // Calendar navigation handlers
+  const goToPrevMonth = () => {
+    setCalendarMonth(prev => {
+      if (prev === 0) {
+        setCalendarYear(y => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+    setSelectedDate(1);
+  };
+
+  const goToNextMonth = () => {
+    setCalendarMonth(prev => {
+      if (prev === 11) {
+        setCalendarYear(y => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+    setSelectedDate(1);
   };
 
   // Schedule Modal functions
@@ -314,40 +266,139 @@ const handleAddSchedule = () => {
     alert('Course added successfully!');
     closeAddCourseModal();
   };
-
   const showScheduleManager = () => {
     setShowAddScheduleModal(true);
   };
 
+  // Add these missing data arrays
+  const scheduleData = [
+    {
+      id: 1,
+      time: "8:00 AM",
+      subject: "Mathematics",
+      room: "Room 101",
+      type: "blue"
+    },
+    {
+      id: 2,
+      time: "10:00 AM",
+      subject: "Physics",
+      room: "Lab 201",
+      type: "green"
+    },
+    {
+      id: 3,
+      time: "2:00 PM",
+      subject: "Chemistry",
+      room: "Lab 301",
+      type: "blue"
+    }
+  ];
+
+  const departmentOptions = [
+    "Computer Science",
+    "Information Technology",
+    "Engineering",
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Business Administration",
+    "Liberal Arts"
+  ];
+
+  const positionOptions = [
+    "Professor",
+    "Associate Professor",
+    "Assistant Professor",
+    "Instructor",
+    "Lecturer",
+    "Department Head",
+    "Dean"
+  ];
+
+  const employmentStatusOptions = [
+    "Full-time",
+    "Part-time",
+    "Contract",
+    "Adjunct"
+  ];
+
+  const programs = [
+    "Bachelor of Science in Computer Science",
+    "Bachelor of Science in Information Technology",
+    "Bachelor of Engineering",
+    "Bachelor of Science in Mathematics",
+    "Bachelor of Arts",
+    "Master of Science in Computer Science",
+    "Master of Business Administration"
+  ];
+
+  const courseOptions = [
+    "CS101 - Introduction to Programming",
+    "CS102 - Data Structures",
+    "MATH101 - Calculus I",
+    "PHYS101 - General Physics",
+    "CHEM101 - General Chemistry"
+  ];
+
+  const instructorOptions = [
+    "Dr. John Smith",
+    "Prof. Jane Doe",
+    "Dr. Michael Johnson",
+    "Prof. Sarah Wilson",
+    "Dr. David Brown"
+  ];
+
+  const roomOptions = [
+    "Room 101",
+    "Room 102",
+    "Lab 201",
+    "Lab 202",
+    "Lecture Hall A",
+    "Lecture Hall B",
+    "Computer Lab 1",
+    "Computer Lab 2"
+  ];
+
+  const dayOptions = [
+    "Monday",
+    "Tuesday", 
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ];
+
   // Navigation
   const showSection = (section) => {
     switch(section){
-        case 'Curriculum':
-            window.location.href = '/curriculum-management';
-                break;
-        case 'Students':
-            window.location.href = '/student-management';
-                break;
-        case 'Schedule':
-            window.location.href = '/schedule-management';
-                break;
-        case 'Faculty':
-            window.location.href = '/faculty-management';
-                break;
-        case 'Courses':
-            window.location.href = '/course-management';
-                break;
-        default:
-            alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Curriculum':
+        navigate('/curriculum-management');
+        break;
+      case 'Students':
+        navigate('/student-management');
+        break;
+      case 'Schedule':
+        navigate('/schedule-management');
+        break;
+      case 'Faculty':
+        navigate('/faculty-management');
+        break;
+      case 'Courses':
+        navigate('/course-management');
+        break;
+      default:
+        // No action for unknown sections
     }
   };
 
   const calendarDays = generateCalendarDays();
   return (
-    <div className="dashboard-container">
-      {/* Sidebar */}
+    <div className="dashboard-container">      {/* Sidebar */}
       <Sidebar 
-        activePage="Dashboard" 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Schedule Admin" }}        sections={[
           {
@@ -452,25 +503,22 @@ const handleAddSchedule = () => {
                 <h2 className="dashboard-calendar-title">Calendar</h2>
               </div>
               <div className="dashboard-calendar-content">
-                <div className="dashboard-calendar-month">March 2025</div>
+                <div className="dashboard-calendar-month" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                  <button className="btn btn-secondary" style={{ minWidth: 0, padding: '4px 10px' }} onClick={goToPrevMonth}>&lt;</button>
+                  <span>
+                    {new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button className="btn btn-secondary" style={{ minWidth: 0, padding: '4px 10px' }} onClick={goToNextMonth}>&gt;</button>
+                </div>
                 <div className="dashboard-calendar-grid">
                   {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
                     <div key={day} className="dashboard-calendar-day-header">{day}</div>
                   ))}
-                  
                   {calendarDays.map((dayObj, index) => {
                     let dayClasses = ['dashboard-calendar-day'];
-                    
-                    if (dayObj.isCurrentMonth) {
-                      dayClasses.push('dashboard-calendar-day-current-month');
-                    }
-                    if (dayObj.isSelected) {
-                      dayClasses.push('dashboard-calendar-day-selected');
-                    }
-                    if (dayObj.isToday && !dayObj.isSelected) {
-                      dayClasses.push('dashboard-calendar-day-today');
-                    }
-                    
+                    if (dayObj.isCurrentMonth) dayClasses.push('dashboard-calendar-day-current-month');
+                    if (dayObj.isSelected) dayClasses.push('dashboard-calendar-day-selected');
+                    if (dayObj.isToday && !dayObj.isSelected) dayClasses.push('dashboard-calendar-day-today');
                     return (
                       <div
                         key={index}

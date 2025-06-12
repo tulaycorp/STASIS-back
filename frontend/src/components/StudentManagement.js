@@ -1,4 +1,5 @@
-import React, { useState} from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './StudentManagement.css';
 import Sidebar from './Sidebar';
 import ProgramSidebar from './ProgramSidebar';
@@ -345,24 +346,28 @@ const Student = () => {
   };
 
   // Navigation
-  const showSection = (section) => {
+  const navigate = useNavigate();  const showSection = (section) => {
     switch(section){
-        case 'Dashboard':
-            window.location.href = '/admin-dashboard';
-                break;        case 'Curriculum':
-            window.location.href = '/curriculum-management';
-                break;
-        case 'Schedule':
-            window.location.href = '/schedule-management';
-                break;
-        case 'Faculty':
-            window.location.href = '/faculty-management';
-                break;
-        case 'Courses':
-            window.location.href = '/course-management';
-                break;
-        default:
-            alert(`${section.charAt(0).toUpperCase() + section.slice(1)} section would be displayed here.`);
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Curriculum':
+        navigate('/curriculum-management');
+        break;
+      case 'Students':
+        navigate('/student-management');
+        break;
+      case 'Schedule':
+        navigate('/schedule-management');
+        break;
+      case 'Faculty':
+        navigate('/faculty-management');
+        break;
+      case 'Courses':
+        navigate('/course-management');
+        break;
+      default:
+        // No action for unknown sections
     }
   };
 
@@ -372,10 +377,8 @@ const Student = () => {
     setSelectedSection('All Sections');
   };
   return (
-    <div className="dashboard-container">
-      {/* Sidebar */}
+    <div className="dashboard-container">      {/* Sidebar */}
       <Sidebar 
-        activePage="Students" 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
         sections={[
@@ -426,8 +429,8 @@ const Student = () => {
             <div className="dashboard-section-header">
               <h2 className="dashboard-section-title">Students</h2>
               <div className="student-header-actions">
-                <button className="btn btn-primary" onClick={showAddStudentForm}>
-                  Add Student
+                <button className="btn-add-student" onClick={showAddStudentForm}>
+                  + Add New Student
                 </button>
               </div>
             </div>
@@ -483,12 +486,10 @@ const Student = () => {
                           {student.status}
                         </span>
                       </td>
-                      <td>
-                        <button 
+                      <td>                        <button 
                           className="btn-action"
                           onClick={() => showEditStudentForm(student)}
                         >
-                          Edit
                         </button>
                       </td>
                     </tr>
@@ -615,7 +616,7 @@ const Student = () => {
               <button className="btn btn-secondary" onClick={closeAddStudentModal}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleAddStudent}>
+              <button className="btn-add-student" onClick={handleAddStudent}>
                 Add Student
               </button>
             </div>
