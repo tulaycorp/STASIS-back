@@ -1,4 +1,4 @@
-/*CirruculumManagement.css
+/*CurriculumManagement.css
 Global Reset */
 * {
   margin: 0;
@@ -7,25 +7,65 @@ Global Reset */
 }
 
 /* Container and Layout */
-.container {
+.dashboard-container {
   display: flex;
   min-height: 100vh;
+  background-color: #f8f9fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Main Content */
 .main-content {
   flex: 1;
-  margin-left: 256px;
-  padding: 25px 30px;
-  background-color: #f8f9fa;
+  padding-left: calc(256px + 20px); /* Sidebar width + content padding */
+  padding-right: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
   min-height: 100vh;
+  box-sizing: border-box;
+  background-color: #f8f9fa;
+  min-width: 0;
+  overflow-x: auto;
 }
 
-/* Content wrapper to control max width */
+/* Content wrapper */
 .content-wrapper {
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: none; /* Allow full width stretching */
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+/* Curriculum Content Wrapper */
+.curriculum-content-wrapper {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 25px;
+  height: calc(100vh - 140px);
+  padding: 15px;
+}
+
+/* Program Navigation Card */
+.curriculum-nav-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  padding: 0;
+  height: fit-content;
+  position: sticky;
+  top: 0;
+}
+
+/* Main Curriculum Section Card */
+.curriculum-main-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  padding: 0;
+  height: fit-content;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
 }
 
 /* Header */
@@ -37,10 +77,36 @@ Global Reset */
   width: 100%;
 }
 
+/* Breadcrumb */
 .breadcrumb {
   color: #6c757d;
-  font-size: 12px;
-  margin-bottom: 5px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumb-link {
+  color: #dc3545;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+  color: #c82333;
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #9ca3af;
+  margin: 0 4px;
+}
+
+.breadcrumb-current {
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .page-title {
@@ -178,12 +244,15 @@ Global Reset */
 .table-container {
   overflow-x: auto;
   width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .curriculum-table {
   width: 100%;
+  min-width: 800px; /* Fixed minimum width for horizontal scroll */
   border-collapse: collapse;
-  min-width: 1000px; /* Increased minimum width for wider table */
+  font-size: 13px;
 }
 
 .curriculum-table thead {
@@ -191,23 +260,25 @@ Global Reset */
 }
 
 .curriculum-table th {
-  padding: 15px 20px;
+  background-color: #f8f9fa;
+  padding: 12px;
   text-align: left;
   font-weight: 600;
   color: #495057;
-  font-size: 14px;
   border-bottom: 1px solid #dee2e6;
   white-space: nowrap;
 }
 
 .curriculum-table td {
-  padding: 20px;
+  padding: 12px;
   border-bottom: 1px solid #f1f3f4;
+  color: #495057;
   vertical-align: middle;
 }
 
 .curriculum-table tbody tr:hover {
-  background: #f8f9fa;
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
 }
 
 .curriculum-name {
@@ -485,17 +556,163 @@ Global Reset */
   transform: translateY(-1px);
 }
 
+/* Curriculum Filters */
+.curriculum-filters {
+  padding: 20px 28px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.curriculum-search-group,
+.curriculum-filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Table */
+.curriculum-table-container {
+  overflow-x: auto;
+  padding: 0 28px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.curriculum-table {
+  width: 100%;
+  min-width: 800px; /* Fixed minimum width for horizontal scroll */
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.curriculum-table th {
+  background-color: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  white-space: nowrap;
+}
+
+.curriculum-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f3f4;
+  color: #495057;
+  vertical-align: middle;
+}
+
+.curriculum-table tbody tr:hover {
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
+}
+
+/* Section Headers */
+.curriculum-section-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+  border-radius: 8px 8px 0 0;
+}
+
+.curriculum-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 6px 0;
+}
+
+.curriculum-section-desc {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.curriculum-section-content {
+  padding: 20px;
+  padding-bottom: 20px;
+}
+
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .main-content {
+    padding-left: calc(506px + 20px); /* Adjusted for smaller sidebars + content padding */
+  }
+  
+  .curriculum-content-wrapper {
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-content {
+    padding-left: 20px;
+  }
+  
+  .curriculum-content-wrapper {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .curriculum-nav-section {
+    position: static;
+  }
+}
+
 @media (max-width: 768px) {
   .main-content {
-    margin-left: 0;
-    padding: 15px;
-    max-width: 100vw;
+    padding-left: 20px;
   }
-
+  
+  .curriculum-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .curriculum-search-group,
+  .curriculum-filter-group {
+    min-width: 100%;
+  }
+  
+  .curriculum-section-content {
+    padding: 20px;
+  }
+  
+  .curriculum-table {
+    font-size: 12px;
+  }
+  
+  .curriculum-table th,
+  .curriculum-table td {
+    padding: 8px;
+  }
+  
   .stats-grid {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 8px;
+  }
+  
+  .curriculum-section-header {
+    padding: 16px;
+  }
+  
+  .curriculum-filters {
+    padding: 16px;
+  }
+  
+  .curriculum-table-container {
+    padding: 0 16px;
+  }
+}
 
   .search-filter {
     flex-direction: column;
@@ -522,7 +739,6 @@ Global Reset */
     width: 95%;
     max-height: 95%;
   }
-
   .table-container {
     overflow-x: scroll;
   }
@@ -530,4 +746,3 @@ Global Reset */
   .curriculum-table {
     min-width: 700px;
   }
-}

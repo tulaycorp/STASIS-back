@@ -249,10 +249,21 @@ const CurriculumManagement = () => {
 
       {/* Main Content */}
       <div className="main-content">
+        {/* Breadcrumb */}
+        <div className="breadcrumb">
+          <span 
+            className="breadcrumb-link" 
+            onClick={() => navigate('/admin-dashboard')}
+          >
+            Dashboard
+          </span>
+          <span className="breadcrumb-separator"> / </span>
+          <span className="breadcrumb-current">Curriculum Management</span>
+        </div>
+
         {/* Header */}
         <div className="header">
           <div>
-            <div className="breadcrumb">Home &gt; Curriculum</div>
             <h1 className="page-title">Curriculum Management</h1>
           </div>
           <button className="create-btn" onClick={openModal}>

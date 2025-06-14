@@ -381,7 +381,14 @@ const ScheduleManagement = () => {
       <div className="main-content">
         <div className="content-wrapper">
           <div className="breadcrumb">
-            Dashboard / Schedule Management
+            <span 
+              className="breadcrumb-link" 
+              onClick={() => navigate('/admin-dashboard')}
+            >
+              Dashboard
+            </span>
+            <span className="breadcrumb-separator"> / </span>
+            <span className="breadcrumb-current">Schedule Management</span>
           </div>
           
           {/* Header */}

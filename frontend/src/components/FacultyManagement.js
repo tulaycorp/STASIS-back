@@ -293,6 +293,17 @@ const FacultyManagement = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="content-wrapper">
+          {/* Breadcrumb */}
+          <div className="breadcrumb">
+            <span 
+              className="breadcrumb-link" 
+              onClick={() => navigate('/admin-dashboard')}
+            >
+              Dashboard
+            </span>
+            <span className="breadcrumb-separator"> / </span>
+            <span className="breadcrumb-current">Faculty Management</span>
+          </div>
           
           {/* Header */}
           <div className="page-header">

@@ -1,5 +1,5 @@
 /* Container and Layout */
-.container {
+.dashboard-container {
   display: flex;
   min-height: 100vh;
   background-color: #f8f9fa;
@@ -9,16 +9,55 @@
 /* Main Content */
 .main-content {
   flex: 1;
-  padding-left: calc(256px + 20px); /* Only main sidebar + 20px content padding */
+  padding-left: calc(256px + 20px); /* Sidebar width + content padding */
   padding-right: 20px;
   padding-top: 20px;
   padding-bottom: 20px;
-  overflow-y: auto;
   min-height: 100vh;
+  box-sizing: border-box;
   background-color: #f8f9fa;
   min-width: 0;
-  box-sizing: border-box;
-  /* Remove position and z-index */
+  overflow-x: auto;
+}
+
+.content-wrapper {
+  width: 100%;
+  max-width: none; /* Allow full width stretching */
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumb-link {
+  color: #dc3545;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+  color: #c82333;
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #9ca3af;
+  margin: 0 4px;
+}
+
+.breadcrumb-current {
+  color: #6b7280;
+  font-weight: 500;
 }
 
 /* Course Content Wrapper - Similar to Settings */
@@ -27,6 +66,7 @@
   grid-template-columns: 280px 1fr;
   gap: 25px;
   height: calc(100vh - 140px);
+  padding: 15px;
 }
 
 /* Program Navigation Card */
@@ -38,6 +78,42 @@
   height: fit-content;
   position: sticky;
   top: 0;
+}
+
+/* Main Course Section Card */
+.course-main-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  padding: 0;
+  height: fit-content;
+  max-height: calc(100vh - 180px); /* Add max height constraint */
+  overflow-y: auto; /* Allow scrolling if content is too tall */
+}
+
+.course-section-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+  border-radius: 8px 8px 0 0;
+}
+
+.course-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 6px 0;
+}
+
+.course-section-desc {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.course-section-content {
+  padding: 20px; /* Fixed padding like Settings */
+  padding-bottom: 20px;
 }
 
 .course-nav-header {
@@ -140,6 +216,8 @@
   border: 1px solid #e9ecef;
   padding: 0;
   height: fit-content;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
 }
 
 .course-section-header {
@@ -163,7 +241,8 @@
 }
 
 .course-section-content {
-  padding: 0;
+  padding: 20px;
+  padding-bottom: 20px;
 }
 
 /* Update existing course filters to work within card */
@@ -186,11 +265,14 @@
 .course-table-container {
   overflow-x: auto;
   padding: 0 28px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Course Table */
 .course-table {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -321,8 +403,96 @@
   gap: 10px;
 }
 
+/* Course Filters */
+.course-filters {
+  padding: 20px 28px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.course-search-group,
+.course-filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* Table */
+.course-table-container {
+  overflow-x: auto;
+  padding: 0 28px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.course-table {
+  width: 100%;
+  min-width: 800px; /* Fixed minimum width for horizontal scroll */
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.course-table th {
+  background-color: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  white-space: nowrap; /* Prevent header wrapping */
+}
+
+.course-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f3f4;
+  color: #495057;
+  vertical-align: middle;
+}
+
+.course-table tbody tr:hover {
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
+}
+
+/* Add New Course Button - Updated to match design consistency */
+.add-course-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  outline: none;
+  gap: 8px;
+}
+
+.add-course-btn:hover {
+  background: #c82333;
+}
+
+.add-course-btn:focus {
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.add-course-btn:active {
+  transform: translateY(1px);
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
+  .main-content {
+    padding-left: calc(506px + 20px); /* Adjusted for smaller sidebars + content padding */
+  }
+  
   .course-content-wrapper {
     grid-template-columns: 260px 1fr;
     gap: 20px;
@@ -330,6 +500,10 @@
 }
 
 @media (max-width: 992px) {
+  .main-content {
+    padding-left: 20px;
+  }
+  
   .course-content-wrapper {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -345,6 +519,68 @@
     padding-left: 20px;
   }
   
+  .course-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .course-search-group,
+  .course-filter-group {
+    min-width: 100%;
+  }
+  
+  .course-section-content {
+    padding: 20px;
+  }
+  
+  .course-table {
+    font-size: 12px;
+  }
+  
+  .course-table th,
+  .course-table td {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 8px;
+  }
+  
+  .course-section-header {
+    padding: 16px;
+  }
+  
+  .course-filters {
+    padding: 16px;
+  }
+    .course-table-container {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-content {
+    padding-left: 20px;
+  }
+  
+  .course-content-wrapper {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .course-nav-section {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .course-section-content {
+    padding: 20px;
+  }
+  
   .course-content-wrapper {
     display: block;
   }
@@ -352,11 +588,6 @@
   .course-nav-section {
     margin-bottom: 20px;
   }
-}
-
-/* Remove responsive breakpoints that reference old sidebar setup */
-@media (max-width: 1200px) {
-  /* Remove old main-content padding-left calc */
 }
 
 /* Print Styles */

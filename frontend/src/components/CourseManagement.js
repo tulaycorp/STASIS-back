@@ -331,6 +331,18 @@ const Course = () => {
     {/* Main Content with Card Layout */}
     <div className="main-content">
       <div className="content-wrapper">
+        {/* Breadcrumb */}
+        <div className="breadcrumb">
+          <span 
+            className="breadcrumb-link" 
+            onClick={() => navigate('/admin-dashboard')}
+          >
+            Dashboard
+          </span>
+          <span className="breadcrumb-separator"> / </span>
+          <span className="breadcrumb-current">Course Management</span>
+        </div>
+        
         <div className="dashboard-header">
           <h1 className="dashboard-welcome-title">Course Management</h1>
           <div className="program-indicator">

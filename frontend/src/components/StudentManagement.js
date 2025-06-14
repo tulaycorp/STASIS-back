@@ -414,6 +414,17 @@ const Student = () => {
       {/* Main Content with Card Layout */}
       <div className="main-content">
         <div className="content-wrapper">
+          <div className="breadcrumb">
+            <span 
+              className="breadcrumb-link" 
+              onClick={() => navigate('/admin-dashboard')}
+            >
+              Dashboard
+            </span>
+            <span className="breadcrumb-separator"> / </span>
+            <span className="breadcrumb-current">Student Management</span>
+          </div>
+          
           <div className="dashboard-header">
             <h1 className="dashboard-welcome-title">Student Management</h1>
             <div className="program-indicator">
@@ -485,7 +496,7 @@ const Student = () => {
                   </div>
                   <div className="student-header-actions">
                     <button className="btn-add-student" onClick={showAddStudentForm}>
-                      Add Student
+                      + Add New Student
                     </button>
                   </div>
                 </div>

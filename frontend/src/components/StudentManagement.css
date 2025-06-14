@@ -9,7 +9,7 @@
 /* Main Content */
 .main-content {
   flex: 1;
-  padding-left: calc(256px + 20px); /* Only main sidebar + 20px content padding */
+  padding-left: calc(256px + 20px); /* Sidebar width + content padding */
   padding-right: 20px;
   padding-top: 20px;
   padding-bottom: 20px;
@@ -18,11 +18,11 @@
   background-color: #f8f9fa;
   min-width: 0;
   overflow-x: auto;
-  /* Remove margin-left, width calc, position, and z-index */
 }
 
 .content-wrapper {
   width: 100%;
+  max-width: none; /* Allow full width stretching */
   margin: 0;
   padding: 0;
   min-width: 0;
@@ -32,13 +32,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
+  margin-bottom: clamp(20px, 3vw, 36px);
+  padding-bottom: clamp(16px, 2.5vw, 24px);
   border-bottom: 1px solid #e9ecef;
+  flex-wrap: wrap;
+  gap: clamp(12px, 2vw, 16px);
 }
 
 .dashboard-welcome-title {
-  font-size: 24px;
+  font-size: clamp(20px, 3vw, 28px); /* Responsive title */
   font-weight: 600;
   color: #212529;
   margin: 0;
@@ -47,10 +49,11 @@
 .program-indicator {
   background-color: #ffebee;
   color: #dc3545;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: clamp(6px, 1vw, 10px) clamp(12px, 2vw, 20px);
+  border-radius: clamp(16px, 2vw, 24px);
+  font-size: clamp(11px, 1.5vw, 14px);
   font-weight: 500;
+  white-space: nowrap; /* Prevent wrapping */
 }
 
 /* Section Card */
@@ -83,10 +86,10 @@
 
 /* Buttons */
 .btn {
-  padding: 8px 16px;
+  padding: clamp(6px, 1vw, 10px) clamp(12px, 2vw, 20px); /* Responsive padding */
   border: none;
-  border-radius: 4px;
-  font-size: 13px;
+  border-radius: clamp(3px, 0.5vw, 6px); /* Responsive border radius */
+  font-size: clamp(12px, 1.5vw, 14px); /* Responsive font size */
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -107,9 +110,9 @@
   background-color: #6c757d;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: clamp(8px, 1.5vw, 12px) clamp(16px, 2.5vw, 24px);
+  border-radius: clamp(4px, 0.8vw, 8px);
+  font-size: clamp(12px, 1.5vw, 14px);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -121,20 +124,20 @@
 }
 
 .btn-action {
-  padding: 6px 8px;
+  padding: clamp(4px, 0.8vw, 8px) clamp(6px, 1vw, 10px);
   background-color: #28a745;
   color: white;
   border: none;
-  border-radius: 3px;
-  font-size: 14px;
+  border-radius: clamp(2px, 0.5vw, 4px);
+  font-size: clamp(12px, 1.5vw, 16px);
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 32px;
+  min-width: clamp(28px, 4vw, 36px);
+  height: clamp(28px, 4vw, 36px);
 }
 
 .btn-action:hover {
@@ -143,16 +146,16 @@
 
 .btn-action::before {
   content: "✏️";
-  font-size: 14px;
+  font-size: clamp(12px, 1.5vw, 16px);
 }
 
 .btn-add-student {
   background: #dc3545;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: clamp(8px, 1.5vw, 12px) clamp(16px, 2.5vw, 24px);
+  border-radius: clamp(4px, 0.8vw, 8px);
+  font-size: clamp(12px, 1.5vw, 14px);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -202,52 +205,65 @@
 /* Table */
 .student-table-container {
   overflow-x: auto;
+  border-radius: clamp(6px, 1vw, 8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%; /* Fill available space */
 }
 
 .student-table {
   width: 100%;
+  min-width: 600px; /* Minimum width for horizontal scroll */
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: clamp(12px, 1.5vw, 14px); /* Responsive table text */
 }
 
 .student-table th {
   background-color: #f8f9fa;
-  padding: 12px;
+  padding: clamp(10px, 2vw, 16px);
   text-align: left;
   font-weight: 600;
   color: #495057;
   border-bottom: 1px solid #dee2e6;
+  font-size: clamp(11px, 1.5vw, 13px);
+  white-space: nowrap; /* Prevent header wrapping */
 }
 
 .student-table td {
-  padding: 12px;
+  padding: clamp(10px, 2vw, 16px);
   border-bottom: 1px solid #f1f3f4;
   color: #495057;
+  vertical-align: middle;
 }
 
 .student-table tbody tr:hover {
   background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
 }
 
 .student-id {
   font-weight: 600;
   color: #007bff;
+  white-space: nowrap;
 }
 
 .student-name {
   font-weight: 500;
+  min-width: 150px; /* Ensure names don't get too cramped */
 }
 
 .student-email {
   color: #6c757d;
+  font-size: clamp(11px, 1.3vw, 13px);
 }
 
 .student-status {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
+  padding: clamp(3px, 0.5vw, 5px) clamp(6px, 1vw, 10px);
+  border-radius: clamp(10px, 1.5vw, 14px);
+  font-size: clamp(10px, 1.2vw, 12px);
   font-weight: 500;
   text-transform: uppercase;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .student-status.active {
@@ -261,9 +277,10 @@
 }
 
 .no-students {
-  padding: 40px;
+  padding: clamp(32px, 5vw, 48px);
   text-align: center;
   color: #6c757d;
+  font-size: clamp(14px, 2vw, 16px);
 }
 
 /* Modal Styles */
@@ -278,43 +295,45 @@
   align-items: center;
   justify-content: center;
   z-index: 2000 !important;
+  padding: clamp(8px, 2vw, 16px); /* Dynamic overlay padding */
 }
 
 .modal-content {
   background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
+  border-radius: clamp(6px, 1vw, 12px); /* Responsive border radius */
+  width: min(90vw, 800px); /* Responsive width with max constraint */
+  max-height: min(90vh, 800px); /* Dynamic height constraints */
   overflow-y: auto;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: auto; /* Center in available space */
 }
 
 .modal-header {
-  padding: 20px;
+  padding: clamp(16px, 3vw, 24px);
   border-bottom: 1px solid #e9ecef;
 }
 
 .modal-title {
-  font-size: 18px;
+  font-size: clamp(16px, 2vw, 20px); /* Responsive title size */
   font-weight: 600;
   color: #212529;
   margin: 0;
 }
 
 .modal-body {
-  padding: 20px;
+  padding: clamp(16px, 3vw, 24px);
 }
 
 .modal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); /* Better responsive grid */
+  gap: clamp(12px, 2vw, 20px); /* Dynamic gap */
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  gap: clamp(4px, 0.5vw, 8px); /* Dynamic form spacing */
 }
 
 .form-label {
@@ -335,19 +354,21 @@
 }
 
 .modal-footer {
-  padding: 20px;
+  padding: clamp(16px, 3vw, 24px);
   border-top: 1px solid #e9ecef;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: clamp(8px, 1vw, 12px); /* Dynamic button spacing */
+  flex-wrap: wrap; /* Allow wrapping on small screens */
 }
 
 /* Student Content Wrapper - Similar to Settings */
 .student-content-wrapper {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 25px;
-  height: calc(100vh - 140px);
+  grid-template-columns: 280px 1fr; /* Fixed sidebar width like Settings */
+  gap: 25px; /* Fixed gap like Settings */
+  height: calc(100vh - 140px); /* Fixed height calculation like Settings */
+  padding: 15px; /* Add padding like Settings */
 }
 
 /* Program Navigation Card */
@@ -461,6 +482,8 @@
   border: 1px solid #e9ecef;
   padding: 0;
   height: fit-content;
+  max-height: calc(100vh - 180px); /* Add max height constraint like Settings */
+  overflow-y: auto; /* Allow scrolling if content is too tall */
 }
 
 .student-section-header {
@@ -484,7 +507,8 @@
 }
 
 .student-section-content {
-  padding: 0;
+  padding: 20px; /* Fixed padding like Settings */
+  padding-bottom: 20px;
 }
 
 /* Update existing student filters to work within card */
@@ -497,33 +521,56 @@
   flex-wrap: wrap;
 }
 
+.student-search-group,
+.student-filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
 /* Update student table container */
 .student-table-container {
   overflow-x: auto;
   padding: 0 28px;
 }
 
-/* Responsive Design - Both sidebars hide together */
+/* Breadcrumb - Add this after the existing dashboard header styles */
+.breadcrumb {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumb-link {
+  color: #dc3545;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+  color: #c82333;
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #9ca3af;
+  margin: 0 4px;
+}
+
+.breadcrumb-current {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Responsive Design - Enhanced with better breakpoints */
 @media (max-width: 1200px) {
   .main-content {
-    padding-left: calc(506px + 20px); /* 506px for smaller sidebars + 20px content padding */
+    padding-left: calc(256px + 20px); /* Keep sidebar calculation */
   }
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    padding-left: 20px; /* No sidebars - just content padding */
-  }
-}
-
-@media (max-width: 480px) {
-  .content-wrapper {
-    padding: 8px;
-  }
-}
-
-/* Responsive Design Updates */
-@media (max-width: 1200px) {
+  
   .student-content-wrapper {
     grid-template-columns: 260px 1fr;
     gap: 20px;
@@ -531,6 +578,10 @@
 }
 
 @media (max-width: 992px) {
+  .main-content {
+    padding-left: 20px; /* Remove sidebar width, keep content padding */
+  }
+  
   .student-content-wrapper {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -539,19 +590,74 @@
   .student-nav-section {
     position: static;
   }
+  
+  .modal-grid {
+    grid-template-columns: 1fr; /* Single column forms on tablets */
+  }
 }
 
 @media (max-width: 768px) {
   .main-content {
-    padding-left: 20px;
+    padding-left: 20px; /* Just content padding */
   }
   
-  .student-content-wrapper {
-    display: block;
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
   
-  .student-nav-section {
-    margin-bottom: 20px;
+  .student-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .student-search-group,
+  .student-filter-group {
+    min-width: 100%;
+  }
+  
+  .student-section-content {
+    padding: 20px;
+  }
+  
+  .student-table {
+    font-size: 12px;
+  }
+  
+  .student-table th,
+  .student-table td {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 8px;
+  }
+  
+  .modal-content {
+    width: 95vw;
+    margin: 8px;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 16px;
+  }
+  
+  .student-section-header {
+    padding: 16px;
+  }
+  
+  .student-filters {
+    padding: 16px;
+  }
+  
+  .student-table-container {
+    padding: 0 16px;
   }
 }
 
