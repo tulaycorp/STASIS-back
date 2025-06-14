@@ -5,6 +5,7 @@
   background-color: #f8f9fa;
   color: #333;
   font-size: 14px;
+  gap: clamp(10px, 2vw, 30px); /* Responsive gap instead of fixed */
 }
 
 .dashboard-sidebar {
@@ -83,26 +84,17 @@
 
 .main-content {
   flex: 1;
-  margin-left: 256px;
   min-height: 100vh;
-  padding: 20px;
-  max-width: 1200px;
-  margin-right: auto;
+  margin-right: 0;
+  margin-left: 0;
   box-sizing: border-box;
-}
-
-.admin-dashboard {
-  padding: 1rem; /* Reduce if currently larger */
-  margin: 0; /* Remove any margins causing spacing */
-}
-
-.dashboard-content {
-  gap: 1rem; /* Consistent spacing between elements */
+  padding: 15px;
+  max-width: 100vw;
 }
 
 @media (max-width: 1200px) {
   .main-content {
-    padding: 20px 12px;
+    margin-left: 0;
     max-width: 1000px;
   }
 }
@@ -110,7 +102,6 @@
 @media (max-width: 992px) {
   .main-content {
     margin-left: 0;
-    padding: 20px 8px;
     max-width: 100vw;
   }
 }
@@ -118,7 +109,6 @@
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
-    padding: 15px;
     max-width: 100vw;
   }
 }

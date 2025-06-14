@@ -194,7 +194,7 @@ const Settings = () => {
         />
       </div>
 
-      <div className="settings-form-row">Se
+      <div className="settings-form-row">   
         <div className="settings-form-group">
           <label className="settings-form-label">Phone Number</label>
           <input

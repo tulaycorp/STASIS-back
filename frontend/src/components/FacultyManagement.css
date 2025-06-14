@@ -21,7 +21,10 @@ body {
 /* Main Content */
 .main-content {
   flex: 1;
-  padding: 20px;
+  padding-left: calc(256px + 20px); /* Correct sidebar width + content padding */
+  padding-right: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
   min-height: 100vh;
   box-sizing: border-box;
   background-color: #f8f9fa;
@@ -69,6 +72,10 @@ body {
 }
 
 @media (max-width: 1200px) {
+  .main-content {
+    padding-left: calc(506px + 20px); /* Adjusted for smaller sidebars + content padding */
+  }
+  
   .faculty-content-wrapper {
     grid-template-columns: 260px 1fr;
     gap: 20px;
@@ -574,9 +581,18 @@ body {
 }
 
 .pagination {
-  display: flex;
-  gap: 8px;
-}
+  display: flex !important; /* Force flex display */
+  flex-direction: row !important; /* Explicitly set direction to row */
+  flex-wrap: nowrap !important; /* Prevent buttons from wrapping */
+  align-items: center !important; /* Vertically align buttons */
+  justify-content: flex-start; /* Align buttons to the start (left) by default */
+  gap: 8px; /* Space between buttons */
+  padding: 0;
+  margin: 0;
+  list-style: none; /* Remove list styles if it's a <ul> or <ol> */
+  flex-shrink: 0; /* Prevent the pagination container from shrinking too much */
+} 
+
 
 .page-btn {
   padding: 8px 12px;

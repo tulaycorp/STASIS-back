@@ -207,15 +207,22 @@
   overflow-x: auto;
   border-radius: clamp(6px, 1vw, 8px);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  width: 100%; /* Fill available space */
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;  
+  box-sizing: border-box;
 }
 
 .student-table {
   width: 100%;
-  min-width: 600px; /* Minimum width for horizontal scroll */
+  min-width: 600px;
   border-collapse: collapse;
-  font-size: clamp(12px, 1.5vw, 14px); /* Responsive table text */
+  font-size: clamp(12px, 1.5vw, 14px);
+  margin: 0; /* Remove any default margins */
+  padding: 0; /* Remove left padding */
+  max-width: none;
 }
+
 
 .student-table th {
   background-color: #f8f9fa;
@@ -563,22 +570,6 @@
 .breadcrumb-current {
   color: #6b7280;
   font-weight: 500;
-}
-
-/* Student Management Styles */
-.student-management {
-  padding: 0; /* Remove component-level padding */
-  margin: 0;
-}
-
-.student-management-header {
-  margin-bottom: 1rem; /* Consistent header spacing */
-}
-
-.programs-section,
-.students-section {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
 }
 
 /* Responsive Design - Enhanced with better breakpoints */
