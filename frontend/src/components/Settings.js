@@ -55,6 +55,9 @@ const Settings = () => {
       case 'Settings':
         navigate('/settings');
         break;
+      case 'AdminTools':
+        navigate('/admin-tools');
+        break;
       default:
         // No action for unknown sections
     }
@@ -191,7 +194,7 @@ const Settings = () => {
         />
       </div>
 
-      <div className="settings-form-row">
+      <div className="settings-form-row">Se
         <div className="settings-form-group">
           <label className="settings-form-label">Phone Number</label>
           <input
@@ -409,7 +412,8 @@ const Settings = () => {
     <div className="settings-container">
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}        sections={[
+        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}        
+        sections={[
           {
             items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
           },
@@ -426,8 +430,8 @@ const Settings = () => {
           {
             label: 'System',
             items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️', clickable: false },
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧', clickable: false }
+              { id: 'Settings', label: 'Settings', icon: '⚙️'},
+              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
             ]
           }
         ]}

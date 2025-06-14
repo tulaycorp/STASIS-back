@@ -89,7 +89,12 @@ const Sidebar = ({ onNavigate }) => {
             >
               ⚙️ Settings
             </div>
-            <div className="nav-item">🔧 Admin Tools</div>
+            <div
+              className={`nav-item${activePage === 'AdminTools' ? ' active-page' : ''}`}
+              onClick={() => onNavigate('AdminTools')}
+            >
+              🔧 Admin Tools
+          </div>
           </div>
         </div>
       </div>

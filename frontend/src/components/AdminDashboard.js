@@ -393,6 +393,9 @@ const handleAddSchedule = () => {
       case 'Settings':
         navigate('/settings');
         break;
+      case 'AdminTools':
+        navigate('/admin-tools');
+      break;
       default:
         // No action for unknown sections
     }
@@ -420,8 +423,8 @@ const handleAddSchedule = () => {
           {
             label: 'System',
             items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️', clickable: false },
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧', clickable: false }
+              { id: 'Settings', label: 'Settings', icon: '⚙️'},
+              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
             ]
           }
         ]}
