@@ -1,0 +1,50 @@
+/* Override conflicting layout styles */
+
+/* Reset main content positioning in all components */
+.main-content,
+.admin-main-content,
+.settings-main-content {
+  position: relative !important;
+  left: 0 !important;
+  padding-left: 20px !important;
+  margin-left: 256px !important;
+  width: calc(100% - 256px) !important;
+}
+
+/* Fix for AdminTools */
+.admin-main-content {
+  position: relative !important;
+  left: 0 !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+}
+
+/* Fix for ScheduleManagement */
+.main-content {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+}
+
+/* Fix for StudentManagement and FacultyManagement */
+.main-content {
+  padding-left: 20px !important;
+}
+
+/* Fix for CurriculumManagement */
+.curriculum-content-wrapper {
+  padding-left: 0 !important;
+}
+
+/* Media query for responsive design */
+@media (max-width: 992px) {
+  .main-content,
+  .admin-main-content,
+  .settings-main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}

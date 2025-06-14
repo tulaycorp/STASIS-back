@@ -565,6 +565,22 @@
   font-weight: 500;
 }
 
+/* Student Management Styles */
+.student-management {
+  padding: 0; /* Remove component-level padding */
+  margin: 0;
+}
+
+.student-management-header {
+  margin-bottom: 1rem; /* Consistent header spacing */
+}
+
+.programs-section,
+.students-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+}
+
 /* Responsive Design - Enhanced with better breakpoints */
 @media (max-width: 1200px) {
   .main-content {

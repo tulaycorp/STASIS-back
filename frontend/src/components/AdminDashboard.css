@@ -91,6 +91,15 @@
   box-sizing: border-box;
 }
 
+.admin-dashboard {
+  padding: 1rem; /* Reduce if currently larger */
+  margin: 0; /* Remove any margins causing spacing */
+}
+
+.dashboard-content {
+  gap: 1rem; /* Consistent spacing between elements */
+}
+
 @media (max-width: 1200px) {
   .main-content {
     padding: 20px 12px;

@@ -42,3 +42,38 @@ code {
     justify-content: center;
     align-items: center;
 }
+
+/* Add global container and layout styles */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 256px; /* Exactly match sidebar width */
+  padding: 20px;
+  overflow-y: auto;
+  width: calc(100% - 256px);
+  box-sizing: border-box;
+}
+
+/* Fix for specific component overrides */
+.admin-main-content,
+.settings-main-content {
+  position: relative !important;
+  left: 0 !important;
+  margin-left: 256px;
+  padding: 20px;
+}
+
+/* Media query for responsive design */
+@media (max-width: 992px) {
+  .main-content,
+  .admin-main-content,
+  .settings-main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 16px;
+  }
+}
