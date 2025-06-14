@@ -77,7 +77,8 @@ body {
 
 @media (max-width: 1200px) {
   .main-content {
-    left: 506px; /* Adjusted for smaller sidebars */
+    left: 0; /* Adjusted for smaller sidebars */
+    right: 0;
   }
   
   .schedule-content-wrapper {
