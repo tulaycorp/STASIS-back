@@ -31,17 +31,6 @@ const Settings = () => {
     sessionTimeout: '30'
   });
 
-  // System Settings State
-  const [systemSettings, setSystemSettings] = useState({
-    language: 'en',
-    timezone: 'America/New_York',
-    dateFormat: 'MM/DD/YYYY',
-    timeFormat: '12',
-    autoSave: true,
-    emailDigest: 'daily',
-    desktopNotifications: true
-  });
-
   // Navigation
   const showSection = (section) => {
     switch(section){
@@ -88,21 +77,12 @@ const Settings = () => {
     setHasUnsavedChanges(true);
   };
 
-  const handleSystemChange = (field, value) => {
-    setSystemSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setHasUnsavedChanges(true);
-  };
-
   // Save functions
   const saveSettings = () => {
     // Here you would typically send to API
     console.log('Saving settings for section:', activeSection);
     console.log('Profile:', profileSettings);
     console.log('Account:', accountSettings);
-    console.log('System:', systemSettings);
     
     alert('Settings saved successfully!');
     setHasUnsavedChanges(false);
@@ -135,17 +115,6 @@ const Settings = () => {
             sessionTimeout: '30'
           });
           break;
-        case 'system':
-          setSystemSettings({
-            language: 'en',
-            timezone: 'America/New_York',
-            dateFormat: 'MM/DD/YYYY',
-            timeFormat: '12',
-            autoSave: true,
-            emailDigest: 'daily',
-            desktopNotifications: true
-          });
-          break;
       }
       setHasUnsavedChanges(false);
       alert('Settings reset to defaults');
@@ -159,11 +128,10 @@ const Settings = () => {
     }
   };
 
-  // Settings sections configuration (privacy section removed)
+  // Settings sections configuration (system preferences removed)
   const settingsSections = [
     { id: 'profile', label: 'Profile', icon: '👤' },
-    { id: 'account', label: 'Account & Security', icon: '🔒' },
-    { id: 'system', label: 'System Preferences', icon: '⚙️' }
+    { id: 'account', label: 'Account & Security', icon: '🔒' }
   ];
 
   // Render different sections
@@ -411,121 +379,6 @@ const Settings = () => {
     </div>
   );
 
-  const renderSystemSection = () => (
-    <div className="settings-section-content">
-      <div className="settings-form-row">
-        <div className="settings-form-group">
-          <label className="settings-form-label">Language</label>
-          <select
-            className="settings-form-select"
-            value={systemSettings.language}
-            onChange={(e) => handleSystemChange('language', e.target.value)}
-          >
-            <option value="en">English</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-            <option value="de">German</option>
-          </select>
-        </div>
-        <div className="settings-form-group">
-          <label className="settings-form-label">Date Format</label>
-          <select
-            className="settings-form-select"
-            value={systemSettings.dateFormat}
-            onChange={(e) => handleSystemChange('dateFormat', e.target.value)}
-          >
-            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="settings-form-row">
-        <div className="settings-form-group">
-          <label className="settings-form-label">Timezone</label>
-          <select
-            className="settings-form-select"
-            value={systemSettings.timezone}
-            onChange={(e) => handleSystemChange('timezone', e.target.value)}
-          >
-            <option value="America/New_York">Eastern Time (ET)</option>
-            <option value="America/Chicago">Central Time (CT)</option>
-            <option value="America/Denver">Mountain Time (MT)</option>
-            <option value="America/Los_Angeles">Pacific Time (PT)</option>
-            <option value="UTC">UTC</option>
-          </select>
-        </div>
-        <div className="settings-form-group">
-          <label className="settings-form-label">Time Format</label>
-          <select
-            className="settings-form-select"
-            value={systemSettings.timeFormat}
-            onChange={(e) => handleSystemChange('timeFormat', e.target.value)}
-          >
-            <option value="12">12-hour (AM/PM)</option>
-            <option value="24">24-hour</option>
-          </select>
-        </div>
-      </div>
-
-      <hr className="settings-divider" />
-
-      <div className="settings-form-group">
-        <div className="settings-form-checkbox-group">
-          <input
-            type="checkbox"
-            className="settings-form-checkbox"
-            checked={systemSettings.autoSave}
-            onChange={(e) => handleSystemChange('autoSave', e.target.checked)}
-            id="autoSave"
-          />
-          <label htmlFor="autoSave" className="settings-form-checkbox-label">
-            Auto-save Changes
-            <div className="settings-form-checkbox-desc">
-              Automatically save your work every few minutes
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <div className="settings-form-group">
-        <div className="settings-form-checkbox-group">
-          <input
-            type="checkbox"
-            className="settings-form-checkbox"
-            checked={systemSettings.desktopNotifications}
-            onChange={(e) => handleSystemChange('desktopNotifications', e.target.checked)}
-            id="desktopNotifications"
-          />
-          <label htmlFor="desktopNotifications" className="settings-form-checkbox-label">
-            Desktop Notifications
-            <div className="settings-form-checkbox-desc">
-              Get notified on your desktop when important events occur
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <div className="settings-form-group">
-        <label className="settings-form-label">Email Digest Frequency</label>
-        <div className="settings-form-sublabel">
-          How often would you like to receive email summaries?
-        </div>
-        <select
-          className="settings-form-select"
-          value={systemSettings.emailDigest}
-          onChange={(e) => handleSystemChange('emailDigest', e.target.value)}
-        >
-          <option value="never">Never</option>
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-      </div>
-    </div>
-  );
-
   // Get current section data
   const getCurrentSectionData = () => {
     switch(activeSection) {
@@ -540,12 +393,6 @@ const Settings = () => {
           title: 'Account & Security',
           description: 'Manage your account security and authentication settings',
           content: renderAccountSection()
-        };
-      case 'system':
-        return {
-          title: 'System Preferences',
-          description: 'Configure your system preferences and display settings',
-          content: renderSystemSection()
         };
       default:
         return {
