@@ -283,6 +283,9 @@ const Course = () => {
         case 'Faculty':
             navigate('/faculty-management');
             break;
+        case 'Settings':
+            navigate('/settings');
+        break;
         default:
             // No action for unknown sections
     }

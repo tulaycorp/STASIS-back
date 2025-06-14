@@ -390,6 +390,9 @@ const handleAddSchedule = () => {
       case 'Courses':
         navigate('/course-management');
         break;
+      case 'Settings':
+        navigate('/settings');
+        break;
       default:
         // No action for unknown sections
     }

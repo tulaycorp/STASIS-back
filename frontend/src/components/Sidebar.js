@@ -17,6 +17,8 @@ const getActivePageFromURL = () => {
     return 'Faculty';
   } else if (path === '/course-management') {
     return 'Courses';
+  } else if (path === '/settings') {
+    return 'Settings';
   }
   
   // Return empty string if no match so nothing is highlighted
@@ -81,7 +83,12 @@ const Sidebar = ({ onNavigate }) => {
         <div className="nav-section">
           <div className="nav-label">System</div>
           <div className="nav-items">
-            <div className="nav-item">⚙️ Settings</div>
+            <div
+              className={`nav-item${activePage === 'Settings' ? ' active-page' : ''}`}
+              onClick={() => onNavigate('Settings')}
+            >
+              ⚙️ Settings
+            </div>
             <div className="nav-item">🔧 Admin Tools</div>
           </div>
         </div>

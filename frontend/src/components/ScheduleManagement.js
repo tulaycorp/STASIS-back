@@ -335,7 +335,11 @@ const ScheduleManagement = () => {
       case 'Curriculum':
         navigate('/curriculum-management');
         break;
-      case 'Courses':        navigate('/course-management');
+      case 'Courses':        
+        navigate('/course-management');
+        break;
+      case 'Settings':
+        navigate('/settings');
         break;
       default:
         // No action for unknown sections
