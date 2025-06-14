@@ -19,6 +19,8 @@ const getActivePageFromURL = () => {
     return 'Courses';
   } else if (path === '/settings') {
     return 'Settings';
+  } else if (path === '/admin-tools') {
+    return 'AdminTools';
   }
   
   // Return empty string if no match so nothing is highlighted

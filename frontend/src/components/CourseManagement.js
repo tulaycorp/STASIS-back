@@ -2,7 +2,6 @@ import React, { useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CourseManagement.css';
 import Sidebar from './Sidebar';
-import ProgramSidebar from './ProgramSidebar';
 
 const Course = () => {
   const [coursesData, setCoursesData] = useState([
@@ -300,44 +299,38 @@ const Course = () => {
     setSelectedSection('All Sections');
   };
   return (
-    <div className="container">      {/* Main Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
-        sections={[
-          {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'Students', label: 'Students', icon: '👥' },
-              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'Schedule', label: 'Schedule', icon: '📅' },
-              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-              { id: 'Courses', label: 'Courses', icon: '📖' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️'},
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-            ]
-          }
-        ]}
-      />      {/* Program Sidebar */}
-      <ProgramSidebar
-        programs={programs}
-        selectedProgram={selectedProgram}
-        onProgramSelect={handleProgramSelect}
-        onAddSection={showAddSectionForm}
-        totalCount={filteredCourses.length}
-        countLabel="Courses"
-      />
+  <div className="container">
+    {/* Main Sidebar */}
+    <Sidebar 
+      onNavigate={showSection}
+      userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+      sections={[
+        {
+          items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+        },
+        {
+          label: 'Management',
+          items: [
+            { id: 'Students', label: 'Students', icon: '👥' },
+            { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+            { id: 'Schedule', label: 'Schedule', icon: '📅' },
+            { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+            { id: 'Courses', label: 'Courses', icon: '📖' }
+          ]
+        },
+        {
+          label: 'System',
+          items: [
+            { id: 'Settings', label: 'Settings', icon: '⚙️'},
+            { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+          ]
+        }
+      ]}
+    />
 
-      {/* Main Content */}
-      <div className="main-content">
+    {/* Main Content with Card Layout */}
+    <div className="main-content">
+      <div className="content-wrapper">
         <div className="dashboard-header">
           <h1 className="dashboard-welcome-title">Course Management</h1>
           <div className="program-indicator">
@@ -345,274 +338,311 @@ const Course = () => {
           </div>
         </div>
 
-        {/* Course Management Section */}
-        <div className="dashboard-section-card">
-          <div className="dashboard-section-header">
-            <h2 className="dashboard-section-title">Courses</h2>
-            <div className="course-header-actions">
-              <button className="add-course-btn" onClick={showAddCourseForm}>
-                + Add New Course
+        <div className="course-content-wrapper">
+          {/* Program Selection Card */}
+          <div className="course-nav-section">
+            <div className="course-nav-header">
+              <h2 className="course-nav-title">Programs</h2>
+            </div>
+            <div className="course-nav-list">
+              {programs.map((program) => (
+                <div
+                  key={program}
+                  className={`course-nav-item ${selectedProgram === program ? 'course-nav-item-active' : ''}`}
+                  onClick={() => handleProgramSelect(program)}
+                >
+                  <span className="course-nav-icon">📚</span>
+                  {program}
+                </div>
+              ))}
+            </div>
+            <div className="course-nav-actions">
+              <button className="course-btn-add-section" onClick={showAddSectionForm}>
+                Add New Section
               </button>
             </div>
-          </div>
-          
-          {/* Search Filter */}
-          <div className="course-filters">
-            <div className="course-search-group">
-              <input
-                type="text"
-                className="form-input course-search-input"
-                placeholder="Search courses..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="course-nav-info">
+              <div className="course-nav-info-item">
+                <div className="course-nav-info-label">{selectedProgram}</div>
+                <div className="course-nav-info-value">Total Courses: {filteredCourses.length}</div>
+              </div>
             </div>
           </div>
 
-          {/* Courses Table */}
-          <div className="course-table-container">
-            <table className="course-table">
-              <thead>
-                <tr>
-                  <th>Course Code</th>
-                  <th>Course Name</th>
-                  <th>Program</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCourses.map((course) => (
-                  <tr key={course.id}>
-                    <td className="course-code">{course.courseCode}</td>
-                    <td className="course-name">{course.courseName}</td>
-                    <td className="course-program">{course.program}</td>
-                    <td>
-                      <span className={`course-status ${course.status.toLowerCase()}`}>
-                        {course.status}
-                      </span>
-                    </td>
-                    <td>                      <button 
-                        className="btn-action"
-                        onClick={() => showEditCourseForm(course)}
-                      >
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Course Management Section Card */}
+          <div className="course-main-section">
+            <div className="course-section-header">
+              <h2 className="course-section-title">Courses</h2>
+              <p className="course-section-desc">Manage course records and information</p>
+            </div>
             
-            {filteredCourses.length === 0 && (
-              <div className="no-courses">
-                <p>No courses found matching your criteria.</p>
+            <div className="course-section-content">
+              {/* Filters */}
+              <div className="course-filters">
+                <div className="course-search-group">
+                  <input
+                    type="text"
+                    className="form-input course-search-input"
+                    placeholder="Search courses..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="course-header-actions">
+                  <button className="add-course-btn" onClick={showAddCourseForm}>
+                    + Add New Course
+                  </button>
+                </div>
               </div>
-            )}
+
+              {/* Courses Table */}
+              <div className="course-table-container">
+                <table className="course-table">
+                  <thead>
+                    <tr>
+                      <th>Course Code</th>
+                      <th>Course Name</th>
+                      <th>Program</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCourses.map((course) => (
+                      <tr key={course.id}>
+                        <td className="course-code">{course.courseCode}</td>
+                        <td className="course-name">{course.courseName}</td>
+                        <td className="course-program">{course.program}</td>
+                        <td>
+                          <span className={`course-status ${course.status.toLowerCase()}`}>
+                            {course.status}
+                          </span>
+                        </td>
+                        <td>
+                          <button 
+                            className="btn-action"
+                            onClick={() => showEditCourseForm(course)}
+                          >
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {filteredCourses.length === 0 && (
+                  <div className="no-courses">
+                    <p>No courses found matching your criteria.</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Add Course Modal */}
-      {showAddCourseModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Add New Course</h2>
-            </div>
-            
-            <div className="modal-body">
-              <div className="modal-grid">
-                <div className="form-group">
-                  <label className="form-label">Course Code *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter Course Code (e.g., CS101)"
-                    value={courseForm.courseCode}
-                    onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Course Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter Course Name"
-                    value={courseForm.courseName}
-                    onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Program *</label>
-                  <select
-                    className="form-input"
-                    value={courseForm.program}
-                    onChange={(e) => handleCourseFormChange('program', e.target.value)}
-                  >
-                    <option value="">Select Program</option>
-                    {programs.map((program) => (
-                      <option key={program} value={program}>{program}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeAddCourseModal}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleAddCourse}>
-                Add Course
-              </button>
-            </div>
+    {/* Add Course Modal */}
+    {showAddCourseModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2 className="modal-title">Add New Course</h2>
           </div>
-        </div>
-      )}
-
-      {/* Edit Course Modal */}
-      {showEditCourseModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Edit Course</h2>
-            </div>
-            
-            <div className="modal-body">
-              <div className="modal-grid">
-                <div className="form-group">
-                  <label className="form-label">Course Code *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter Course Code (e.g., CS101)"
-                    value={courseForm.courseCode}
-                    onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Course Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter Course Name"
-                    value={courseForm.courseName}
-                    onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Program *</label>
-                  <select
-                    className="form-input"
-                    value={courseForm.program}
-                    onChange={(e) => handleCourseFormChange('program', e.target.value)}
-                  >
-                    <option value="">Select Program</option>
-                    {programs.map((program) => (
-                      <option key={program} value={program}>{program}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select
-                    className="form-input"
-                    value={courseForm.status}
-                    onChange={(e) => handleCourseFormChange('status', e.target.value)}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
+          
+          <div className="modal-body">
+            <div className="modal-grid">
+              <div className="form-group">
+                <label className="form-label">Course Code *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter Course Code (e.g., CS101)"
+                  value={courseForm.courseCode}
+                  onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
+                />
               </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeEditCourseModal}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleEditCourse}>
-                Update Course
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Section Modal */}
-      {showAddSectionModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Add New Section</h2>
-            </div>
-            
-            <div className="modal-body">
+              
+              <div className="form-group">
+                <label className="form-label">Course Name *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter Course Name"
+                  value={courseForm.courseName}
+                  onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
+                />
+              </div>
+              
               <div className="form-group">
                 <label className="form-label">Program *</label>
                 <select
                   className="form-input"
-                  value={sectionForm.program}
-                  onChange={(e) => handleSectionFormChange('program', e.target.value)}
+                  value={courseForm.program}
+                  onChange={(e) => handleCourseFormChange('program', e.target.value)}
                 >
                   <option value="">Select Program</option>
-                  <option value="BSIT">BSIT</option>
-                  <option value="BSCS">BSCS</option>
-                  <option value="BSIS">BSIS</option>
-                  <option value="BSEMC">BSEMC</option>
+                  {programs.map((program) => (
+                    <option key={program} value={program}>{program}</option>
+                  ))}
                 </select>
               </div>
-              
-              <div className="form-group">
-                <label className="form-label">Year Level *</label>
-                <select
-                  className="form-input"
-                  value={sectionForm.yearLevel}
-                  onChange={(e) => handleSectionFormChange('yearLevel', e.target.value)}
-                >
-                  <option value="">Select Year Level</option>
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Section Number *</label>
-                <select
-                  className="form-input"
-                  value={sectionForm.sectionNumber}
-                  onChange={(e) => handleSectionFormChange('sectionNumber', e.target.value)}
-                >
-                  <option value="">Select Section Number</option>
-                  <option value="1">Section 1</option>
-                  <option value="2">Section 2</option>
-                  <option value="3">Section 3</option>
-                  <option value="4">Section 4</option>
-                  <option value="5">Section 5</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeAddSectionModal}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleAddSection}>
-                Create Section
-              </button>
             </div>
           </div>
+          
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={closeAddCourseModal}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleAddCourse}>
+              Add Course
+            </button>
+          </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+
+    {/* Edit Course Modal */}
+    {showEditCourseModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2 className="modal-title">Edit Course</h2>
+          </div>
+          
+          <div className="modal-body">
+            <div className="modal-grid">
+              <div className="form-group">
+                <label className="form-label">Course Code *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter Course Code (e.g., CS101)"
+                  value={courseForm.courseCode}
+                  onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Course Name *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter Course Name"
+                  value={courseForm.courseName}
+                  onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Program *</label>
+                <select
+                  className="form-input"
+                  value={courseForm.program}
+                  onChange={(e) => handleCourseFormChange('program', e.target.value)}
+                >
+                  <option value="">Select Program</option>
+                  {programs.map((program) => (
+                    <option key={program} value={program}>{program}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select
+                  className="form-input"
+                  value={courseForm.status}
+                  onChange={(e) => handleCourseFormChange('status', e.target.value)}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={closeEditCourseModal}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleEditCourse}>
+              Update Course
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add Section Modal */}
+    {showAddSectionModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2 className="modal-title">Add New Section</h2>
+          </div>
+          
+          <div className="modal-body">
+            <div className="form-group">
+              <label className="form-label">Program *</label>
+              <select
+                className="form-input"
+                value={sectionForm.program}
+                onChange={(e) => handleSectionFormChange('program', e.target.value)}
+              >
+                <option value="">Select Program</option>
+                <option value="BSIT">BSIT</option>
+                <option value="BSCS">BSCS</option>
+                <option value="BSIS">BSIS</option>
+                <option value="BSEMC">BSEMC</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Year Level *</label>
+              <select
+                className="form-input"
+                value={sectionForm.yearLevel}
+                onChange={(e) => handleSectionFormChange('yearLevel', e.target.value)}
+              >
+                <option value="">Select Year Level</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Section Number *</label>
+              <select
+                className="form-input"
+                value={sectionForm.sectionNumber}
+                onChange={(e) => handleSectionFormChange('sectionNumber', e.target.value)}
+              >
+                <option value="">Select Section Number</option>
+                <option value="1">Section 1</option>
+                <option value="2">Section 2</option>
+                <option value="3">Section 3</option>
+                <option value="4">Section 4</option>
+                <option value="5">Section 5</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={closeAddSectionModal}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleAddSection}>
+              Create Section
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 };
 
 export default Course;

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentManagement.css';
 import Sidebar from './Sidebar';
-import ProgramSidebar from './ProgramSidebar';
 
 const Student = () => {
   const [studentsData, setStudentsData] = useState([
@@ -383,7 +382,8 @@ const Student = () => {
     setSelectedSection('All Sections');
   };
   return (
-    <div className="dashboard-container">      {/* Sidebar */}
+    <div className="dashboard-container">
+      {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
@@ -410,17 +410,8 @@ const Student = () => {
           }
         ]}
       />
-      {/* Program Sidebar */}
-      <ProgramSidebar
-        programs={courses}
-        selectedProgram={selectedProgram}
-        onProgramSelect={handleCourseSelect}
-        onAddSection={showAddSectionForm}
-        totalCount={filteredStudents.length}
-        countLabel="Students"
-      />
 
-      {/* Main Content */}
+      {/* Main Content with Card Layout */}
       <div className="main-content">
         <div className="content-wrapper">
           <div className="dashboard-header">
@@ -430,84 +421,125 @@ const Student = () => {
             </div>
           </div>
 
-          {/* Student Management Section */}
-          <div className="dashboard-section-card">
-            <div className="dashboard-section-header">
-              <h2 className="dashboard-section-title">Students</h2>
-              <div className="student-header-actions">
-                <button className="btn-add-student" onClick={showAddStudentForm}>
-                  + Add New Student
+          <div className="student-content-wrapper">
+            {/* Program Selection Card */}
+            <div className="student-nav-section">
+              <div className="student-nav-header">
+                <h2 className="student-nav-title">Programs</h2>
+              </div>
+              <div className="student-nav-list">
+                {courses.map((program) => (
+                  <div
+                    key={program}
+                    className={`student-nav-item ${selectedProgram === program ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleCourseSelect(program)}
+                  >
+                    <span className="student-nav-icon">📚</span>
+                    {program}
+                  </div>
+                ))}
+              </div>
+              <div className="student-nav-actions">
+                <button className="student-btn-add-section" onClick={showAddSectionForm}>
+                  Add New Section
                 </button>
               </div>
-            </div>
-            
-            {/* Search and Filter */}
-            <div className="student-filters">
-              <div className="student-search-group">
-                <input
-                  type="text"
-                  className="form-input student-search-input"
-                  placeholder="Search students..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="student-filter-group">
-                <select
-                  className="form-input student-filter-select"
-                  value={selectedSection}
-                  onChange={(e) => setSelectedSection(e.target.value)}
-                >
-                  {sections.map((section) => (
-                    <option key={section} value={section}>{section}</option>
-                  ))}
-                </select>
+              <div className="student-nav-info">
+                <div className="student-nav-info-item">
+                  <div className="student-nav-info-label">{selectedProgram}</div>
+                  <div className="student-nav-info-value">Total Students: {filteredStudents.length}</div>
+                </div>
               </div>
             </div>
 
-            {/* Students Table */}
-            <div className="student-table-container">
-              <table className="student-table">
-                <thead>
-                  <tr>
-                    <th>Student ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Birthday</th>
-                    <th>Section</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.map((student) => (
-                    <tr key={student.id}>
-                      <td className="student-id">{student.studentId}</td>
-                      <td className="student-name">{student.name}</td>
-                      <td className="student-email">{student.email}</td>
-                      <td className="student-birthday">{student.birthday}</td>
-                      <td className="student-section">{student.section}</td>
-                      <td>
-                        <span className={`student-status ${student.status.toLowerCase()}`}>
-                          {student.status}
-                        </span>
-                      </td>
-                      <td>                        <button 
-                          className="btn-action"
-                          onClick={() => showEditStudentForm(student)}
-                        >
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Student Management Section Card */}
+            <div className="student-main-section">
+              <div className="student-section-header">
+                <h2 className="student-section-title">Students</h2>
+                <p className="student-section-desc">Manage student records and information</p>
+              </div>
               
-              {filteredStudents.length === 0 && (
-                <div className="no-students">
-                  <p>No students found matching your criteria.</p>
+              <div className="student-section-content">
+                {/* Filters */}
+                <div className="student-filters">
+                  <div className="student-search-group">
+                    <input
+                      type="text"
+                      className="form-input student-search-input"
+                      placeholder="Search students..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="student-filter-group">
+                    <select
+                      className="form-input"
+                      value={selectedSection}
+                      onChange={(e) => setSelectedSection(e.target.value)}
+                    >
+                      <option value="All Sections">All Sections</option>
+                      {sections.map((section) => (
+                        <option key={section} value={section}>{section}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="student-header-actions">
+                    <button className="btn-add-student" onClick={showAddStudentForm}>
+                      Add Student
+                    </button>
+                  </div>
                 </div>
-              )}
+
+                {/* Student Table */}
+                <div className="student-table-container">
+                  <table className="student-table">
+                    <thead>
+                      <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Birthday</th>
+                        <th>Section</th>
+                        <th>Program</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStudents.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="no-students">
+                            No students found matching your criteria.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredStudents.map((student) => (
+                          <tr key={student.id}>
+                            <td className="student-id">{student.studentId}</td>
+                            <td className="student-name">{student.name}</td>
+                            <td className="student-email">{student.email}</td>
+                            <td>{student.birthday}</td>
+                            <td>{student.section}</td>
+                            <td>{student.program}</td>
+                            <td>
+                              <span className={`student-status ${student.status.toLowerCase()}`}>
+                                {student.status}
+                              </span>
+                            </td>
+                            <td>
+                              <button 
+                                className="btn-action"
+                                onClick={() => showEditStudentForm(student)}
+                              >
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>

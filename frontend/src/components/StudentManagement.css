@@ -9,7 +9,7 @@
 /* Main Content */
 .main-content {
   flex: 1;
-  padding-left: calc(536px + 20px); /* 536px for sidebars + 20px content padding */
+  padding-left: calc(256px + 20px); /* Only main sidebar + 20px content padding */
   padding-right: 20px;
   padding-top: 20px;
   padding-bottom: 20px;
@@ -342,6 +342,167 @@
   gap: 10px;
 }
 
+/* Student Content Wrapper - Similar to Settings */
+.student-content-wrapper {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 25px;
+  height: calc(100vh - 140px);
+}
+
+/* Program Navigation Card */
+.student-nav-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  padding: 0;
+  height: fit-content;
+  position: sticky;
+  top: 0;
+}
+
+.student-nav-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+  border-radius: 8px 8px 0 0;
+}
+
+.student-nav-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+}
+
+.student-nav-list {
+  padding: 12px 0;
+}
+
+.student-nav-item {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  color: #495057;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.student-nav-item:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.student-nav-item-active {
+  color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  font-weight: 500;
+  border-radius: 6px;
+  margin: 4px 12px; /* Add margin on sides and top/bottom */
+}
+
+.student-nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.student-nav-actions {
+  padding: 12px 20px;
+  border-top: 1px solid #f1f3f4;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.student-btn-add-section {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.student-btn-add-section:hover {
+  background-color: #c82333;
+}
+
+.student-nav-info {
+  padding: 12px 20px;
+}
+
+.student-nav-info-item {
+  margin-bottom: 10px;
+}
+
+.student-nav-info-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.student-nav-info-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+}
+
+/* Main Student Section Card */
+.student-main-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  padding: 0;
+  height: fit-content;
+}
+
+.student-section-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+  border-radius: 8px 8px 0 0;
+}
+
+.student-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 6px 0;
+}
+
+.student-section-desc {
+  font-size: 14px;
+  color: #6c757d;
+  margin: 0;
+}
+
+.student-section-content {
+  padding: 0;
+}
+
+/* Update existing student filters to work within card */
+.student-filters {
+  padding: 20px 28px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Update student table container */
+.student-table-container {
+  overflow-x: auto;
+  padding: 0 28px;
+}
+
 /* Responsive Design - Both sidebars hide together */
 @media (max-width: 1200px) {
   .main-content {
@@ -358,6 +519,39 @@
 @media (max-width: 480px) {
   .content-wrapper {
     padding: 8px;
+  }
+}
+
+/* Responsive Design Updates */
+@media (max-width: 1200px) {
+  .student-content-wrapper {
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .student-content-wrapper {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .student-nav-section {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 20px;
+  }
+  
+  .student-content-wrapper {
+    display: block;
+  }
+  
+  .student-nav-section {
+    margin-bottom: 20px;
   }
 }
 

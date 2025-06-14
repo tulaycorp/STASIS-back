@@ -6,10 +6,10 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Main Content - Use padding instead of margin to create proper spacing */
+/* Main Content */
 .main-content {
   flex: 1;
-  padding-left: calc(536px + 20px); /* 536px for sidebars + 20px content padding */
+  padding-left: calc(256px + 20px); /* Only main sidebar + 20px content padding */
   padding-right: 20px;
   padding-top: 20px;
   padding-bottom: 20px;
@@ -21,263 +21,174 @@
   /* Remove position and z-index */
 }
 
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e9ecef;
+/* Course Content Wrapper - Similar to Settings */
+.course-content-wrapper {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 25px;
+  height: calc(100vh - 140px);
 }
 
-.dashboard-welcome-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0;
-}
-
-.program-indicator {
-  background-color: #ffebee;
-  color: #dc3545;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-/* Section Card */
-.dashboard-section-card {
+/* Program Navigation Card */
+.course-nav-section {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  border: 1px solid #e9ecef;
+  padding: 0;
+  height: fit-content;
+  position: sticky;
+  top: 0;
 }
 
-.dashboard-section-header {
-  padding: 20px;
-  border-bottom: 1px solid #e9ecef;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.course-nav-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+  border-radius: 8px 8px 0 0;
 }
 
-.dashboard-section-title {
-  font-size: 18px;
+.course-nav-title {
+  font-size: 16px;
   font-weight: 600;
   color: #212529;
   margin: 0;
 }
 
-.course-header-actions {
-  display: flex;
-  gap: 10px;
+.course-nav-list {
+  padding: 12px 0;
 }
 
-/* Buttons */
-.btn {
-  padding: 8px 16px;
+.course-nav-item {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  color: #495057;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.course-nav-item:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.course-nav-item-active {
+  color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  font-weight: 500;
+  border-radius: 6px;
+  margin: 4px 12px; /* Add margin on sides and top/bottom */
+}
+
+.course-nav-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.course-nav-actions {
+  padding: 12px 20px;
+  border-top: 1px solid #f1f3f4;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.course-btn-add-section {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #dc3545;
+  color: white;
   border: none;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  display: inline-block;
+  transition: background-color 0.2s;
 }
 
-.btn-primary {
-  background-color: #dc3545;
-  color: white;
-}
-
-.btn-primary:hover {
+.course-btn-add-section:hover {
   background-color: #c82333;
 }
 
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
+.course-nav-info {
+  padding: 12px 20px;
 }
 
-.btn-secondary:hover {
-  background-color: #545b62;
+.course-nav-info-item {
+  margin-bottom: 10px;
 }
 
-.btn-action {
-  padding: 4px 12px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 3px;
+.course-nav-info-label {
   font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 5px;
 }
 
-.btn-action:hover {
-  background-color: #166828;
-}
-
-/* Add Course Button - Updated to match CurriculumManagement styling */
-.add-course-btn {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  outline: none;
-  gap: 8px;
-}
-
-.add-course-btn:hover {
-  background: #c82333;
-}
-
-.add-course-btn:focus {
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-}
-
-.add-course-btn:active {
-  transform: translateY(0);
-}
-
-/* Modal Footer Buttons - Updated to match design consistency */
-.modal-footer .btn-primary {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.modal-footer .btn-primary:hover {
-  background: #c82333;
-}
-
-.modal-footer .btn-secondary {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.modal-footer .btn-secondary:hover {
-  background: #545b62;
-}
-
-/* Edit Button */
-.btn-edit {
-  padding: 6px 8px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 3px;
+.course-nav-info-value {
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 32px;
+  color: #212529;
 }
 
-.btn-edit:hover {
-  background-color: #1e7e34;
+/* Main Course Section Card */
+.course-main-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  padding: 0;
+  height: fit-content;
 }
 
-.btn-edit::before {
-  content: "✏️";
+.course-section-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f1f3f4;
+  background: #fafbfc;
+  border-radius: 8px 8px 0 0;
+}
+
+.course-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 6px 0;
+}
+
+.course-section-desc {
   font-size: 14px;
+  color: #6c757d;
+  margin: 0;
 }
 
-/* Delete Button */
-.btn-delete {
-  padding: 6px 8px;
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 32px;
+.course-section-content {
+  padding: 0;
 }
 
-.btn-delete:hover {
-  background-color: #c82333;
-}
-
-.btn-delete::before {
-  content: "🗑️";
-  font-size: 14px;
-}
-
-/* Course Filters */
+/* Update existing course filters to work within card */
 .course-filters {
-  padding: 20px;
+  padding: 20px 28px;
   border-bottom: 1px solid #e9ecef;
   display: flex;
   gap: 15px;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: space-between;
 }
 
-.course-search-group,
-.course-filter-group {
+.course-search-group {
   flex: 1;
   min-width: 200px;
 }
 
-.form-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 13px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #dc3545;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
-
-.course-search-input::placeholder {
-  color: #6c757d;
+/* Update course table container */
+.course-table-container {
+  overflow-x: auto;
+  padding: 0 28px;
 }
 
 /* Course Table */
-.course-table-container {
-  overflow-x: auto;
-}
-
 .course-table {
   width: 100%;
   border-collapse: collapse;
@@ -412,21 +323,40 @@
 
 /* Responsive Design */
 @media (max-width: 1200px) {
-  .main-content {
-    padding-left: calc(506px + 20px); /* 506px for smaller sidebars + 20px content padding */
+  .course-content-wrapper {
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .course-content-wrapper {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .course-nav-section {
+    position: static;
   }
 }
 
 @media (max-width: 768px) {
   .main-content {
-    padding-left: 20px; /* No sidebars - just content padding */
+    padding-left: 20px;
+  }
+  
+  .course-content-wrapper {
+    display: block;
+  }
+  
+  .course-nav-section {
+    margin-bottom: 20px;
   }
 }
 
-@media (max-width: 480px) {
-  .main-content {
-    padding: 12px;
-  }
+/* Remove responsive breakpoints that reference old sidebar setup */
+@media (max-width: 1200px) {
+  /* Remove old main-content padding-left calc */
 }
 
 /* Print Styles */

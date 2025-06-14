@@ -41,7 +41,8 @@
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 25px;
-  height: calc(100vh - 100px);
+  height: calc(100vh - 140px); /* Reduce height to create bottom space */
+  padding: 15px; /* Add padding around the entire card layout */
 }
 
 /* Navigation Section */
@@ -94,7 +95,9 @@
   color: #ef4444 !important;
   background-color: #fef2f2 !important;
   font-weight: 500;
-  border-left: 3px solid #ef4444;
+  border-radius: 6px;
+  margin: 4px 12px; /* Add margin on sides and top/bottom */
+  border-left: 3px solid transparent; /* Remove the left border for consistency */
 }
 
 .admin-nav-icon {
@@ -110,6 +113,8 @@
   border: 1px solid #e9ecef;
   padding: 0;
   height: fit-content;
+  max-height: calc(100vh - 180px); /* Add max height constraint */
+  overflow-y: auto; /* Allow scrolling if content is too tall */
 }
 
 .admin-section-header {
@@ -133,7 +138,27 @@
 }
 
 .admin-section-content {
-  padding: 28px;
+  padding: 20px; /* Reduce from 28px to 20px */
+  padding-bottom: 15px; /* Reduce bottom padding */
+}
+
+/* Custom scrollbar styling */
+.admin-main-section::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-main-section::-webkit-scrollbar-track {
+  background: #f1f3f4;
+  border-radius: 8px;
+}
+
+.admin-main-section::-webkit-scrollbar-thumb {
+  background: #c1c7cd;
+  border-radius: 8px;
+}
+
+.admin-main-section::-webkit-scrollbar-thumb:hover {
+  background: #a8b2ba;
 }
 
 /* Controls */
