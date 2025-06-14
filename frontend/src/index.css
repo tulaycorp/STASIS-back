@@ -51,18 +51,17 @@ code {
 
 .main-content {
   flex: 1;
-  margin-left: 256px; /* Exactly match sidebar width */
+  margin-left: 256px; /* Match sidebar width */
   padding: 20px;
   overflow-y: auto;
   width: calc(100% - 256px);
   box-sizing: border-box;
 }
 
-/* Fix for specific component overrides */
+/* Remove the !important flags and position overrides */
 .admin-main-content,
 .settings-main-content {
-  position: relative !important;
-  left: 0 !important;
+  /* Keep only the base styles */
   margin-left: 256px;
   padding: 20px;
 }
@@ -74,6 +73,5 @@ code {
   .settings-main-content {
     margin-left: 0;
     width: 100%;
-    padding: 16px;
   }
 }

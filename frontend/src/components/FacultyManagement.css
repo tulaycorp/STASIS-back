@@ -21,10 +21,7 @@ body {
 /* Main Content */
 .main-content {
   flex: 1;
-  padding-left: calc(256px + 20px); /* Correct sidebar width + content padding */
-  padding-right: 20px;
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding: 20px;
   min-height: 100vh;
   box-sizing: border-box;
   background-color: #f8f9fa;
@@ -72,10 +69,6 @@ body {
 }
 
 @media (max-width: 1200px) {
-  .main-content {
-    padding-left: calc(506px + 20px); /* Adjusted for smaller sidebars + content padding */
-  }
-  
   .faculty-content-wrapper {
     grid-template-columns: 260px 1fr;
     gap: 20px;

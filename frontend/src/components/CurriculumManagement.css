@@ -17,10 +17,7 @@ Global Reset */
 /* Main Content */
 .main-content {
   flex: 1;
-  padding-left: calc(256px + 20px); /* Sidebar width + content padding */
-  padding-right: 20px;
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding: 20px;
   min-height: 100vh;
   box-sizing: border-box;
   background-color: #f8f9fa;

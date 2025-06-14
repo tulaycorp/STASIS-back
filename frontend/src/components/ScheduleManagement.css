@@ -23,19 +23,13 @@ body {
 /* Main Content */
 .main-content {
   flex: 1;
-  position: fixed; /* Use fixed positioning like Settings */
-  left: 256px;
-  right: 0;
-  top: 0;
-  bottom: 0;
   overflow-y: auto;
-  padding: clamp(16px, 2vw, 24px);
+  padding: 20px;
   box-sizing: border-box;
   background-color: #f8f9fa;
-  min-width: 0;
-  transition: left 0.3s ease; /* Smooth transitions for sidebar changes */
 }
 
+/* Content Wrapper */
 .content-wrapper {
   width: 100%;
   max-width: none; /* Allow full width stretching */
@@ -76,10 +70,6 @@ body {
 }
 
 @media (max-width: 1200px) {
-  .main-content {
-    left: 506px; /* Adjusted for smaller sidebars */
-  }
-  
   .schedule-content-wrapper {
     grid-template-columns: 260px 1fr;
     gap: 20px;
@@ -88,7 +78,6 @@ body {
 
 @media (max-width: 992px) {
   .main-content {
-    left: 0; /* Remove sidebar offset */
     padding: 16px;
   }
   
