@@ -54,7 +54,6 @@ code {
   margin-left: 256px; /* Match sidebar width */
   padding: 20px;
   overflow-y: auto;
-  width: calc(100% - 256px);
   box-sizing: border-box;
 }
 
