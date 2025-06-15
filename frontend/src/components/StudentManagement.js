@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './StudentManagement.css';
 import Sidebar from './Sidebar';
 
-const Student = () => {
+const StudentManagement = () => {
   const [studentsData, setStudentsData] = useState([
     {
       id: 1,
@@ -873,4 +873,4 @@ const Student = () => {
   );
 };
 
-export default Student;
+export default StudentManagement;
