@@ -41,7 +41,7 @@
 
 .dashboard-welcome-title {
   font-size: clamp(20px, 3vw, 28px); /* Responsive title */
-  font-weight: 600;
+  font-weight: 700; /* Changed from 600 to 700 for bolder text */
   color: #212529;
   margin: 0;
 }
@@ -153,9 +153,9 @@
   background: #dc3545;
   color: white;
   border: none;
-  padding: clamp(8px, 1.5vw, 12px) clamp(16px, 2.5vw, 24px);
-  border-radius: clamp(4px, 0.8vw, 8px);
-  font-size: clamp(12px, 1.5vw, 14px);
+  padding: 10px 20px;         /* Updated padding */
+  border-radius: 6px;         /* Updated border radius */
+  font-size: 13px;            /* Updated font size */
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -372,8 +372,8 @@
 /* Student Content Wrapper - Similar to Settings */
 .student-content-wrapper {
   display: grid;
-  grid-template-columns: 280px 1fr; /* Fixed sidebar width like Settings */
-  gap: 25px; /* Fixed gap like Settings */
+  grid-template-columns: 230px 1fr; /* Decreased sidebar width */
+  gap: 25px;
   height: calc(100vh - 140px); /* Fixed height calculation like Settings */
   padding: 15px; /* Add padding like Settings */
 }
@@ -384,6 +384,9 @@
   border-radius: 8px;
   border: 1px solid #e9ecef;
   padding: 0;
+  width: 230px; /* Set sidebar width to 230px */
+  min-width: 160px; /* Optional: prevent too small */
+  max-width: 230px; /* Set max width to 230px */
   height: fit-content;
   position: sticky;
   top: 0;
@@ -575,11 +578,11 @@
 /* Responsive Design - Enhanced with better breakpoints */
 @media (max-width: 1200px) {
   .main-content {
-    padding-left: calc(256px + 20px); /* Keep sidebar calculation */
+    padding-left: calc(230px + 20px); /* Keep sidebar calculation */
   }
   
   .student-content-wrapper {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 230px 1fr;
     gap: 20px;
   }
 }

@@ -401,7 +401,7 @@ const Course = () => {
                   />
                 </div>
                 <div className="course-header-actions">
-                  <button className="add-course-btn" onClick={showAddCourseForm}>
+                  <button className="course-btn-add-course" onClick={showAddCourseForm}>
                     + Add New Course
                   </button>
                 </div>

@@ -61,9 +61,14 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  /* Enhanced transition properties for smoother animations - 0.3s for nav switching */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  /* Ensure consistent positioning for margin transitions */
+  /* Enhanced transition for smooth highlight animation */
+  transition: 
+    background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin: 0;
   position: relative;
 }
@@ -80,12 +85,12 @@
   background-color: #fef2f2 !important;
   font-weight: 500;
   border-radius: 6px;
-  /* Use padding instead of margin for smoother transitions */
   padding: 12px 16px;
-  /* Add a subtle left border for active state */
-  border-left: 3px solid #ef4444;
-  /* Apply same hover transform for active state */
+  /* Smooth margin transition for highlight effect */
+  margin: 2px 0;
   transform: translateX(2px);
+  /* No border-left */
+  /* border-left: 3px solid #ef4444; */
 }
 
 /* Apply hover effects to active items as well */
