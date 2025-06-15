@@ -19,7 +19,7 @@ public class Student {
      private String lastName;
      private String email;
      private String dateOfBirth;
-     private int grade_level;
+     private int year_level;
 
      @ManyToOne
      @JoinColumn(name = "programID")
