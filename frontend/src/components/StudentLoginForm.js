@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // Link back to initial page
+import { Link, useNavigate } from 'react-router-dom';
 
 // Basic styling (add more in a CSS file if needed)
 const formStyle = {
@@ -17,11 +17,18 @@ const StudentLoginForm = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setError(''); // Clear previous errors
+        setError('');
         setLoading(true);
+        // Temporary hardcoded login check
+        if (username === 'student123' && password === 'pass123') {
+            setLoading(false);
+            navigate('/student-dashboard');
+            return;
+        }
 
         try {
             const response = await fetch('/api/auth/login', {
