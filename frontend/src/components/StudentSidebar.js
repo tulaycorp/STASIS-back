@@ -9,7 +9,7 @@ const getActivePageFromURL = () => {
     return 'StudentDashboard';
   } else if (path === '/student-schedule') {
     return 'StudentSchedule';
-  } else if (path === '/student-enrollment') {
+  } else if (path === '/enrollment') {
     return 'Enrollment';
   } else if (path === '/student-grades') {
     return 'StudentGrades';

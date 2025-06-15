@@ -44,10 +44,10 @@ const StudentSettings = () => {
         alert("Enrollment page here");
         break;
       case 'StudentCurriculum':
-        alert("Curriculum page here");
+        navigate('/student-curriculum');
         break;
       case 'StudentGrades':
-        alert("Grades page here");
+        navigate('/student-grades');
         break;
       case 'StudentSettings':
         navigate('/student-settings');

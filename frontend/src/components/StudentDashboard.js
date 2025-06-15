@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './StudentDashboard.module.css';
+import './AdminDashboard.css';
 import Sidebar from './StudentSidebar';
 
 const StudentDashboard = () => {
@@ -213,10 +213,10 @@ const StudentDashboard = () => {
         alert("Curriculum page here");
         break;
       case 'StudentGrades':
-        alert("Grades page here");
+        navigate('/student-grades');
         break;
-      case 'StudentSettings':
-        alert("Settings page here");
+      case 'Settings':
+        navigate('/settings');
         break;
       default:
         // No action for unknown sections
@@ -246,7 +246,7 @@ const StudentDashboard = () => {
           {
             label: 'System',
             items: [
-              { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
+              { id: 'Settings', label: 'Settings', icon: '⚙️'}
             ]
           }
         ]}

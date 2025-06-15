@@ -15,6 +15,8 @@ import AdminTools from './components/AdminTools';
 import StudentDashboard from './components/StudentDashboard';
 import StudentSchedule from './components/StudentSchedule';
 import StudentSettings from './components/StudentSettings';
+import StudentGrades from './components/StudentGrades';
+import StudentCurriculum from './components/StudentCurriculum';
 import './index.css'; // Global styles
 
 function App() {
@@ -53,6 +55,10 @@ function App() {
         <Route path="/student-schedule" element={<StudentSchedule />} />
 
         <Route path="/student-settings" element={<StudentSettings />} />
+
+        <Route path="/student-grades" element={<StudentGrades />} />
+
+        <Route path="/student-curriculum" element={<StudentCurriculum />} />
 
         {/* Add other routes for dashboards etc. later */}
         {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}
