@@ -1,170 +1,269 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from './StudentGrades.module.css';
+import './StudentSchedule.module.css';
 import Sidebar from './StudentSidebar';
 
-const StudentGrades = () => {
-  // Sample grades data
-  const [gradesList, setGradesList] = useState([
+const StudentSchedule = () => {
+  const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [scheduleForm, setScheduleForm] = useState({
+    course: '',
+    section: '',
+    instructor: '',
+    room: '',
+    day: '',
+    timeFrom: '',
+    timeTo: ''
+  });
+
+  // Sample schedule data
+  const [scheduleList, setScheduleList] = useState([
     {
-      id: 'GRD001',
+      id: 'SCH001',
       course: 'Computer Programming I',
       section: 'CS-101-A',
       instructor: 'Emily Thompson',
-      creditUnits: 3,
-      midtermGrade: 85,
-      finalGrade: 88,
-      overallGrade: 86.5,
-      letterGrade: 'B+',
-      remarks: 'Passed',
-      semester: 'Fall 2024',
-      status: 'Completed'
+      room: 'Room 204',
+      day: 'Monday',
+      timeFrom: '08:00',
+      timeTo: '10:00',
+      status: 'Active'
     },
     {
-      id: 'GRD002',
+      id: 'SCH002',
       course: 'Database Management',
       section: 'IT-201-B',
       instructor: 'James Chen',
-      creditUnits: 3,
-      midtermGrade: 92,
-      finalGrade: 90,
-      overallGrade: 91,
-      letterGrade: 'A-',
-      remarks: 'Passed',
-      semester: 'Fall 2024',
-      status: 'Completed'
+      room: 'Lab 301',
+      day: 'Tuesday',
+      timeFrom: '10:00',
+      timeTo: '12:00',
+      status: 'Active'
     },
     {
-      id: 'GRD003',
+      id: 'SCH003',
       course: 'Business Ethics',
       section: 'BA-105-A',
       instructor: 'Sarah Martinez',
-      creditUnits: 2,
-      midtermGrade: 78,
-      finalGrade: 82,
-      overallGrade: 80,
-      letterGrade: 'B-',
-      remarks: 'Passed',
-      semester: 'Fall 2024',
-      status: 'Completed'
+      room: 'Room 105',
+      day: 'Wednesday',
+      timeFrom: '14:00',
+      timeTo: '16:00',
+      status: 'Active'
     },
     {
-      id: 'GRD004',
+      id: 'SCH004',
       course: 'Engineering Mathematics',
       section: 'ENG-102-C',
       instructor: 'Michael Roberts',
-      creditUnits: 4,
-      midtermGrade: 95,
-      finalGrade: 93,
-      overallGrade: 94,
-      letterGrade: 'A',
-      remarks: 'Passed',
-      semester: 'Fall 2024',
-      status: 'Completed'
+      room: 'Room 307',
+      day: 'Thursday',
+      timeFrom: '09:00',
+      timeTo: '11:00',
+      status: 'Active'
     },
     {
-      id: 'GRD005',
+      id: 'SCH005',
       course: 'General Psychology',
       section: 'PSY-101-A',
       instructor: 'Rachel Williams',
-      creditUnits: 3,
-      midtermGrade: 72,
-      finalGrade: 75,
-      overallGrade: 73.5,
-      letterGrade: 'C+',
-      remarks: 'Passed',
-      semester: 'Fall 2024',
-      status: 'Completed'
+      room: 'Room 201',
+      day: 'Friday',
+      timeFrom: '13:00',
+      timeTo: '15:00',
+      status: 'Cancelled'
     },
     {
-      id: 'GRD006',
+      id: 'SCH006',
       course: 'Data Structures',
       section: 'CS-201-B',
       instructor: 'Emily Thompson',
-      creditUnits: 3,
-      midtermGrade: 88,
-      finalGrade: null,
-      overallGrade: null,
-      letterGrade: 'INC',
-      remarks: 'In Progress',
-      semester: 'Spring 2025',
-      status: 'Ongoing'
+      room: 'Lab 205',
+      day: 'Monday',
+      timeFrom: '15:00',
+      timeTo: '17:00',
+      status: 'Active'
     },
     {
-      id: 'GRD007',
+      id: 'SCH007',
       course: 'Network Administration',
       section: 'IT-301-A',
       instructor: 'James Chen',
-      creditUnits: 3,
-      midtermGrade: 85,
-      finalGrade: null,
-      overallGrade: null,
-      letterGrade: 'INC',
-      remarks: 'In Progress',
-      semester: 'Spring 2025',
-      status: 'Ongoing'
+      room: 'Lab 302',
+      day: 'Wednesday',
+      timeFrom: '08:00',
+      timeTo: '10:00',
+      status: 'Completed'
     },
     {
-      id: 'GRD008',
+      id: 'SCH008',
       course: 'Financial Accounting',
       section: 'BA-201-C',
       instructor: 'Sarah Martinez',
-      creditUnits: 3,
-      midtermGrade: 90,
-      finalGrade: null,
-      overallGrade: null,
-      letterGrade: 'INC',
-      remarks: 'In Progress',
-      semester: 'Spring 2025',
-      status: 'Ongoing'
+      room: 'Room 106',
+      day: 'Friday',
+      timeFrom: '10:00',
+      timeTo: '12:00',
+      status: 'Active'
     }
   ]);
 
-  const [selectedSemester, setSelectedSemester] = useState('All Semesters');
+  const [selectedDay, setSelectedDay] = useState('All Days');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Semester options
-  const semesterOptions = ['Fall 2024', 'Spring 2025'];
+  // Course options
+  const courseOptions = [
+    'Computer Programming I',
+    'Computer Programming II',
+    'Database Management',
+    'Data Structures',
+    'Network Administration',
+    'Web Development',
+    'Software Engineering',
+    'Business Ethics',
+    'Financial Accounting',
+    'Marketing Management',
+    'Engineering Mathematics',
+    'Physics I',
+    'Chemistry Lab',
+    'General Psychology',
+    'Research Methods'
+  ];
+
+  // Instructor options
+  const instructorOptions = [
+    'Emily Thompson',
+    'James Chen',
+    'Sarah Martinez',
+    'Michael Roberts',
+    'Rachel Williams',
+    'David Johnson',
+    'Lisa Anderson',
+    'Mark Wilson',
+    'Jennifer Brown',
+    'Robert Garcia'
+  ];
+
+  // Room options
+  const roomOptions = [
+    'Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105',
+    'Room 201', 'Room 202', 'Room 203', 'Room 204', 'Room 205',
+    'Room 301', 'Room 302', 'Room 303', 'Room 304', 'Room 305',
+    'Lab 101', 'Lab 102', 'Lab 201', 'Lab 202', 'Lab 301', 'Lab 302',
+    'Auditorium A', 'Auditorium B', 'Conference Room'
+  ];
+
+  // Day options
+  const dayOptions = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  ];
 
   // Statistics calculations
-  const completedCourses = gradesList.filter(g => g.status === 'Completed');
-  const ongoingCourses = gradesList.filter(g => g.status === 'Ongoing');
-  
-  // Calculate GPA for completed courses only
-  const totalGradePoints = completedCourses.reduce((sum, grade) => {
-    return sum + (grade.overallGrade * grade.creditUnits);
-  }, 0);
-  const totalCreditUnits = completedCourses.reduce((sum, grade) => sum + grade.creditUnits, 0);
-  const currentGPA = totalCreditUnits > 0 ? (totalGradePoints / totalCreditUnits / 100 * 4).toFixed(2) : '0.00';
-  
-  const totalUnitsEarned = completedCourses.reduce((sum, grade) => sum + grade.creditUnits, 0);
-  const totalUnitsEnrolled = gradesList.reduce((sum, grade) => sum + grade.creditUnits, 0);
+  const totalSchedules = scheduleList.length;
+  const activeSchedules = scheduleList.filter(s => s.status === 'Active').length;
+  const completedSchedules = scheduleList.filter(s => s.status === 'Completed').length;
+  const cancelledSchedules = scheduleList.filter(s => s.status === 'Cancelled').length;
 
-  // Determine enrollment status (sample logic - you can modify this based on your requirements)
-  const enrollmentStatus = totalUnitsEnrolled >= 18 ? 'Regular' : 'Irregular';
-
-  // Filter grades based on search and semester
-  const filteredGrades = gradesList.filter(grade => {
-    const matchesSearch = grade.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSemester = selectedSemester === 'All Semesters' || grade.semester === selectedSemester;
-    return matchesSearch && matchesSemester;
+  // Filter schedules based on search and day
+  const filteredSchedules = scheduleList.filter(schedule => {
+    const matchesSearch = schedule.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         schedule.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         schedule.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         schedule.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDay = selectedDay === 'All Days' || schedule.day === selectedDay;
+    return matchesSearch && matchesDay;
   });
 
-  // Get letter grade color class
-  const getGradeColor = (letterGrade) => {
-    if (letterGrade === 'A' || letterGrade === 'A+') return styles.gradeA;
-    if (letterGrade === 'A-' || letterGrade === 'B+') return styles.gradeBPlus;
-    if (letterGrade === 'B' || letterGrade === 'B-') return styles.gradeB;
-    if (letterGrade === 'C+' || letterGrade === 'C') return styles.gradeC;
-    if (letterGrade === 'C-' || letterGrade === 'D') return styles.gradeD;
-    if (letterGrade === 'F') return styles.gradeF;
-    return styles.gradeInc;
+  // Edit Schedule Modal functions
+  const showEditScheduleForm = (schedule) => {
+    setEditingSchedule(schedule);
+    setScheduleForm({
+      course: schedule.course,
+      section: schedule.section,
+      instructor: schedule.instructor,
+      room: schedule.room,
+      day: schedule.day,
+      timeFrom: schedule.timeFrom,
+      timeTo: schedule.timeTo
+    });
+    setShowEditScheduleModal(true);
   };
 
-  // Navigation
+  const closeEditScheduleModal = () => {
+    setShowEditScheduleModal(false);
+    setEditingSchedule(null);
+    setScheduleForm({
+      course: '',
+      section: '',
+      instructor: '',
+      room: '',
+      day: '',
+      timeFrom: '',
+      timeTo: ''
+    });
+  };
+
+  const handleScheduleFormChange = (field, value) => {
+    setScheduleForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleEditSchedule = () => {
+    // Validate required fields
+    if (!scheduleForm.course || !scheduleForm.section || !scheduleForm.instructor || 
+        !scheduleForm.room || !scheduleForm.day || !scheduleForm.timeFrom || !scheduleForm.timeTo) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Validate time
+    if (scheduleForm.timeFrom >= scheduleForm.timeTo) {
+      alert('End time must be after start time');
+      return;
+    }
+    
+    // Create updated schedule object
+    const updatedSchedule = {
+      ...editingSchedule,
+      course: scheduleForm.course,
+      section: scheduleForm.section,
+      instructor: scheduleForm.instructor,
+      room: scheduleForm.room,
+      day: scheduleForm.day,
+      timeFrom: scheduleForm.timeFrom,
+      timeTo: scheduleForm.timeTo
+    };
+    
+    // Update schedule list
+    setScheduleList(prev => 
+      prev.map(schedule => 
+        schedule.id === editingSchedule.id ? updatedSchedule : schedule
+      )
+    );
+    
+    alert('Schedule updated successfully!');
+    closeEditScheduleModal();
+  };
+
+  const handleDeleteSchedule = (scheduleId) => {
+    if (window.confirm('Are you sure you want to delete this schedule?')) {
+      setScheduleList(prev => prev.filter(schedule => schedule.id !== scheduleId));
+      alert('Schedule deleted successfully!');
+    }
+  };
+
+  // Format time for display
+  const formatTime = (time) => {
+    const [hours, minutes] = time.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours < 12 ? 'AM' : 'PM';
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+// Navigation
   const navigate = useNavigate();
   const showSection = (section) => {
     switch(section){
@@ -190,9 +289,8 @@ const StudentGrades = () => {
         // No action for unknown sections
     }
   };
-
   return (
-    <div className={styles.dashboardContainer}>
+    <div className="dashboard-container">
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
@@ -220,143 +318,271 @@ const StudentGrades = () => {
       />
 
       {/* Main Content */}
-      <div className={styles.mainContent}>
-        <div className={styles.contentWrapper}>
-          <div className={styles.breadcrumb}>
+      <div className="main-content">
+        <div className="content-wrapper">
+          <div className="breadcrumb">
             <span 
-              className={styles.breadcrumbLink} 
-              onClick={() => navigate('/student-dashboard')}
+              className="breadcrumb-link" 
+              onClick={() => navigate('/admin-dashboard')}
             >
               Dashboard
             </span>
-            <span className={styles.breadcrumbSeparator}> / </span>
-            <span className={styles.breadcrumbCurrent}>My Grades</span>
+            <span className="breadcrumb-separator"> / </span>
+            <span className="breadcrumb-current">Schedule Management</span>
           </div>
           
           {/* Header */}
-          <div className={styles.pageHeader}>
-            <h1 className={styles.pageTitle}>My Grades</h1>
+          <div className="page-header">
+            <h1 className="page-title">Schedule Management</h1>
           </div>
 
-          {/* Grades List */}
-          <div className={styles.gradesListContainer}>
-            <div className={styles.listHeader}>
-              <div className={styles.listControls}>
-                <h2 className={styles.listTitle}>Academic Records</h2>
-                <div className={styles.controls}>
+          {/* Stats Cards */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-label">Total Schedules</div>
+              <div className="stat-value">{totalSchedules}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Active</div>
+              <div className="stat-value">{activeSchedules}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Completed</div>
+              <div className="stat-value">{completedSchedules}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Cancelled</div>
+              <div className="stat-value">{cancelledSchedules}</div>
+            </div>
+          </div>
+
+          {/* Schedule List */}
+          <div className="schedule-list-container">
+            <div className="list-header">
+              <div className="list-controls">
+                <h2 className="list-title">Schedule List</h2>
+                <div className="controls">
                   <select 
-                    value={selectedSemester}
-                    onChange={(e) => setSelectedSemester(e.target.value)}
-                    className={styles.selectInput}
+                    value={selectedDay}
+                    onChange={(e) => setSelectedDay(e.target.value)}
+                    className="select-input"
                   >
-                    <option>All Semesters</option>
-                    {semesterOptions.map(semester => (
-                      <option key={semester} value={semester}>{semester}</option>
+                    <option>All Days</option>
+                    {dayOptions.map(day => (
+                      <option key={day} value={day}>{day}</option>
                     ))}
                   </select>
                   <input
                     type="text"
-                    placeholder="Search courses..."
+                    placeholder="Search schedules..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className={styles.searchInput}
+                    className="search-input"
                   />
-                </div>
-              </div>
-              
-              {/* Academic Information */}
-              <div className={styles.academicInfo}>
-                <div className={styles.academicItem}>
-                  <span className={styles.academicLabel}>Current GPA:</span>
-                  <span className={`${styles.academicValue} ${styles.gpaValue}`}>{currentGPA}</span>
-                </div>
-                <div className={styles.academicItem}>
-                  <span className={styles.academicLabel}>Enrollment Status:</span>
-                  <span className={`${styles.academicValue} ${styles.statusBadge} ${enrollmentStatus.toLowerCase() === 'regular' ? styles.statusRegular : styles.statusIrregular}`}>
-                    {enrollmentStatus}
-                  </span>
-                </div>
-                <div className={styles.academicItem}>
-                  <span className={styles.academicLabel}>Units Earned:</span>
-                  <span className={styles.academicValue}>{totalUnitsEarned} / {totalUnitsEnrolled}</span>
                 </div>
               </div>
             </div>
 
-            <div className={styles.tableContainer}>
-              <table className={styles.gradesTable}>
+            <div className="table-container">
+              <table className="schedule-table">
                 <thead>
                   <tr>
-                    <th>Course Code</th>
+                    <th>Schedule ID</th>
                     <th>Course & Section</th>
                     <th>Instructor</th>
-                    <th>Units</th>
-                    <th>Midterm</th>
-                    <th>Final</th>
-                    <th>Overall</th>
-                    <th>Grade</th>
-                    <th>Remarks</th>
-                    <th>Semester</th>
+                    <th>Room</th>
+                    <th>Day & Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredGrades.map((grade, index) => (
-                    <tr key={grade.id}>
-                      <td className={styles.courseCode}>{grade.id}</td>
+                  {filteredSchedules.map((schedule, index) => (
+                    <tr key={schedule.id}>
+                      <td>{schedule.id}</td>
                       <td>
-                        <div className={styles.courseInfo}>
-                          <div className={styles.courseName}>{grade.course}</div>
-                          <div className={styles.courseSection}>{grade.section}</div>
+                        <div className="schedule-info">
+                          <div className="schedule-course">{schedule.course}</div>
+                          <div className="schedule-section">{schedule.section}</div>
                         </div>
                       </td>
-                      <td className={styles.instructorName}>{grade.instructor}</td>
-                      <td className={styles.creditUnits}>{grade.creditUnits}</td>
-                      <td className={styles.gradeScore}>
-                        {grade.midtermGrade !== null ? grade.midtermGrade : '-'}
-                      </td>
-                      <td className={styles.gradeScore}>
-                        {grade.finalGrade !== null ? grade.finalGrade : '-'}
-                      </td>
-                      <td className={styles.gradeScore}>
-                        {grade.overallGrade !== null ? grade.overallGrade.toFixed(1) : '-'}
+                      <td>{schedule.instructor}</td>
+                      <td>{schedule.room}</td>
+                      <td>
+                        <div className="time-info">
+                          <div className="time-period">
+                            {formatTime(schedule.timeFrom)} - {formatTime(schedule.timeTo)}
+                          </div>
+                          <div className="day-info">{schedule.day}</div>
+                        </div>
                       </td>
                       <td>
-                        <span className={`${styles.letterGrade} ${getGradeColor(grade.letterGrade)}`}>
-                          {grade.letterGrade}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`${styles.remarksBadge} ${
-                          grade.remarks === 'Passed' ? styles.remarksPassed : 
-                          grade.remarks === 'Failed' ? styles.remarksFailed : 
-                          styles.remarksProgress
+                        <span className={`status-badge ${
+                          schedule.status === 'Active' ? 'status-active' : 
+                          schedule.status === 'Completed' ? 'status-completed' : 
+                          'status-cancelled'
                         }`}>
-                          {grade.remarks}
+                          {schedule.status}
                         </span>
                       </td>
-                      <td className={styles.semesterInfo}>{grade.semester}</td>
+                      <td className="action-buttons">
+                        <button 
+                          className="btn-edit"
+                          onClick={() => showEditScheduleForm(schedule)}
+                        >
+                        </button>
+                        <button 
+                          className="btn-delete"
+                          onClick={() => handleDeleteSchedule(schedule.id)}
+                        >
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className={styles.tableFooter}>
-              <div className={styles.tableInfo}>
-                Showing {filteredGrades.length} of {gradesList.length} courses
+            <div className="table-footer">
+              <div className="table-info">
+                Showing 1 to {filteredSchedules.length} of {totalSchedules} entries
               </div>
-              <div className={styles.pagination}>
-                <button className={`${styles.pageBtn} ${styles.disabled}`}>Previous</button>
-                <button className={`${styles.pageBtn} ${styles.active}`}>1</button>
-                <button className={styles.pageBtn}>2</button>
-                <button className={styles.pageBtn}>Next</button>
+              <div className="pagination">
+                <button className="page-btn disabled">Previous</button>
+                <button className="page-btn active">1</button>
+                <button className="page-btn">2</button>
+                <button className="page-btn">Next</button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Edit Schedule Modal */}
+      {showEditScheduleModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h2 className="modal-title">Edit Schedule</h2>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="modal-content">
+              <div className="form-grid">
+                {/* Course */}
+                <div className="form-group">
+                  <label className="form-label">Course *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.course}
+                    onChange={(e) => handleScheduleFormChange('course', e.target.value)}
+                  >
+                    <option value="">Select course</option>
+                    {courseOptions.map((course) => (
+                      <option key={course} value={course}>{course}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Section */}
+                <div className="form-group">
+                  <label className="form-label">Section *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g., CS-101-A"
+                    value={scheduleForm.section}
+                    onChange={(e) => handleScheduleFormChange('section', e.target.value)}
+                  />
+                </div>
+                
+                {/* Instructor */}
+                <div className="form-group">
+                  <label className="form-label">Instructor *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.instructor}
+                    onChange={(e) => handleScheduleFormChange('instructor', e.target.value)}
+                  >
+                    <option value="">Select instructor</option>
+                    {instructorOptions.map((instructor) => (
+                      <option key={instructor} value={instructor}>{instructor}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Room */}
+                <div className="form-group">
+                  <label className="form-label">Room *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.room}
+                    onChange={(e) => handleScheduleFormChange('room', e.target.value)}
+                  >
+                    <option value="">Select room</option>
+                    {roomOptions.map((room) => (
+                      <option key={room} value={room}>{room}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Day */}
+                <div className="form-group">
+                  <label className="form-label">Day *</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.day}
+                    onChange={(e) => handleScheduleFormChange('day', e.target.value)}
+                  >
+                    <option value="">Select day</option>
+                    {dayOptions.map((day) => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Time Period */}
+                <div className="form-group">
+                  <label className="form-label">Time Period *</label>
+                  <div className="time-inputs">
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={scheduleForm.timeFrom}
+                      onChange={(e) => handleScheduleFormChange('timeFrom', e.target.value)}
+                    />
+                    <input
+                      type="time"
+                      className="form-input"
+                      value={scheduleForm.timeTo}
+                      onChange={(e) => handleScheduleFormChange('timeTo', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={closeEditScheduleModal}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={handleEditSchedule}
+              >
+                Update Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default StudentGrades;
+export default StudentSchedule;
