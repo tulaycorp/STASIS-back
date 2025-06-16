@@ -1,9 +1,141 @@
-import React, { useState } from 'react';
+// At the top, add createPortal to your React import
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from './Sidebar';
 
+// --- NEW DEDICATED DROPDOWN COMPONENT ---
+// This component encapsulates all the logic for the portal-based dropdown
+const FilterDropdown = ({ filter, onFilterSelect, dayOptions, programOptions }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openSubMenu, setOpenSubMenu] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({});
+  
+  const buttonRef = useRef(null); // Ref for the trigger button
+  const dropdownRef = useRef(null); // Ref for the dropdown menu itself
+
+  // This effect calculates the dropdown's position when it opens
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width, // Set dropdown width to match button width
+      });
+    }
+  }, [isOpen]);
+
+  // This effect handles clicks outside the component to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        isOpen &&
+        buttonRef.current && !buttonRef.current.contains(event.target) &&
+        dropdownRef.current && !dropdownRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+        setOpenSubMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+
+  const handleToggle = () => {
+    setIsOpen(prev => !prev);
+    if(isOpen) setOpenSubMenu(null); // Reset submenu when closing
+  };
+
+  const handleSubMenuToggle = (menu) => {
+    setOpenSubMenu(prev => (prev === menu ? null : menu));
+  };
+
+  const handleSelect = (type, value) => {
+    onFilterSelect(type, value);
+    setIsOpen(false);
+    setOpenSubMenu(null);
+  };
+
+  const DropdownMenu = () => (
+    <ul 
+      ref={dropdownRef}
+      className="primary-dropdown" 
+      style={menuPosition}
+    >
+      <li 
+        className="primary-dropdown-item" 
+        onClick={() => handleSubMenuToggle('days')}
+      >
+        <span>Days</span>
+        <ul className={`secondary-dropdown ${openSubMenu === 'days' ? 'open' : ''}`}>
+          <li
+            className={`secondary-dropdown-item ${filter.type === 'all' ? 'active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); handleSelect('all', 'All') }}
+          >
+            All Days
+          </li>
+          {dayOptions.map(day => (
+            <li
+              key={day}
+              className={`secondary-dropdown-item ${filter.type === 'day' && filter.value === day ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); handleSelect('day', day) }}
+            >
+              {day}
+            </li>
+          ))}
+        </ul>
+      </li>
+      <li 
+        className="primary-dropdown-item"
+        onClick={() => handleSubMenuToggle('programs')}
+      >
+        <span>Programs</span>
+        <ul className={`secondary-dropdown ${openSubMenu === 'programs' ? 'open' : ''}`}>
+          <li
+            className={`secondary-dropdown-item ${filter.type === 'all' ? 'active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); handleSelect('all', 'All') }}
+          >
+            All Programs
+          </li>
+          {programOptions.map(program => (
+            <li
+              key={program}
+              className={`secondary-dropdown-item ${filter.type === 'program' && filter.value === program ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); handleSelect('program', program) }}
+            >
+              {program}
+            </li>
+          ))}
+        </ul>
+      </li>
+    </ul>
+  );
+
+  return (
+    <div className="filter-dropdown-container">
+      <button 
+        ref={buttonRef}
+        className="filter-button" 
+        onClick={handleToggle}
+      >
+        {filter.type === 'all' 
+          ? 'Filter' 
+          : `${filter.type.charAt(0).toUpperCase() + filter.type.slice(1)}: ${filter.value}`
+        }
+      </button>
+      {isOpen && createPortal(<DropdownMenu />, document.getElementById('portal-root'))}
+    </div>
+  );
+};
+
+
+// --- MAIN SCHEDULE MANAGEMENT COMPONENT ---
 const ScheduleManagement = () => {
+  // ... (all your existing state and functions up to the return statement) ...
+  // No need for isFilterOpen, openSubMenu, or filterRef states here anymore
   const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
   const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
@@ -109,10 +241,12 @@ const ScheduleManagement = () => {
     }
   ]);
 
-  const [selectedDay, setSelectedDay] = useState('All Days');
+  // State for search and filter
   const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState({ type: 'all', value: 'All' });
 
-  // Course options
+
+  // Course options (used for "Programs" filter)
   const courseOptions = [
     'Computer Programming I',
     'Computer Programming II',
@@ -165,15 +299,27 @@ const ScheduleManagement = () => {
   const completedSchedules = scheduleList.filter(s => s.status === 'Completed').length;
   const cancelledSchedules = scheduleList.filter(s => s.status === 'Cancelled').length;
 
-  // Filter schedules based on search and day
+  // Filter selection handler (now simpler)
+  const handleFilterSelect = (type, value) => {
+    setFilter({ type, value });
+  };
+  
+  // Filter schedules based on search and new filter state
   const filteredSchedules = scheduleList.filter(schedule => {
-    const matchesSearch = schedule.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDay = selectedDay === 'All Days' || schedule.day === selectedDay;
-    return matchesSearch && matchesDay;
+    const matchesSearch = 
+      searchTerm === '' ||
+      schedule.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      schedule.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      schedule.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      schedule.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = 
+      (filter.type === 'all') ||
+      (filter.type === 'day' && schedule.day === filter.value) ||
+      (filter.type === 'program' && schedule.course === filter.value);
+
+    return matchesSearch && matchesFilter;
   });
 
   // Add Schedule Modal functions
@@ -348,108 +494,100 @@ const ScheduleManagement = () => {
         // No action for unknown sections
     }
   };
+
   return (
-    <div className="dashboard-container">      {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}
-        sections={[
-          {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'Students', label: 'Students', icon: '👥' },
-              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'Schedule', label: 'Schedule', icon: '📅' },
-              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-              { id: 'Courses', label: 'Courses', icon: '📖' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️'},
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-            ]
-          }
-        ]}
-      />
-
-      {/* Main Content */}
-      <div className="main-content">
-        <div className="content-wrapper">
-          <div className="breadcrumb">
-            <span 
-              className="breadcrumb-link" 
-              onClick={() => navigate('/admin-dashboard')}
-            >
-              Dashboard
-            </span>
-            <span className="breadcrumb-separator"> / </span>
-            <span className="breadcrumb-current">Schedule Management</span>
-          </div>
-          
-          {/* Header */}
-          <div className="page-header">
-            <h1 className="page-title">Schedule Management</h1>
-            <button 
-              onClick={showAddScheduleForm}
-              className="add-schedule-btn"
-            >
-              + Add New Schedule
-            </button>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-label">Total Schedules</div>
-              <div className="stat-value">{totalSchedules}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Active</div>
-              <div className="stat-value">{activeSchedules}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Completed</div>
-              <div className="stat-value">{completedSchedules}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Cancelled</div>
-              <div className="stat-value">{cancelledSchedules}</div>
-            </div>
-          </div>
-
-          {/* Schedule List */}
-          <div className="schedule-list-container">
-            <div className="list-header">
-              <div className="list-controls">
-                <h2 className="list-title">Schedule List</h2>
-                <div className="controls">
-                  <select 
-                    value={selectedDay}
-                    onChange={(e) => setSelectedDay(e.target.value)}
-                    className="select-input"
-                  >
-                    <option>All Days</option>
-                    {dayOptions.map(day => (
-                      <option key={day} value={day}>{day}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    placeholder="Search schedules..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="search-input"
-                  />
+    <div className="dashboard-container">
+        <Sidebar 
+            onNavigate={showSection}
+            userInfo={{ name: "David Anderson", role: "Schedule Admin" }}
+            sections={[
+            {
+                items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+                label: 'Management',
+                items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+                ]
+            },
+            {
+                label: 'System',
+                items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️'},
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+                ]
+            }
+            ]}
+        />
+        <div className="main-content">
+            <div className="content-wrapper">
+                <div className="breadcrumb">
+                    <span 
+                    className="breadcrumb-link" 
+                    onClick={() => navigate('/admin-dashboard')}
+                    >
+                    Dashboard
+                    </span>
+                    <span className="breadcrumb-separator"> / </span>
+                    <span className="breadcrumb-current">Schedule Management</span>
                 </div>
-              </div>
-            </div>
+                
+                <div className="page-header">
+                    <h1 className="page-title">Schedule Management</h1>
+                    <button 
+                    onClick={showAddScheduleForm}
+                    className="add-schedule-btn"
+                    >
+                    + Add New Schedule
+                    </button>
+                </div>
 
-            <div className="table-container">
+                <div className="stats-grid">
+                    <div className="stat-card">
+                        <div className="stat-label">Total Schedules</div>
+                        <div className="stat-value">{totalSchedules}</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Active</div>
+                        <div className="stat-value">{activeSchedules}</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Completed</div>
+                        <div className="stat-value">{completedSchedules}</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Cancelled</div>
+                        <div className="stat-value">{cancelledSchedules}</div>
+                    </div>
+                </div>
+                
+                <div className="schedule-list-container">
+                    <div className="list-header">
+                        <div className="list-controls">
+                            <h2 className="list-title">Schedule List</h2>
+                            <div className="controls">
+                                <FilterDropdown
+                                    filter={filter}
+                                    onFilterSelect={handleFilterSelect}
+                                    dayOptions={dayOptions}
+                                    programOptions={courseOptions}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Search schedules..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="search-input"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    {/* ... a lot of closing tags and the rest of the component ... */}
+                                <div className="table-container">
               <table className="schedule-table">
                 <thead>
                   <tr>
@@ -520,12 +658,11 @@ const ScheduleManagement = () => {
                 <button className="page-btn">Next</button>
               </div>
             </div>
-          </div>
+                </div>
+            </div>
         </div>
-      </div>
-
-      {/* Add Schedule Modal */}
-      {showAddScheduleModal && (
+        {/* Modals go here as before */}
+        {showAddScheduleModal && (
         <div className="modal-overlay">
           <div className="modal-container">
             {/* Modal Header */}
@@ -723,7 +860,7 @@ const ScheduleManagement = () => {
                   <select
                     className="form-input"
                     value={scheduleForm.day}
-                    onChange={(e) => handleScheduleFormChange('day', e.target.value)}
+                    onChange={(e) => handleScheduleFormChange('day', e.g.target.value)}
                   >
                     <option value="">Select day</option>
                     {dayOptions.map((day) => (
