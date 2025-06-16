@@ -56,7 +56,7 @@ public class SemesterEnrollmentService {
     }
 
     public List<SemesterEnrollment> getEnrollmentsByStudent(Long studentId) {
-        return semesterEnrollmentRepository.findByStudentId(studentId);
+        return semesterEnrollmentRepository.findByStudent_Id(studentId); // Fixed method name
     }
 
     public List<SemesterEnrollment> getEnrollmentsBySemester(String semester, String academicYear) {
@@ -81,6 +81,6 @@ public class SemesterEnrollmentService {
     }
 
     public Optional<SemesterEnrollment> findByStudentAndSemester(Long studentId, String semester, String academicYear) {
-        return semesterEnrollmentRepository.findByStudentAndSemesterAndYear(studentId, semester, academicYear);
+        return semesterEnrollmentRepository.findByStudent_IdAndSemesterAndAcademicYear(studentId, semester, academicYear); // Fixed method name
     }
 }

@@ -60,10 +60,13 @@
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>
 		</dependency>	      
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
+<!-- Remove or comment out this dependency -->
+<!--
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+-->
 	</dependencies>
 	<build>
 		<plugins>

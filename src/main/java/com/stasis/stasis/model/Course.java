@@ -1,10 +1,5 @@
 package com.stasis.stasis.model;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -15,19 +10,24 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "courses") // Add table name to match your SQL
 public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long courseID;
+    private Long id; // Changed from courseID to id to match your SQL
 
+    @Column(name = "course_code")
     private String courseCode;
-    private int credits; // This should match the getter method
+    
+    @Column(name = "credits")
+    private int credits;
+    
+    @Column(name = "course_description")
     private String courseDescription;
 
-    @ManyToOne
-    @JoinColumn(name = "programID")
-    private Program program;
+    @Column(name = "program")
+    private String program; // Changed to String to match your SQL data
     
     // Add getter method that matches the service usage
     public int getCreditUnits() {

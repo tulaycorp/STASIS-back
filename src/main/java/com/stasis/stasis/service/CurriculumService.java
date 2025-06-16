@@ -1,7 +1,6 @@
 package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.Curriculum;
-import com.stasis.stasis.model.Program;
 import com.stasis.stasis.repository.CurriculumRepository;
 import com.stasis.stasis.repository.ProgramRepository;
 import org.springframework.beans.factory.annotation.Autowired;
