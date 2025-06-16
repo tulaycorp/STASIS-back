@@ -22,10 +22,15 @@ public class Course {
     private Long courseID;
 
     private String courseCode;
-    private int credits;
+    private int credits; // This should match the getter method
     private String courseDescription;
 
     @ManyToOne
     @JoinColumn(name = "programID")
     private Program program;
+    
+    // Add getter method that matches the service usage
+    public int getCreditUnits() {
+        return this.credits;
+    }
 }

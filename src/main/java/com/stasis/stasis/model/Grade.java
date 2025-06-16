@@ -1,17 +1,9 @@
 package com.stasis.stasis.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Data
@@ -25,7 +17,11 @@ public class Grade {
     private Long gradeID;
 
     @OneToOne
-    private Enrollment enrollment;
-    private String gradeValue;
+    @JoinColumn(name = "enrolledCourseID")
+    private EnrolledCourse enrolledCourse;
+    
+    @Column(precision = 5, scale = 2)
+    private BigDecimal gradeValue; // Using BigDecimal for precise decimal handling
+    
     private LocalDate gradeDate;
 }

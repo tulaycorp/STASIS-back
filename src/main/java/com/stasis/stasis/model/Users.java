@@ -1,16 +1,7 @@
 package com.stasis.stasis.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Data
@@ -30,7 +21,7 @@ public class Users {
     private UserRole role;
 
     @OneToOne(optional = true)
-    private Enrollment enrollment;
+    private SemesterEnrollment semesterEnrollment; // Updated reference
 
     @OneToOne(optional = true)
     private Faculty faculty;
