@@ -24,9 +24,13 @@ const FacultyLoginForm = () => {
         setError('');
         setLoading(true);
         // Temporary hardcoded login check
-        if (username === 'faculty123' && password === 'pass123') {
+        if (username === 'admin123' && password === 'pass123') {
             setLoading(false);
             navigate('/admin-dashboard');
+            return;
+        } else if (username === 'faculty123' && password === 'pass123') {
+            setLoading(false);
+            navigate('/faculty-dashboard');
             return;
         }
 

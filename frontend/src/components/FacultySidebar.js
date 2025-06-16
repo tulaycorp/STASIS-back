@@ -1,20 +1,19 @@
 import React from 'react';
-import './StudentSidebar.module.css';
+import './FacultySidebar.module.css';
 
 // Utility function to get active page from current URL
 const getActivePageFromURL = () => {
   const path = window.location.pathname;
   
-  if (path === '/student-dashboard' || path === '/') {
-    return 'StudentDashboard';
-  } else if (path === '/student-schedule') {
-    return 'StudentSchedule';
-  } else if (path === '/enrollment') {
-    return 'Enrollment';
-  } else if (path === '/student-grades') {
-    return 'StudentGrades';
-  } else if (path === '/student-curriculum') {
-    return 'StudentCurriculum';
+  if (path === '/faculty-dashboard' || path === '/') {
+    return 'FacultyDashboard';
+  } else if (path === '/faculty-schedule') {
+    //return 'FacultySchedule';
+    alert("Schedule Page Here");
+  } else if (path === '/faculty-grades') {
+    return 'FacultyGrades';
+  } else if (path === '/faculty-curriculum') {
+    return 'FacultyCurriculum';
   } else if (path === '/student-settings') {
     return 'StudentSettings';
   }
@@ -23,7 +22,7 @@ const getActivePageFromURL = () => {
   return '';
 };
 
-const StudentSidebar = ({ onNavigate }) => {
+const FacultySidebar = ({ onNavigate }) => {
   // Automatically determine active page from URL instead of using prop
   const activePage = getActivePageFromURL();
   
@@ -37,37 +36,31 @@ const StudentSidebar = ({ onNavigate }) => {
           <div className="nav-label">Main</div>
           <div className="nav-items">
             <div
-              className={`nav-item${activePage === 'StudentDashboard' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentDashboard')}
+              className={`nav-item${activePage === 'FacultyDashboard' ? ' active-page' : ''}`}
+              onClick={() => onNavigate('FacultyDashboard')}
             >
               📊 Dashboard
             </div>
           </div>
         </div>
         <div className="nav-section">
-          <div className="nav-label">Academic</div>
+          <div className="nav-label">Management</div>
           <div className="nav-items">
             <div
-              className={`nav-item${activePage === 'StudentSchedule' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentSchedule')}
+              className={`nav-item${activePage === 'FacultySchedule' ? ' active-page' : ''}`}
+              onClick={() => onNavigate('FacultySchedule')}
             >
               📅 Schedule
             </div>
             <div
-              className={`nav-item${activePage === 'Enrollment' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Enrollment')}
-            >
-              📝 Enrollment
-            </div>
-            <div
-              className={`nav-item${activePage === 'StudentGrades' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentGrades')}
+              className={`nav-item${activePage === 'FacultyGrades' ? ' active-page' : ''}`}
+              onClick={() => onNavigate('FacultyGrades')}
             >
               📈 Grades
             </div>
             <div
-              className={`nav-item${activePage === 'StudentCurriculum' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentCurriculum')}
+              className={`nav-item${activePage === 'FacultyCurriculum' ? ' active-page' : ''}`}
+              onClick={() => onNavigate('FacultyCurriculum')}
             >
               📚 Curriculum
             </div>
@@ -77,8 +70,8 @@ const StudentSidebar = ({ onNavigate }) => {
           <div className="nav-label">System</div>
           <div className="nav-items">
             <div
-              className={`nav-item${activePage === 'StudentSettings' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentSettings')}
+              className={`nav-item${activePage === 'FacultySettings' ? ' active-page' : ''}`}
+              onClick={() => onNavigate('FacultySettings')}
             >
               ⚙️ Settings
             </div>
@@ -94,10 +87,10 @@ const StudentSidebar = ({ onNavigate }) => {
           🚪 Log Out
         </button>
         <div className="user-profile">
-          <div className="user-avatar">JS</div>
+          <div className="user-avatar">JD</div>
           <div className="user-info">
-            <div className="user-name">John Smith</div>
-            <div className="user-role">Student</div>
+            <div className="user-name">John Doe</div>
+            <div className="user-role">Faculty</div>
           </div>
         </div>
       </div>
@@ -105,4 +98,4 @@ const StudentSidebar = ({ onNavigate }) => {
   );
 };
 
-export default StudentSidebar;
+export default FacultySidebar;

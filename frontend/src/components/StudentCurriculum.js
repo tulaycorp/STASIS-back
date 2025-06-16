@@ -171,7 +171,7 @@ const CurriculumManagement = () => {
   
   const showSection = (section) => {
     switch(section){
-      case 'Dashboard':
+      case 'StudentDashboard':
         navigate('/student-dashboard');
         break;
       case 'StudentSchedule':
@@ -201,7 +201,7 @@ const CurriculumManagement = () => {
         userInfo={{ name: "John Smith", role: "Student" }}
         sections={[
           {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]
           },
           {
             label: 'Management',

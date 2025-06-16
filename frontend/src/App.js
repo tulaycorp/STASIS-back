@@ -17,6 +17,7 @@ import StudentSchedule from './components/StudentSchedule';
 import StudentSettings from './components/StudentSettings';
 import StudentGrades from './components/StudentGrades';
 import StudentCurriculum from './components/StudentCurriculum';
+import FacultyDashboard from './components/FacultyDashboard';
 import './index.css'; // Global styles
 
 function App() {
@@ -59,6 +60,8 @@ function App() {
         <Route path="/student-grades" element={<StudentGrades />} />
 
         <Route path="/student-curriculum" element={<StudentCurriculum />} />
+
+        <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
 
         {/* Add other routes for dashboards etc. later */}
         {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

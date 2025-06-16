@@ -410,7 +410,7 @@ const StudentSettings = () => {
         userInfo={{ name: "John Smith", role: "Student" }}
         sections={[
           {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            items: [{ id: 'StudentDashboard', label: 'StudentDashboard', icon: '📊' }]
           },
           {
             label: 'Management',

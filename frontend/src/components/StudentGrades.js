@@ -111,12 +111,24 @@ const StudentGrades = () => {
   const navigate = useNavigate();
   const showSection = (section) => {
     switch(section){
-      case 'Dashboard': navigate('/student-dashboard'); break;
-      case 'StudentSchedule': navigate('/student-schedule'); break;
-      case 'Enrollment': alert("Enrollment page here"); break;
-      case 'StudentCurriculum': navigate('/student-curriculum'); break;
-      case 'StudentGrades': navigate('/student-grades'); break;
-      case 'StudentSettings': navigate('/student-settings'); break;
+      case 'StudentDashboard': 
+        navigate('/student-dashboard'); 
+      break;
+      case 'StudentSchedule': 
+        navigate('/student-schedule'); 
+      break;
+      case 'Enrollment': 
+        alert("Enrollment page here"); 
+      break;
+      case 'StudentCurriculum': 
+        navigate('/student-curriculum'); 
+      break;
+      case 'StudentGrades': 
+        navigate('/student-grades'); 
+      break;
+      case 'StudentSettings': 
+        navigate('/student-settings'); 
+      break;
       default: // No action
     }
   };
@@ -128,7 +140,7 @@ const StudentGrades = () => {
         onNavigate={showSection}
         userInfo={{ name: "John Smith", role: "Student" }}
         sections={[
-            { items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }] },
+            { items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }] },
             { label: 'Management', items: [
                 { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
                 { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
