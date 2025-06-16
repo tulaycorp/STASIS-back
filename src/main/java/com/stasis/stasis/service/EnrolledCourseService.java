@@ -72,4 +72,12 @@ public class EnrolledCourseService {
         }
         return false;
     }
+
+    public List<EnrolledCourse> getEnrolledCoursesBySemesterEnrollmentId(Long semesterEnrollmentId) {
+        // For now, return empty list - this will be properly implemented when SemesterEnrollment integration is complete
+        return enrolledCourseRepository.findAll().stream()
+            .filter(ec -> ec.getSemesterEnrollment() != null && 
+                         ec.getSemesterEnrollment().getSemesterEnrollmentID().equals(semesterEnrollmentId))
+            .toList();
+    }
 }

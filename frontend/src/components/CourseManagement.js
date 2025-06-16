@@ -1,44 +1,13 @@
-import React, { useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CourseManagement.css';
 import Sidebar from './Sidebar';
+import { courseAPI, courseSectionAPI, testConnection } from '../services/api';
 
 const Course = () => {
-  const [coursesData, setCoursesData] = useState([
-    {
-      id: 1,
-      courseCode: 'CS101',
-      courseDescription: 'Introduction to Computer Science',
-      credits: 3,
-      program: 'BS Computer Science',
-      status: 'Active'
-    },
-    {
-      id: 2,
-      courseCode: 'IT201',
-      courseDescription: 'Database Management Systems',
-      credits: 3,
-      program: 'BS Information Technology',
-      status: 'Active'
-    },
-    {
-      id: 3,
-      courseCode: 'IS301',
-      courseDescription: 'Systems Analysis and Design',
-      credits: 4,
-      program: 'BS Information Systems',
-      status: 'Active'
-    },
-    {
-      id: 4,
-      courseCode: 'EMC401',
-      courseDescription: '3D Animation and Modeling',
-      credits: 4,
-      program: 'BS Entertainment and Multimedia Computing',
-      status: 'Inactive'
-    }
-  ]);
-
+  const [coursesData, setCoursesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [showEditCourseModal, setShowEditCourseModal] = useState(false);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
@@ -108,6 +77,69 @@ const Course = () => {
     return matchesSearch && matchesProgram;
   });
 
+  // Load courses from API on component mount
+  useEffect(() => {
+    // Test connection first, then load courses
+    testConnectionAndLoadCourses();
+  }, []);
+
+  const testConnectionAndLoadCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Testing backend connection...');
+      
+      // First test the connection
+      const connectionTest = await testConnection();
+      
+      if (!connectionTest.success) {
+        throw new Error(`Connection failed: ${connectionTest.error} (Code: ${connectionTest.code})`);
+      }
+      
+      console.log('Connection successful, loading courses...');
+      await loadCourses();
+      
+    } catch (err) {
+      console.error('Connection test or course loading failed:', err);
+      handleConnectionError(err);
+    }
+  };
+
+  const loadCourses = async () => {
+    try {
+      console.log('Attempting to load courses from API...');
+      
+      const response = await courseAPI.getAllCourses();
+      console.log('API Response:', response.data);
+      
+      setCoursesData(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading courses:', err);
+      handleConnectionError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnectionError = (err) => {
+    // Provide more specific error messages
+    if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
+      setError('Cannot connect to server. Please check:\n1. Backend is running on http://localhost:8080\n2. No firewall blocking the connection\n3. Backend started without errors');
+    } else if (err.code === 'ECONNREFUSED') {
+      setError('Connection refused. The backend server is not running on http://localhost:8080');
+    } else if (err.response?.status === 404) {
+      setError('API endpoint not found. Please check if the CourseController is properly configured.');
+    } else if (err.response?.status === 500) {
+      setError('Server error. Please check the backend console for error details.');
+    } else if (err.response?.status === 0) {
+      setError('Network error. This might be a CORS issue or the server is not responding.');
+    } else {
+      setError(`Failed to load courses: ${err.response?.data?.message || err.message}`);
+    }
+  };
+
   // Course Modal functions
   const showAddCourseForm = () => {
     setEditingCourse(null);
@@ -164,7 +196,7 @@ const Course = () => {
     }));
   };
 
-  const handleAddCourse = () => {
+  const handleAddCourse = async () => {
     // Validate required fields
     if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
       alert('Please fill in all required fields');
@@ -177,32 +209,31 @@ const Course = () => {
       return;
     }
     
-    // Check if course code already exists
-    const existingCourse = coursesData.find(course => 
-      course.courseCode.toLowerCase() === courseForm.courseCode.toLowerCase()
-    );
-    
-    if (existingCourse) {
-      alert('Course code already exists!');
-      return;
+    try {
+      const courseData = {
+        courseCode: courseForm.courseCode,
+        courseDescription: courseForm.courseDescription,
+        credits: parseInt(courseForm.credits),
+        program: courseForm.program
+        // Note: removed 'status' field as it's not in the Course model
+      };
+
+      console.log('Creating course:', courseData);
+      await courseAPI.createCourse(courseData);
+      alert('Course added successfully!');
+      closeAddCourseModal();
+      loadCourses(); // Reload courses list
+    } catch (error) {
+      console.error('Error adding course:', error);
+      if (error.response?.status === 400) {
+        alert('Course code already exists or invalid data provided!');
+      } else {
+        alert('Failed to add course. Please try again.');
+      }
     }
-    
-    // Create new course object
-    const newCourse = {
-      id: coursesData.length + 1,
-      courseCode: courseForm.courseCode,
-      courseDescription: courseForm.courseDescription,
-      credits: parseInt(courseForm.credits),
-      program: courseForm.program,
-      status: courseForm.status
-    };
-    
-    setCoursesData(prev => [...prev, newCourse]);
-    alert('Course added successfully!');
-    closeAddCourseModal();
   };
 
-  const handleEditCourse = () => {
+  const handleEditCourse = async () => {
     // Validate required fields
     if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
       alert('Please fill in all required fields');
@@ -215,35 +246,45 @@ const Course = () => {
       return;
     }
     
-    // Check if course code already exists (excluding current course)
-    const existingCourse = coursesData.find(course => 
-      course.courseCode.toLowerCase() === courseForm.courseCode.toLowerCase() &&
-      course.id !== editingCourse.id
-    );
-    
-    if (existingCourse) {
-      alert('Course code already exists!');
-      return;
+    try {
+      const courseData = {
+        courseCode: courseForm.courseCode,
+        courseDescription: courseForm.courseDescription,
+        credits: parseInt(courseForm.credits),
+        program: courseForm.program
+      };
+
+      await courseAPI.updateCourse(editingCourse.id, courseData);
+      alert('Course updated successfully!');
+      closeEditCourseModal();
+      loadCourses(); // Reload courses list
+    } catch (error) {
+      console.error('Error updating course:', error);
+      if (error.response?.status === 400) {
+        alert('Course code already exists or invalid data provided!');
+      } else if (error.response?.status === 404) {
+        alert('Course not found!');
+      } else {
+        alert('Failed to update course. Please try again.');
+      }
     }
-    
-    // Update course object
-    const updatedCourse = {
-      ...editingCourse,
-      courseCode: courseForm.courseCode,
-      courseDescription: courseForm.courseDescription,
-      credits: parseInt(courseForm.credits),
-      program: courseForm.program,
-      status: courseForm.status
-    };
-    
-    setCoursesData(prev => 
-      prev.map(course => 
-        course.id === editingCourse.id ? updatedCourse : course
-      )
-    );
-    
-    alert('Course updated successfully!');
-    closeEditCourseModal();
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    if (window.confirm('Are you sure you want to delete this course?')) {
+      try {
+        await courseAPI.deleteCourse(courseId);
+        alert('Course deleted successfully!');
+        loadCourses(); // Reload courses list
+      } catch (error) {
+        console.error('Error deleting course:', error);
+        if (error.response?.status === 404) {
+          alert('Course not found!');
+        } else {
+          alert('Failed to delete course. Please try again.');
+        }
+      }
+    }
   };
 
   // Section Modal functions
@@ -267,24 +308,28 @@ const Course = () => {
     }));
   };
 
-  const handleAddSection = () => {
+  const handleAddSection = async () => {
     // Validate required fields
     if (!sectionForm.program || !sectionForm.yearLevel || !sectionForm.sectionNumber) {
       alert('Please fill in all required fields');
       return;
     }
     
-    // Create new section name
-    const newSectionName = `${sectionForm.program} ${sectionForm.yearLevel}-${sectionForm.sectionNumber}`;
-    
-    // Check if section already exists
-    if (sections.includes(newSectionName)) {
-      alert('Section already exists!');
-      return;
+    try {
+      const sectionData = {
+        program: sectionForm.program,
+        yearLevel: sectionForm.yearLevel,
+        sectionNumber: sectionForm.sectionNumber,
+        // Add other required fields based on your CourseSection model
+      };
+
+      await courseSectionAPI.createSection(sectionData);
+      alert(`Section "${sectionForm.program} ${sectionForm.yearLevel}-${sectionForm.sectionNumber}" created successfully!`);
+      closeAddSectionModal();
+    } catch (error) {
+      console.error('Error adding section:', error);
+      alert('Failed to create section. Please try again.');
     }
-    
-    alert(`Section "${newSectionName}" created successfully!`);
-    closeAddSectionModal();
   };
   // Navigation
   const navigate = useNavigate();
@@ -321,6 +366,96 @@ const Course = () => {
     setSelectedProgram(program);
     setSelectedSection('All Sections');
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container">
+        <Sidebar 
+          onNavigate={showSection}
+          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          sections={[
+            {
+              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️'},
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+              ]
+            }
+          ]}
+        />
+        <div className="main-content">
+          <div className="content-wrapper">
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <p>Loading courses...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="container">
+        {/* ...existing sidebar... */}
+        <div className="main-content">
+          <div className="content-wrapper">
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <div style={{ color: '#ef4444', marginBottom: '1rem' }}>
+                <h3>Error Loading Courses</h3>
+                <pre style={{ 
+                  background: '#f5f5f5', 
+                  padding: '1rem', 
+                  borderRadius: '4px', 
+                  textAlign: 'left',
+                  whiteSpace: 'pre-wrap',
+                  fontSize: '14px'
+                }}>
+                  {error}
+                </pre>
+                <div style={{ marginTop: '1rem', fontSize: '14px', color: '#666' }}>
+                  <p><strong>Troubleshooting steps:</strong></p>
+                  <ol style={{ textAlign: 'left', display: 'inline-block' }}>
+                    <li>Check if Spring Boot is running: <code>http://localhost:8080</code></li>
+                    <li>Check browser console for additional errors</li>
+                    <li>Verify backend logs for any startup errors</li>
+                    <li>Try accessing the API directly: <code>http://localhost:8080/api/courses</code></li>
+                  </ol>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <button onClick={testConnectionAndLoadCourses} className="btn btn-primary">
+                  Retry Connection
+                </button>
+                <button 
+                  onClick={() => window.open('http://localhost:8080/api/courses', '_blank')} 
+                  className="btn btn-secondary"
+                >
+                  Test API Directly
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
   <div className="container">
     {/* Main Sidebar */}
@@ -439,8 +574,7 @@ const Course = () => {
                       <th>Course Description</th>
                       <th>Credits</th>
                       <th>Program</th>
-                      <th>Status</th>
-                      <th>Action</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -451,16 +585,24 @@ const Course = () => {
                         <td className="course-credits">{course.credits}</td>
                         <td className="course-program">{course.program}</td>
                         <td>
-                          <span className={`course-status ${course.status.toLowerCase()}`}>
-                            {course.status}
-                          </span>
-                        </td>
-                        <td>
-                          <button 
-                            className="btn-action"
-                            onClick={() => showEditCourseForm(course)}
-                          >
-                          </button>
+                          <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                              className="btn-action btn-edit"
+                              onClick={() => showEditCourseForm(course)}
+                              title="Edit Course"
+                              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button 
+                              className="btn-action btn-delete"
+                              onClick={() => handleDeleteCourse(course.id)}
+                              title="Delete Course"
+                              style={{ background: '#ef4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -468,7 +610,7 @@ const Course = () => {
                 </table>
                 
                 {filteredCourses.length === 0 && (
-                  <div className="no-courses">
+                  <div className="no-courses" style={{ padding: '2rem', textAlign: 'center' }}>
                     <p>No courses found matching your criteria.</p>
                   </div>
                 )}
@@ -607,18 +749,6 @@ const Course = () => {
                 {programs.map((program) => (
                   <option key={program} value={program}>{program}</option>
                 ))}
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Status</label>
-              <select
-                className="form-input"
-                value={courseForm.status}
-                onChange={(e) => handleCourseFormChange('status', e.target.value)}
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
               </select>
             </div>
           </div>
