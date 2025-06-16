@@ -1,5 +1,6 @@
-/* StudentGrades.module.css - CSS Module for Student Academic Records Interface */
-
+* {
+  box-sizing: border-box;
+}
 /* Dashboard Container */
 .dashboardContainer {
   display: flex;
@@ -10,15 +11,24 @@
 /* Main Content Area */
 .mainContent {
   flex: 1;
-  padding: 0;
-  background-color: #f8fafc;
+  position: fixed;
+  left: 256px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  overflow-y: auto;
+  padding: clamp(16px, 2vw, 24px);
+  background-color: #f8f9fa;
+  box-sizing: border-box;
   min-height: 100vh;
 }
 
 .contentWrapper {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none; /* Allow full width stretching */
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 
 /* Breadcrumb Navigation */
