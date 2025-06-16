@@ -90,8 +90,7 @@ const StudentManagement = () => {
 
   const sections = getSectionsForProgram(selectedProgram);
 
-  // Available programs
-  const programs = [
+  const curriculum = [
     '2019-2020 Curriculum',
     '2020-2021 Curriculum',
     '2021-2022 Curriculum',
@@ -511,7 +510,7 @@ const StudentManagement = () => {
                         <th>Email</th>
                         <th>Birthday</th>
                         <th>Section</th>
-                        <th>Program</th>
+                        <th>Curriculum</th>
                         <th>Status</th>
                         <th>Actions</th>
                       </tr>
@@ -653,7 +652,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('program', e.target.value)}
                   >
                     <option value="">Select Program</option>
-                    {programs.map((program) => (
+                    {curriculum.map((program) => (
                       <option key={program} value={program}>{program}</option>
                     ))}
                   </select>
@@ -770,7 +769,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('program', e.target.value)}
                   >
                     <option value="">Select Program</option>
-                    {programs.map((program) => (
+                    {curriculum.map((program) => (
                       <option key={program} value={program}>{program}</option>
                     ))}
                   </select>
