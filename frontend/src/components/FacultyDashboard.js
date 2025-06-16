@@ -97,19 +97,13 @@ const FacultyDashboard = () => {
         navigate('/faculty-dashboard');
         break;
       case 'FacultySchedule':
-        //navigate('/student-schedule');
-        alert("Schedule Page Here");
+        navigate('/faculty-schedule');
         break;
         case 'FacultyGrades':
-          //navigate('/student-grades');
-          alert("Grades Page Here");
-        break;
-      case 'FacultyCurriculum':
-        alert("Curriculum page here");
+          navigate('/faculty-grades');
         break;
       case 'FacultySettings':
-        //navigate('/faculty-settings');
-        alert("Curriculum page here");
+        navigate('/faculty-settings');
         break;
       default:
         // No action for unknown sections
@@ -131,8 +125,7 @@ const FacultyDashboard = () => {
             label: 'Management',
             items: [
               { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-              { id: 'FacultyGrades', label: 'Grades', icon: '📈' },
-              { id: 'FacultyCurriculum', label: 'Curriculum', icon: '📚' },
+              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
             ]
           },
           {

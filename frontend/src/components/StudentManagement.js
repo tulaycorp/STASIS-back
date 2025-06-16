@@ -12,8 +12,7 @@ const StudentManagement = () => {
       email: 'christopher.mitchell@example.com',
       birthday: 'March 15, 2001',
       section: 'BSIT 2-2',
-      program: '2019-2020 Curriculum',
-      status: 'Active'
+      program: '2019-2020 Curriculum'
     },
     {
       id: 2,
@@ -22,8 +21,7 @@ const StudentManagement = () => {
       email: 'sarah.johnson@example.com',
       birthday: 'July 22, 2000',
       section: 'BSIT 2-1',
-      program: '2019-2020 Curriculum',
-      status: 'Active'
+      program: '2019-2020 Curriculum'
     },
     {
       id: 3,
@@ -32,8 +30,7 @@ const StudentManagement = () => {
       email: 'michael.brown@example.com',
       birthday: 'December 8, 2001',
       section: 'BSIT 2-2',
-      program: '2019-2020 Curriculum',
-      status: 'Inactive'
+      program: '2019-2020 Curriculum'
     }
   ]);
 
@@ -53,8 +50,7 @@ const StudentManagement = () => {
     middleName: '',
     birthday: '',
     section: '',
-    program: '',
-    status: 'Active'
+    program: ''
   });
 
   const [sectionForm, setSectionForm] = useState({
@@ -187,8 +183,7 @@ const StudentManagement = () => {
       middleName: '',
       birthday: '',
       section: '',
-      program: '',
-      status: 'Active'
+      program: ''
     });
     setShowAddStudentModal(true);
   };
@@ -204,8 +199,7 @@ const StudentManagement = () => {
       middleName: nameParts.middleName,
       birthday: formatDateForInput(student.birthday),
       section: student.section,
-      program: student.program,
-      status: student.status
+      program: student.program
     });
     setShowEditStudentModal(true);
   };
@@ -221,8 +215,7 @@ const StudentManagement = () => {
       middleName: '',
       birthday: '',
       section: '',
-      program: '',
-      status: 'Active'
+      program: ''
     });
   };
 
@@ -237,8 +230,7 @@ const StudentManagement = () => {
       middleName: '',
       birthday: '',
       section: '',
-      program: '',
-      status: 'Active'
+      program: ''
     });
   };
 
@@ -264,8 +256,7 @@ const StudentManagement = () => {
       email: studentForm.email,
       birthday: studentForm.birthday,
       section: studentForm.section,
-      program: studentForm.program,
-      status: studentForm.status
+      program: studentForm.program
     };
     
     setStudentsData(prev => [...prev, newStudent]);
@@ -288,8 +279,7 @@ const StudentManagement = () => {
       email: studentForm.email,
       birthday: studentForm.birthday,
       section: studentForm.section,
-      program: studentForm.program,
-      status: studentForm.status
+      program: studentForm.program
     };
     
     setStudentsData(prev => 
@@ -511,14 +501,13 @@ const StudentManagement = () => {
                         <th>Birthday</th>
                         <th>Section</th>
                         <th>Curriculum</th>
-                        <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredStudents.length === 0 ? (
                         <tr>
-                          <td colSpan="8" className="no-students">
+                          <td colSpan="7" className="no-students">
                             No students found matching your criteria.
                           </td>
                         </tr>
@@ -531,11 +520,6 @@ const StudentManagement = () => {
                             <td>{student.birthday}</td>
                             <td>{student.section}</td>
                             <td>{student.program}</td>
-                            <td>
-                              <span className={`student-status ${student.status.toLowerCase()}`}>
-                                {student.status}
-                              </span>
-                            </td>
                             <td>
                               <button 
                                 className="btn-action"
@@ -772,18 +756,6 @@ const StudentManagement = () => {
                     {curriculum.map((program) => (
                       <option key={program} value={program}>{program}</option>
                     ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select
-                    className="form-input"
-                    value={studentForm.status}
-                    onChange={(e) => handleStudentFormChange('status', e.target.value)}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
                   </select>
                 </div>
               </div>

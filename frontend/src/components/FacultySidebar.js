@@ -8,14 +8,11 @@ const getActivePageFromURL = () => {
   if (path === '/faculty-dashboard' || path === '/') {
     return 'FacultyDashboard';
   } else if (path === '/faculty-schedule') {
-    //return 'FacultySchedule';
-    alert("Schedule Page Here");
+    return 'FacultySchedule';
   } else if (path === '/faculty-grades') {
     return 'FacultyGrades';
-  } else if (path === '/faculty-curriculum') {
-    return 'FacultyCurriculum';
-  } else if (path === '/student-settings') {
-    return 'StudentSettings';
+  } else if (path === '/faculty-settings') {
+    return 'FacultySettings';
   }
   
   // Return empty string if no match so nothing is highlighted
@@ -57,12 +54,6 @@ const FacultySidebar = ({ onNavigate }) => {
               onClick={() => onNavigate('FacultyGrades')}
             >
               📈 Grades
-            </div>
-            <div
-              className={`nav-item${activePage === 'FacultyCurriculum' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('FacultyCurriculum')}
-            >
-              📚 Curriculum
             </div>
           </div>
         </div>
