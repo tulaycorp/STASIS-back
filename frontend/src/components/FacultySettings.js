@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './StudentSettings.module.css';
-import Sidebar from './StudentSidebar';
+import './FacultySettings.module.css';
+import Sidebar from './FacultySidebar';
 
-const StudentSettings = () => {
+const FacultySettings = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -34,23 +34,17 @@ const StudentSettings = () => {
   // Navigation
   const showSection = (section) => {
     switch(section){
-      case 'StudentDashboard':
-        navigate('/student-dashboard');
+      case 'FacultyDashboard':
+        navigate('/faculty-dashboard');
         break;
-      case 'StudentSchedule':
-        navigate('/student-schedule');
+      case 'FacultySchedule':
+        navigate('/faculty-schedule');
         break;
-      case 'Enrollment':
-        alert("Enrollment page here");
+        case 'FacultyGrades':
+          navigate('/faculty-grades');
         break;
-      case 'StudentCurriculum':
-        navigate('/student-curriculum');
-        break;
-      case 'StudentGrades':
-        navigate('/student-grades');
-        break;
-      case 'StudentSettings':
-        navigate('/student-settings');
+      case 'FacultySettings':
+        navigate('/faculty-settings');
         break;
       default:
         // No action for unknown sections
@@ -404,27 +398,24 @@ const StudentSettings = () => {
 
   return (
     <div className="settings-container">
-      {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
         userInfo={{ name: "John Smith", role: "Student" }}
         sections={[
           {
-            items: [{ id: 'StudentDashboard', label: 'StudentDashboard', icon: '📊' }]
+            items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
           },
           {
             label: 'Management',
             items: [
-              { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
-              { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
-              { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'StudentGrades', label: 'Grades', icon: '📈' }
+              { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
+              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
             ]
           },
           {
             label: 'System',
             items: [
-              { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
+              { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
             ]
           }
         ]}
@@ -485,4 +476,4 @@ const StudentSettings = () => {
   );
 };
 
-export default StudentSettings;
+export default FacultySettings;

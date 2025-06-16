@@ -18,6 +18,9 @@ import StudentSettings from './components/StudentSettings';
 import StudentGrades from './components/StudentGrades';
 import StudentCurriculum from './components/StudentCurriculum';
 import FacultyDashboard from './components/FacultyDashboard';
+import FacultySchedule from './components/FacultySchedule';
+import FacultyGrades from './components/FacultyGrades';
+import FacultySettings from './components/FacultySettings';
 import './index.css'; // Global styles
 
 function App() {
@@ -62,6 +65,13 @@ function App() {
         <Route path="/student-curriculum" element={<StudentCurriculum />} />
 
         <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
+
+        <Route path="/faculty-schedule" element={<FacultySchedule />} />
+
+        <Route path="/faculty-grades" element={<FacultyGrades />} />
+
+        
+        <Route path="/faculty-settings" element={<FacultySettings />} />
 
         {/* Add other routes for dashboards etc. later */}
         {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}

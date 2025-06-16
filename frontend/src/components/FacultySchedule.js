@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './StudentSchedule.module.css';
-import Sidebar from './StudentSidebar';
+import './FacultySchedule.module.css';
+import Sidebar from './FacultySidebar';
 
-const StudentSchedule = () => {
+const FacultySchedule = () => {
   // Sample schedule data - removed status field
   const [scheduleList, setScheduleList] = useState([
     {
@@ -128,23 +128,17 @@ const StudentSchedule = () => {
   const navigate = useNavigate();
   const showSection = (section) => {
     switch(section){
-      case 'StudentDashboard':
-        navigate('/student-dashboard');
+      case 'FacultyDashboard':
+        navigate('/faculty-dashboard');
         break;
-      case 'StudentSchedule':
-        navigate('/student-schedule');
+      case 'FacultySchedule':
+        navigate('/faculty-schedule');
         break;
-      case 'Enrollment':
-        alert("Enrollment page here");
+        case 'FacultyGrades':
+          navigate('/faculty-grades');
         break;
-      case 'StudentCurriculum':
-        navigate('/student-curriculum');
-        break;
-      case 'StudentGrades':
-        navigate('/student-grades');
-        break;
-      case 'StudentSettings':
-        navigate('/student-settings');
+      case 'FacultySettings':
+        navigate('/faculty-settings');
         break;
       default:
         // No action for unknown sections
@@ -159,21 +153,19 @@ const StudentSchedule = () => {
         userInfo={{ name: "John Smith", role: "Student" }}
         sections={[
           {
-            items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]
+            items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
           },
           {
             label: 'Management',
             items: [
-              { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
-              { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
-              { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'StudentGrades', label: 'Grades', icon: '📈' }
+              { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
+              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
             ]
           },
           {
             label: 'System',
             items: [
-              { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
+              { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
             ]
           }
         ]}
@@ -251,7 +243,6 @@ const StudentSchedule = () => {
                   <tr>
                     <th>Schedule ID</th>
                     <th>Course & Section</th>
-                    <th>Instructor</th>
                     <th>Room</th>
                     <th>Day & Time</th>
                   </tr>
@@ -266,7 +257,6 @@ const StudentSchedule = () => {
                           <div className="schedule-section">{schedule.section}</div>
                         </div>
                       </td>
-                      <td>{schedule.instructor}</td>
                       <td>{schedule.room}</td>
                       <td>
                         <div className="time-info">
@@ -300,4 +290,4 @@ const StudentSchedule = () => {
   );
 };
 
-export default StudentSchedule;
+export default FacultySchedule;
