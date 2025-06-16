@@ -8,28 +8,32 @@ const Course = () => {
     {
       id: 1,
       courseCode: 'CS101',
-      courseName: 'Introduction to Computer Science',
+      courseDescription: 'Introduction to Computer Science',
+      credits: 3,
       program: 'BS Computer Science',
       status: 'Active'
     },
     {
       id: 2,
       courseCode: 'IT201',
-      courseName: 'Database Management Systems',
+      courseDescription: 'Database Management Systems',
+      credits: 3,
       program: 'BS Information Technology',
       status: 'Active'
     },
     {
       id: 3,
       courseCode: 'IS301',
-      courseName: 'Systems Analysis and Design',
+      courseDescription: 'Systems Analysis and Design',
+      credits: 4,
       program: 'BS Information Systems',
       status: 'Active'
     },
     {
       id: 4,
       courseCode: 'EMC401',
-      courseName: '3D Animation and Modeling',
+      courseDescription: '3D Animation and Modeling',
+      credits: 4,
       program: 'BS Entertainment and Multimedia Computing',
       status: 'Inactive'
     }
@@ -45,7 +49,8 @@ const Course = () => {
   
   const [courseForm, setCourseForm] = useState({
     courseCode: '',
-    courseName: '',
+    courseDescription: '',
+    credits: '',
     program: '',
     status: 'Active'
   });
@@ -93,7 +98,7 @@ const Course = () => {
 
   // Filter courses based on search and program
   const filteredCourses = coursesData.filter(course => {
-    const matchesSearch = course.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = course.courseDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.program.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -108,7 +113,8 @@ const Course = () => {
     setEditingCourse(null);
     setCourseForm({
       courseCode: '',
-      courseName: '',
+      courseDescription: '',
+      credits: '',
       program: '',
       status: 'Active'
     });
@@ -119,7 +125,8 @@ const Course = () => {
     setEditingCourse(course);
     setCourseForm({
       courseCode: course.courseCode,
-      courseName: course.courseName,
+      courseDescription: course.courseDescription,
+      credits: course.credits,
       program: course.program,
       status: course.status
     });
@@ -131,7 +138,8 @@ const Course = () => {
     setEditingCourse(null);
     setCourseForm({
       courseCode: '',
-      courseName: '',
+      courseDescription: '',
+      credits: '',
       program: '',
       status: 'Active'
     });
@@ -142,7 +150,8 @@ const Course = () => {
     setEditingCourse(null);
     setCourseForm({
       courseCode: '',
-      courseName: '',
+      courseDescription: '',
+      credits: '',
       program: '',
       status: 'Active'
     });
@@ -157,8 +166,14 @@ const Course = () => {
 
   const handleAddCourse = () => {
     // Validate required fields
-    if (!courseForm.courseCode || !courseForm.courseName || !courseForm.program) {
+    if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
       alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Validate credits is a positive number
+    if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
+      alert('Credits must be a positive number');
       return;
     }
     
@@ -176,7 +191,8 @@ const Course = () => {
     const newCourse = {
       id: coursesData.length + 1,
       courseCode: courseForm.courseCode,
-      courseName: courseForm.courseName,
+      courseDescription: courseForm.courseDescription,
+      credits: parseInt(courseForm.credits),
       program: courseForm.program,
       status: courseForm.status
     };
@@ -188,8 +204,14 @@ const Course = () => {
 
   const handleEditCourse = () => {
     // Validate required fields
-    if (!courseForm.courseCode || !courseForm.courseName || !courseForm.program) {
+    if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
       alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Validate credits is a positive number
+    if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
+      alert('Credits must be a positive number');
       return;
     }
     
@@ -208,7 +230,8 @@ const Course = () => {
     const updatedCourse = {
       ...editingCourse,
       courseCode: courseForm.courseCode,
-      courseName: courseForm.courseName,
+      courseDescription: courseForm.courseDescription,
+      credits: parseInt(courseForm.credits),
       program: courseForm.program,
       status: courseForm.status
     };
@@ -413,7 +436,8 @@ const Course = () => {
                   <thead>
                     <tr>
                       <th>Course Code</th>
-                      <th>Course Name</th>
+                      <th>Course Description</th>
+                      <th>Credits</th>
                       <th>Program</th>
                       <th>Status</th>
                       <th>Action</th>
@@ -423,7 +447,8 @@ const Course = () => {
                     {filteredCourses.map((course) => (
                       <tr key={course.id}>
                         <td className="course-code">{course.courseCode}</td>
-                        <td className="course-name">{course.courseName}</td>
+                        <td className="course-description">{course.courseDescription}</td>
+                        <td className="course-credits">{course.credits}</td>
                         <td className="course-program">{course.program}</td>
                         <td>
                           <span className={`course-status ${course.status.toLowerCase()}`}>
@@ -476,13 +501,26 @@ const Course = () => {
               </div>
               
               <div className="form-group">
-                <label className="form-label">Course Name *</label>
+                <label className="form-label">Course Description *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Enter Course Name"
-                  value={courseForm.courseName}
-                  onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
+                  placeholder="Enter Course Description"
+                  value={courseForm.courseDescription}
+                  onChange={(e) => handleCourseFormChange('courseDescription', e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Credits *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="Enter number of credits"
+                  min="1"
+                  max="6"
+                  value={courseForm.credits}
+                  onChange={(e) => handleCourseFormChange('credits', e.target.value)}
                 />
               </div>
               
@@ -516,72 +554,83 @@ const Course = () => {
 
     {/* Edit Course Modal */}
     {showEditCourseModal && (
-      <div className="modal-overlay">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h2 className="modal-title">Edit Course</h2>
-          </div>
-          
-          <div className="modal-body">
-            <div className="modal-grid">
-              <div className="form-group">
-                <label className="form-label">Course Code *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Enter Course Code (e.g., CS101)"
-                  value={courseForm.courseCode}
-                  onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Course Name *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Enter Course Name"
-                  value={courseForm.courseName}
-                  onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Program *</label>
-                <select
-                  className="form-input"
-                  value={courseForm.program}
-                  onChange={(e) => handleCourseFormChange('program', e.target.value)}
-                >
-                  <option value="">Select Program</option>
-                  {programs.map((program) => (
-                    <option key={program} value={program}>{program}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Status</label>
-                <select
-                  className="form-input"
-                  value={courseForm.status}
-                  onChange={(e) => handleCourseFormChange('status', e.target.value)}
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2 className="modal-title">Edit Course</h2>
+        </div>
+        
+        <div className="modal-body">
+          <div className="modal-grid">
+            <div className="form-group">
+              <label className="form-label">Course Code *</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter Course Code (e.g., CS101)"
+                value={courseForm.courseCode}
+                onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Course Description *</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Enter Course Description"
+                value={courseForm.courseDescription}
+                onChange={(e) => handleCourseFormChange('courseDescription', e.target.value)}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Credits *</label>
+              <input
+                type="number"
+                className="form-input"
+                placeholder="Enter number of credits"
+                min="1"
+                max="6"
+                value={courseForm.credits}
+                onChange={(e) => handleCourseFormChange('credits', e.target.value)}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Program *</label>
+              <select
+                className="form-input"
+                value={courseForm.program}
+                onChange={(e) => handleCourseFormChange('program', e.target.value)}
+              >
+                <option value="">Select Program</option>
+                {programs.map((program) => (
+                  <option key={program} value={program}>{program}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                className="form-input"
+                value={courseForm.status}
+                onChange={(e) => handleCourseFormChange('status', e.target.value)}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
             </div>
           </div>
-          
-          <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={closeEditCourseModal}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleEditCourse}>
-              Update Course
-            </button>
-          </div>
+        </div>
+        
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={closeEditCourseModal}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={handleEditCourse}>
+            Update Course
+          </button>
         </div>
       </div>
     )}
