@@ -56,7 +56,7 @@ const StudentManagement = () => {
   const [programForm, setProgramForm] = useState({
     programName: '',
     programCode: '',
-    description: ''
+    facultyChairman: ''
   });
 
   // Available courses
@@ -65,6 +65,18 @@ const StudentManagement = () => {
     'BS Information Technology',
     'BS Information Systems',
     'BS Entertainment and Multimedia Computing'
+  ];
+
+  // Faculty chairmen list
+  const facultyChairmen = [
+    'Dr. Maria Santos',
+    'Prof. John Rodriguez',
+    'Dr. Ana Garcia',
+    'Prof. Michael Torres',
+    'Dr. Carmen Dela Cruz',
+    'Prof. Robert Kim',
+    'Dr. Elena Valdez',
+    'Prof. David Chen'
   ];
 
   // Available sections based on selected program
@@ -304,7 +316,7 @@ const StudentManagement = () => {
     setProgramForm({
       programName: '',
       programCode: '',
-      description: ''
+      facultyChairman: ''
     });
     setShowAddProgramModal(true);
   };
@@ -314,7 +326,7 @@ const StudentManagement = () => {
     setProgramForm({
       programName: '',
       programCode: '',
-      description: ''
+      facultyChairman: ''
     });
   };
 
@@ -815,14 +827,17 @@ const StudentManagement = () => {
               </div>
               
               <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea
+                <label className="form-label">Faculty Chairman</label>
+                <select
                   className="form-input"
-                  placeholder="Enter program description (optional)"
-                  rows="3"
-                  value={programForm.description}
-                  onChange={(e) => handleProgramFormChange('description', e.target.value)}
-                />
+                  value={programForm.facultyChairman}
+                  onChange={(e) => handleProgramFormChange('facultyChairman', e.target.value)}
+                >
+                  <option value="">Select Faculty Chairman</option>
+                  {facultyChairmen.map((chairman) => (
+                    <option key={chairman} value={chairman}>{chairman}</option>
+                  ))}
+                </select>
               </div>
             </div>
             
