@@ -89,7 +89,13 @@ export const courseAPI = {
 // Course Sections API endpoints
 export const courseSectionAPI = {
   // Get all sections
-  getAllSections: () => api.get('/course-sections'),
+  getAllSections: () => {
+    console.log('Calling getAllSections API...');
+    return api.get('/course-sections');
+  },
+  
+  // Get section by ID
+  getSectionById: (id) => api.get(`/course-sections/${id}`),
   
   // Create new section
   createSection: (sectionData) => {
@@ -98,10 +104,34 @@ export const courseSectionAPI = {
   },
   
   // Update section
-  updateSection: (id, sectionData) => api.put(`/course-sections/${id}`, sectionData),
+  updateSection: (id, sectionData) => {
+    console.log('Calling updateSection API for ID:', id, 'with data:', sectionData);
+    return api.put(`/course-sections/${id}`, sectionData);
+  },
   
   // Delete section
-  deleteSection: (id) => api.delete(`/course-sections/${id}`),
+  deleteSection: (id) => {
+    console.log('Calling deleteSection API for ID:', id);
+    return api.delete(`/course-sections/${id}`);
+  },
+  
+  // Get sections by status
+  getSectionsByStatus: (status) => api.get(`/course-sections/status/${status}`),
+  
+  // Get sections by day
+  getSectionsByDay: (day) => api.get(`/course-sections/day/${day}`),
+  
+  // Get sections by section name
+  getSectionsBySectionName: (sectionName) => api.get(`/course-sections/section-name/${sectionName}`),
+  
+  // Get active sections
+  getActiveSections: () => api.get('/course-sections/active'),
+  
+  // Update section status
+  updateSectionStatus: (id, status) => api.put(`/course-sections/${id}/status?status=${encodeURIComponent(status)}`),
+  
+  // Validate section
+  validateSection: (sectionData) => api.post('/course-sections/validate', sectionData),
 };
 
 // Enrolled Courses API endpoints
