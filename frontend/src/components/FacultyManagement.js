@@ -69,6 +69,7 @@ const FacultyManagement = () => {
   const loadFaculty = async () => {
     try {
       const response = await facultyAPI.getAllFaculty();
+      console.log('Faculty loaded:', response.data);
       setFacultyList(response.data);
     } catch (error) {
       console.error('Error loading faculty:', error);
@@ -79,6 +80,7 @@ const FacultyManagement = () => {
   const loadPrograms = async () => {
     try {
       const response = await programAPI.getAllPrograms();
+      console.log('Programs loaded:', response.data);
       setProgramsList(response.data);
     } catch (error) {
       console.error('Error loading programs:', error);
@@ -108,6 +110,7 @@ const FacultyManagement = () => {
 
   // Add Faculty Modal functions
   const showAddFacultyForm = () => {
+    console.log('Programs available for dropdown:', programsList);
     setFacultyForm({
       firstName: '',
       lastName: '',
@@ -133,14 +136,17 @@ const FacultyManagement = () => {
 
   // Edit Faculty Modal functions
   const showEditFacultyForm = (faculty) => {
+    console.log('Editing faculty:', faculty);
+    console.log('Programs available for edit dropdown:', programsList);
+    
     setEditingFaculty(faculty);
     setFacultyForm({
-      firstName: faculty.firstName,
-      lastName: faculty.lastName,
-      email: faculty.email,
-      programId: faculty.program?.programID || '',
-      position: faculty.position,
-      status: faculty.status
+      firstName: faculty.firstName || '',
+      lastName: faculty.lastName || '',
+      email: faculty.email || '',
+      programId: faculty.program?.programID?.toString() || '',
+      position: faculty.position || '',
+      status: faculty.status || 'Active'
     });
     setShowEditFacultyModal(true);
   };
@@ -159,6 +165,7 @@ const FacultyManagement = () => {
   };
 
   const handleFacultyFormChange = (field, value) => {
+    console.log(`Form field changed: ${field} = ${value}`);
     setFacultyForm(prev => ({
       ...prev,
       [field]: value
@@ -182,6 +189,7 @@ const FacultyManagement = () => {
     try {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === facultyForm.programId);
+      console.log('Selected program for new faculty:', selectedProgramObj);
       
       const facultyData = {
         firstName: facultyForm.firstName,
@@ -192,6 +200,7 @@ const FacultyManagement = () => {
         program: selectedProgramObj || null
       };
 
+      console.log('Sending faculty data:', facultyData);
       await facultyAPI.createFaculty(facultyData);
       alert('Faculty added successfully!');
       closeAddFacultyModal();
@@ -223,6 +232,7 @@ const FacultyManagement = () => {
     try {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === facultyForm.programId);
+      console.log('Selected program for editing faculty:', selectedProgramObj);
       
       const facultyData = {
         firstName: facultyForm.firstName,
@@ -233,6 +243,7 @@ const FacultyManagement = () => {
         program: selectedProgramObj || null
       };
 
+      console.log('Sending updated faculty data:', facultyData);
       await facultyAPI.updateFaculty(editingFaculty.facultyID, facultyData);
       alert('Faculty updated successfully!');
       closeEditFacultyModal();
@@ -278,7 +289,8 @@ const FacultyManagement = () => {
         break;
       case 'Students':
         navigate('/student-management');
-        break;      case 'Schedule':
+        break;      
+      case 'Schedule':
         navigate('/schedule-management');
         break;
       case 'Faculty':
@@ -551,7 +563,7 @@ const FacultyManagement = () => {
         </div>
       </div>
 
-      {/* Add Faculty Modal - Updated with Program instead of Department */}
+      {/* Add Faculty Modal */}
       {showAddFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-container">
@@ -602,12 +614,21 @@ const FacultyManagement = () => {
                     onChange={(e) => handleFacultyFormChange('programId', e.target.value)}
                   >
                     <option value="">Select Program</option>
-                    {programsList.map((program) => (
-                      <option key={program.programID} value={program.programID}>
-                        {program.programName}
-                      </option>
-                    ))}
+                    {programsList && programsList.length > 0 ? (
+                      programsList.map((program) => (
+                        <option key={program.programID} value={program.programID}>
+                          {program.programName}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No programs available</option>
+                    )}
                   </select>
+                  {programsList.length === 0 && (
+                    <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                      No programs loaded. Please refresh the page.
+                    </small>
+                  )}
                 </div>
                 
                 <div className="form-group">
@@ -657,7 +678,7 @@ const FacultyManagement = () => {
         </div>
       )}
 
-      {/* Edit Faculty Modal - Updated with Program instead of Department */}
+      {/* Edit Faculty Modal */}
       {showEditFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-container">
@@ -667,7 +688,6 @@ const FacultyManagement = () => {
             
             <div className="modal-content">
               <div className="form-grid">
-                {/* Same form fields as Add Modal but with Edit handler */}
                 <div className="form-group">
                   <label className="form-label">First Name *</label>
                   <input
@@ -709,12 +729,21 @@ const FacultyManagement = () => {
                     onChange={(e) => handleFacultyFormChange('programId', e.target.value)}
                   >
                     <option value="">Select Program</option>
-                    {programsList.map((program) => (
-                      <option key={program.programID} value={program.programID}>
-                        {program.programName}
-                      </option>
-                    ))}
+                    {programsList && programsList.length > 0 ? (
+                      programsList.map((program) => (
+                        <option key={`edit-${program.programID}`} value={program.programID}>
+                          {program.programName}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No programs available</option>
+                    )}
                   </select>
+                  {programsList.length === 0 && (
+                    <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                      No programs loaded. Please refresh the page.
+                    </small>
+                  )}
                 </div>
                 
                 <div className="form-group">
