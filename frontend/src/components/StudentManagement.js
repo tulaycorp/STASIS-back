@@ -36,7 +36,7 @@ const StudentManagement = () => {
 
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
-  const [showAddSectionModal, setShowAddSectionModal] = useState(false);
+  const [showAddProgramModal, setShowAddProgramModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState('All Sections');
   const [selectedProgram, setSelectedCourse] = useState('BS Computer Science');
@@ -53,10 +53,10 @@ const StudentManagement = () => {
     program: ''
   });
 
-  const [sectionForm, setSectionForm] = useState({
-    program: '',
-    yearLevel: '',
-    sectionNumber: ''
+  const [programForm, setProgramForm] = useState({
+    programName: '',
+    programCode: '',
+    description: ''
   });
 
   // Available courses
@@ -292,49 +292,58 @@ const StudentManagement = () => {
     closeEditStudentModal();
   };
 
-  // Section Modal functions
-  const showAddSectionForm = () => {
-    setShowAddSectionModal(true);
-  };
-
-  const closeAddSectionModal = () => {
-    setShowAddSectionModal(false);
-    setSectionForm({
-      program: '',
-      yearLevel: '',
-      sectionNumber: ''
-    });
-  };
-
-  const handleSectionFormChange = (field, value) => {
-    setSectionForm(prev => ({
+  // Program Modal functions
+  const handleProgramFormChange = (field, value) => {
+    setProgramForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleAddSection = () => {
-    // Validate required fields
-    if (!sectionForm.program || !sectionForm.yearLevel || !sectionForm.sectionNumber) {
+  const showAddProgramForm = () => {
+    setProgramForm({
+      programName: '',
+      programCode: '',
+      description: ''
+    });
+    setShowAddProgramModal(true);
+  };
+
+  const closeAddProgramModal = () => {
+    setShowAddProgramModal(false);
+    setProgramForm({
+      programName: '',
+      programCode: '',
+      description: ''
+    });
+  };
+
+  const handleAddProgram = async () => {
+    if (!programForm.programName || !programForm.programCode) {
       alert('Please fill in all required fields');
       return;
     }
     
-    // Create new section name
-    const newSectionName = `${sectionForm.program} ${sectionForm.yearLevel}-${sectionForm.sectionNumber}`;
-    
-    // Check if section already exists
-    if (sections.includes(newSectionName)) {
-      alert('Section already exists!');
-      return;
+    try {
+      // Here you would typically call an API to save the program
+      // For now, we'll just add it to the local programs array
+      const newProgram = programForm.programName;
+      
+      // You would need to modify the programs state to be dynamic
+      // setPrograms(prev => [...prev, newProgram]);
+      
+      alert(`Program "${programForm.programName}" added successfully!`);
+      closeAddProgramModal();
+    } catch (error) {
+      console.error('Error adding program:', error);
+      alert('Failed to add program. Please try again.');
     }
-    
-    alert(`Section "${newSectionName}" created successfully!`);
-    closeAddSectionModal();
   };
 
   // Navigation
-  const navigate = useNavigate();  const showSection = (section) => {
+  const navigate = useNavigate();
+  
+  const showSection = (section) => {
     switch(section){
       case 'Dashboard':
         navigate('/admin-dashboard');
@@ -370,6 +379,7 @@ const StudentManagement = () => {
     setSelectedCourse(program);
     setSelectedSection('All Sections');
   };
+
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
@@ -440,8 +450,8 @@ const StudentManagement = () => {
                 ))}
               </div>
               <div className="student-nav-actions">
-                <button className="student-btn-add-section" onClick={showAddSectionForm}>
-                  Add New Section
+                <button className="student-btn-add-section" onClick={showAddProgramForm}>
+                  Add New Program
                 </button>
               </div>
               <div className="student-nav-info">
@@ -521,7 +531,7 @@ const StudentManagement = () => {
                             <td>{student.section}</td>
                             <td>{student.program}</td>
                             <td>
-                              <button 
+                              <button //Edit Button
                                 className="btn-action"
                                 onClick={() => showEditStudentForm(student)}
                               >
@@ -773,68 +783,55 @@ const StudentManagement = () => {
         </div>
       )}
 
-      {/* Add Section Modal */}
-      {showAddSectionModal && (
+      {/* Add Program Modal */}
+      {showAddProgramModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2 className="modal-title">Add New Section</h2>
+              <h2 className="modal-title">Add New Program</h2>
             </div>
             
             <div className="modal-body">
               <div className="form-group">
-                <label className="form-label">Program *</label>
-                <select
+                <label className="form-label">Program Name *</label>
+                <input
+                  type="text"
                   className="form-input"
-                  value={sectionForm.program}
-                  onChange={(e) => handleSectionFormChange('program', e.target.value)}
-                >
-                  <option value="">Select Program</option>
-                  <option value="BSIT">BSIT</option>
-                  <option value="BSCS">BSCS</option>
-                  <option value="BSIS">BSIS</option>
-                  <option value="BSEMC">BSEMC</option>
-                </select>
+                  placeholder="Enter Program Name (e.g., BS Computer Science)"
+                  value={programForm.programName}
+                  onChange={(e) => handleProgramFormChange('programName', e.target.value)}
+                />
               </div>
               
               <div className="form-group">
-                <label className="form-label">Year Level *</label>
-                <select
+                <label className="form-label">Program Code *</label>
+                <input
+                  type="text"
                   className="form-input"
-                  value={sectionForm.yearLevel}
-                  onChange={(e) => handleSectionFormChange('yearLevel', e.target.value)}
-                >
-                  <option value="">Select Year Level</option>
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
-                </select>
+                  placeholder="Enter Program Code (e.g., BSCS)"
+                  value={programForm.programCode}
+                  onChange={(e) => handleProgramFormChange('programCode', e.target.value)}
+                />
               </div>
               
               <div className="form-group">
-                <label className="form-label">Section Number *</label>
-                <select
+                <label className="form-label">Description</label>
+                <textarea
                   className="form-input"
-                  value={sectionForm.sectionNumber}
-                  onChange={(e) => handleSectionFormChange('sectionNumber', e.target.value)}
-                >
-                  <option value="">Select Section Number</option>
-                  <option value="1">Section 1</option>
-                  <option value="2">Section 2</option>
-                  <option value="3">Section 3</option>
-                  <option value="4">Section 4</option>
-                  <option value="5">Section 5</option>
-                </select>
+                  placeholder="Enter program description (optional)"
+                  rows="3"
+                  value={programForm.description}
+                  onChange={(e) => handleProgramFormChange('description', e.target.value)}
+                />
               </div>
             </div>
             
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeAddSectionModal}>
+              <button className="btn btn-secondary" onClick={closeAddProgramModal}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleAddSection}>
-                Create Section
+              <button className="btn btn-primary" onClick={handleAddProgram}>
+                Add Program
               </button>
             </div>
           </div>

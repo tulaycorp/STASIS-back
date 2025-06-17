@@ -4,15 +4,14 @@ import './CourseManagement.css';
 import Sidebar from './Sidebar';
 import { courseAPI, courseSectionAPI, testConnection } from '../services/api';
 
-const Course = () => {
+const CourseManagement = () => {
   const [coursesData, setCoursesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [showEditCourseModal, setShowEditCourseModal] = useState(false);
-  const [showAddSectionModal, setShowAddSectionModal] = useState(false);
+  const [showAddProgramModal, setShowAddProgramModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSection, setSelectedSection] = useState('All Sections');
   const [selectedProgram, setSelectedProgram] = useState('BS Computer Science');
   const [editingCourse, setEditingCourse] = useState(null);
   
@@ -24,10 +23,10 @@ const Course = () => {
     status: 'Active'
   });
 
-  const [sectionForm, setSectionForm] = useState({
-    program: '',
-    yearLevel: '',
-    sectionNumber: ''
+  const [programForm, setProgramForm] = useState({
+    programName: '',
+    programCode: '',
+    description: ''
   });
 
   // Available programs
@@ -38,40 +37,12 @@ const Course = () => {
     'BS Entertainment and Multimedia Computing'
   ];
 
-  // Available sections based on selected program
-  const getSectionsForProgram = (program) => {
-    const baseSections = ['All Sections'];
-    switch(program) {
-      case 'BS Computer Science':
-        return [...baseSections, 'CS 1st Year', 'CS 2nd Year', 'CS 3rd Year', 'CS 4th Year'];
-      case 'BS Information Technology':
-        return [...baseSections, 'IT 1st Year', 'IT 2nd Year', 'IT 3rd Year', 'IT 4th Year'];
-      case 'BS Information Systems':
-        return [...baseSections, 'IS 1st Year', 'IS 2nd Year', 'IS 3rd Year', 'IS 4th Year'];
-      case 'BS Entertainment and Multimedia Computing':
-        return [...baseSections, 'EMC 1st Year', 'EMC 2nd Year', 'EMC 3rd Year', 'EMC 4th Year'];
-      default:
-        return baseSections;
-    }
-  };
-
-  const sections = getSectionsForProgram(selectedProgram);
-
-  // Available curricula
-  const curricula = [
-    '2019-2020 Curriculum',
-    '2020-2021 Curriculum',
-    '2021-2022 Curriculum',
-    '2022-2023 Curriculum'
-  ];
-
   // Filter courses based on search and program
   const filteredCourses = coursesData.filter(course => {
     const matchesSearch = course.courseDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.program.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Filter by program
     const matchesProgram = selectedProgram === 'BS Computer Science' || course.program === selectedProgram;
     
     return matchesSearch && matchesProgram;
@@ -79,7 +50,6 @@ const Course = () => {
 
   // Load courses from API on component mount
   useEffect(() => {
-    // Test connection first, then load courses
     testConnectionAndLoadCourses();
   }, []);
 
@@ -90,7 +60,6 @@ const Course = () => {
       
       console.log('Testing backend connection...');
       
-      // First test the connection
       const connectionTest = await testConnection();
       
       if (!connectionTest.success) {
@@ -124,7 +93,6 @@ const Course = () => {
   };
 
   const handleConnectionError = (err) => {
-    // Provide more specific error messages
     if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
       setError('Cannot connect to server. Please check:\n1. Backend is running on http://localhost:8080\n2. No firewall blocking the connection\n3. Backend started without errors');
     } else if (err.code === 'ECONNREFUSED') {
@@ -165,19 +133,8 @@ const Course = () => {
     setShowEditCourseModal(true);
   };
 
-  const closeAddCourseModal = () => {
+  const closeModal = () => {
     setShowAddCourseModal(false);
-    setEditingCourse(null);
-    setCourseForm({
-      courseCode: '',
-      courseDescription: '',
-      credits: '',
-      program: '',
-      status: 'Active'
-    });
-  };
-
-  const closeEditCourseModal = () => {
     setShowEditCourseModal(false);
     setEditingCourse(null);
     setCourseForm({
@@ -197,13 +154,11 @@ const Course = () => {
   };
 
   const handleAddCourse = async () => {
-    // Validate required fields
     if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
       alert('Please fill in all required fields');
       return;
     }
     
-    // Validate credits is a positive number
     if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
       alert('Credits must be a positive number');
       return;
@@ -215,14 +170,13 @@ const Course = () => {
         courseDescription: courseForm.courseDescription,
         credits: parseInt(courseForm.credits),
         program: courseForm.program
-        // Note: removed 'status' field as it's not in the Course model
       };
 
       console.log('Creating course:', courseData);
       await courseAPI.createCourse(courseData);
       alert('Course added successfully!');
-      closeAddCourseModal();
-      loadCourses(); // Reload courses list
+      closeModal();
+      loadCourses();
     } catch (error) {
       console.error('Error adding course:', error);
       if (error.response?.status === 400) {
@@ -234,13 +188,11 @@ const Course = () => {
   };
 
   const handleEditCourse = async () => {
-    // Validate required fields
     if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
       alert('Please fill in all required fields');
       return;
     }
     
-    // Validate credits is a positive number
     if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
       alert('Credits must be a positive number');
       return;
@@ -256,8 +208,8 @@ const Course = () => {
 
       await courseAPI.updateCourse(editingCourse.id, courseData);
       alert('Course updated successfully!');
-      closeEditCourseModal();
-      loadCourses(); // Reload courses list
+      closeModal();
+      loadCourses();
     } catch (error) {
       console.error('Error updating course:', error);
       if (error.response?.status === 400) {
@@ -275,7 +227,7 @@ const Course = () => {
       try {
         await courseAPI.deleteCourse(courseId);
         alert('Course deleted successfully!');
-        loadCourses(); // Reload courses list
+        loadCourses();
       } catch (error) {
         console.error('Error deleting course:', error);
         if (error.response?.status === 404) {
@@ -287,50 +239,54 @@ const Course = () => {
     }
   };
 
-  // Section Modal functions
-  const showAddSectionForm = () => {
-    setShowAddSectionModal(true);
-  };
-
-  const closeAddSectionModal = () => {
-    setShowAddSectionModal(false);
-    setSectionForm({
-      program: '',
-      yearLevel: '',
-      sectionNumber: ''
-    });
-  };
-
-  const handleSectionFormChange = (field, value) => {
-    setSectionForm(prev => ({
+  // Program Modal functions
+  const handleProgramFormChange = (field, value) => {
+    setProgramForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleAddSection = async () => {
-    // Validate required fields
-    if (!sectionForm.program || !sectionForm.yearLevel || !sectionForm.sectionNumber) {
+  const showAddProgramForm = () => {
+    setProgramForm({
+      programName: '',
+      programCode: '',
+      description: ''
+    });
+    setShowAddProgramModal(true);
+  };
+
+  const closeAddProgramModal = () => {
+    setShowAddProgramModal(false);
+    setProgramForm({
+      programName: '',
+      programCode: '',
+      description: ''
+    });
+  };
+
+  const handleAddProgram = async () => {
+    if (!programForm.programName || !programForm.programCode) {
       alert('Please fill in all required fields');
       return;
     }
     
     try {
-      const sectionData = {
-        program: sectionForm.program,
-        yearLevel: sectionForm.yearLevel,
-        sectionNumber: sectionForm.sectionNumber,
-        // Add other required fields based on your CourseSection model
-      };
-
-      await courseSectionAPI.createSection(sectionData);
-      alert(`Section "${sectionForm.program} ${sectionForm.yearLevel}-${sectionForm.sectionNumber}" created successfully!`);
-      closeAddSectionModal();
+      // Here you would typically call an API to save the program
+      // For now, we'll just add it to the local programs array
+      const newProgram = programForm.programName;
+      
+      // You would need to modify the programs state to be dynamic
+      // setPrograms(prev => [...prev, newProgram]);
+      
+      alert(`Program "${programForm.programName}" added successfully!`);
+      closeAddProgramModal();
     } catch (error) {
-      console.error('Error adding section:', error);
-      alert('Failed to create section. Please try again.');
+      console.error('Error adding program:', error);
+      alert('Failed to add program. Please try again.');
     }
   };
+
   // Navigation
   const navigate = useNavigate();
   const showSection = (section) => {
@@ -361,10 +317,8 @@ const Course = () => {
     }
   };
 
-  // Handle program selection
   const handleProgramSelect = (program) => {
     setSelectedProgram(program);
-    setSelectedSection('All Sections');
   };
 
   // Show loading state
@@ -483,7 +437,6 @@ const Course = () => {
 
   return (
   <div className="container">
-    {/* Main Sidebar */}
     <Sidebar 
       onNavigate={showSection}
       userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
@@ -511,10 +464,8 @@ const Course = () => {
       ]}
     />
 
-    {/* Main Content with Card Layout */}
     <div className="main-content">
       <div className="content-wrapper">
-        {/* Breadcrumb */}
         <div className="breadcrumb">
           <span 
             className="breadcrumb-link" 
@@ -534,7 +485,6 @@ const Course = () => {
         </div>
 
         <div className="course-content-wrapper">
-          {/* Program Selection Card */}
           <div className="course-nav-section">
             <div className="course-nav-header">
               <h2 className="course-nav-title">Programs</h2>
@@ -552,8 +502,8 @@ const Course = () => {
               ))}
             </div>
             <div className="course-nav-actions">
-              <button className="course-btn-add-section" onClick={showAddSectionForm}>
-                Add New Section
+              <button className="course-btn-add-program" onClick={showAddProgramForm}>
+                Add New Program
               </button>
             </div>
             <div className="course-nav-info">
@@ -564,7 +514,6 @@ const Course = () => {
             </div>
           </div>
 
-          {/* Course Management Section Card */}
           <div className="course-main-section">
             <div className="course-section-header">
               <h2 className="course-section-title">Courses</h2>
@@ -572,7 +521,6 @@ const Course = () => {
             </div>
             
             <div className="course-section-content">
-              {/* Filters */}
               <div className="course-filters">
                 <div className="course-search-group">
                   <input
@@ -590,7 +538,6 @@ const Course = () => {
                 </div>
               </div>
 
-              {/* Courses Table */}
               <div className="course-table-container">
                 <table className="course-table">
                   <thead>
@@ -610,22 +557,18 @@ const Course = () => {
                         <td className="course-credits">{course.credits}</td>
                         <td className="course-program">{course.program}</td>
                         <td>
-                          <div className="action-buttons" style={{ display: 'flex', gap: '8px' }}>
-                            <button 
+                          <div className="action-buttons">
+                            <button //Edit Button
                               className="btn-action btn-edit"
                               onClick={() => showEditCourseForm(course)}
                               title="Edit Course"
-                              style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
                             >
-                              ✏️ Edit
                             </button>
-                            <button 
+                            <button //Delete Button
                               className="btn-action btn-delete"
                               onClick={() => handleDeleteCourse(course.id)}
                               title="Delete Course"
-                              style={{ background: '#ef4444', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
                             >
-                              🗑️ Delete
                             </button>
                           </div>
                         </td>
@@ -635,7 +578,7 @@ const Course = () => {
                 </table>
                 
                 {filteredCourses.length === 0 && (
-                  <div className="no-courses" style={{ padding: '2rem', textAlign: 'center' }}>
+                  <div className="no-courses">
                     <p>No courses found matching your criteria.</p>
                   </div>
                 )}
@@ -646,12 +589,14 @@ const Course = () => {
       </div>
     </div>
 
-    {/* Add Course Modal */}
-    {showAddCourseModal && (
+    {/* Course Modal */}
+    {(showAddCourseModal || showEditCourseModal) && (
       <div className="modal-overlay">
         <div className="modal-content">
           <div className="modal-header">
-            <h2 className="modal-title">Add New Course</h2>
+            <h2 className="modal-title">
+              {editingCourse ? 'Edit Course' : 'Add New Course'}
+            </h2>
           </div>
           
           <div className="modal-body">
@@ -708,150 +653,69 @@ const Course = () => {
           </div>
           
           <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={closeAddCourseModal}>
+            <button className="btn btn-secondary" onClick={closeModal}>
               Cancel
             </button>
-            <button className="btn btn-primary" onClick={handleAddCourse}>
-              Add Course
+            <button 
+              className="btn btn-primary" 
+              onClick={editingCourse ? handleEditCourse : handleAddCourse}
+            >
+              {editingCourse ? 'Update Course' : 'Add Course'}
             </button>
           </div>
         </div>
       </div>
     )}
 
-    {/* Edit Course Modal */}
-    {showEditCourseModal && (
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2 className="modal-title">Edit Course</h2>
-        </div>
-        
-        <div className="modal-body">
-          <div className="modal-grid">
-            <div className="form-group">
-              <label className="form-label">Course Code *</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Enter Course Code (e.g., CS101)"
-                value={courseForm.courseCode}
-                onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Course Description *</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Enter Course Description"
-                value={courseForm.courseDescription}
-                onChange={(e) => handleCourseFormChange('courseDescription', e.target.value)}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Credits *</label>
-              <input
-                type="number"
-                className="form-input"
-                placeholder="Enter number of credits"
-                min="1"
-                max="6"
-                value={courseForm.credits}
-                onChange={(e) => handleCourseFormChange('credits', e.target.value)}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Program *</label>
-              <select
-                className="form-input"
-                value={courseForm.program}
-                onChange={(e) => handleCourseFormChange('program', e.target.value)}
-              >
-                <option value="">Select Program</option>
-                {programs.map((program) => (
-                  <option key={program} value={program}>{program}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-        
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={closeEditCourseModal}>
-            Cancel
-          </button>
-          <button className="btn btn-primary" onClick={handleEditCourse}>
-            Update Course
-          </button>
-        </div>
-      </div>
-    )}
-
-    {/* Add Section Modal */}
-    {showAddSectionModal && (
+    {/* Add Program Modal */}
+    {showAddProgramModal && (
       <div className="modal-overlay">
         <div className="modal-content">
           <div className="modal-header">
-            <h2 className="modal-title">Add New Section</h2>
+            <h2 className="modal-title">Add New Program</h2>
           </div>
           
           <div className="modal-body">
             <div className="form-group">
-              <label className="form-label">Program *</label>
-              <select
+              <label className="form-label">Program Name *</label>
+              <input
+                type="text"
                 className="form-input"
-                value={sectionForm.program}
-                onChange={(e) => handleSectionFormChange('program', e.target.value)}
-              >
-                <option value="">Select Program</option>
-                <option value="BSIT">BSIT</option>
-                <option value="BSCS">BSCS</option>
-                <option value="BSIS">BSIS</option>
-                <option value="BSEMC">BSEMC</option>
-              </select>
+                placeholder="Enter Program Name (e.g., BS Computer Science)"
+                value={programForm.programName}
+                onChange={(e) => handleProgramFormChange('programName', e.target.value)}
+              />
             </div>
             
             <div className="form-group">
-              <label className="form-label">Year Level *</label>
-              <select
+              <label className="form-label">Program Code *</label>
+              <input
+                type="text"
                 className="form-input"
-                value={sectionForm.yearLevel}
-                onChange={(e) => handleSectionFormChange('yearLevel', e.target.value)}
-              >
-                <option value="">Select Year Level</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
-              </select>
+                placeholder="Enter Program Code (e.g., BSCS)"
+                value={programForm.programCode}
+                onChange={(e) => handleProgramFormChange('programCode', e.target.value)}
+              />
             </div>
             
             <div className="form-group">
-              <label className="form-label">Section Number *</label>
-              <select
+              <label className="form-label">Description</label>
+              <textarea
                 className="form-input"
-                value={sectionForm.sectionNumber}
-                onChange={(e) => handleSectionFormChange('sectionNumber', e.target.value)}
-              >
-                <option value="">Select Section Number</option>
-                <option value="1">Section 1</option>
-                <option value="2">Section 2</option>
-                <option value="3">Section 3</option>
-                <option value="4">Section 4</option>
-                <option value="5">Section 5</option>
-              </select>
+                placeholder="Enter program description (optional)"
+                rows="3"
+                value={programForm.description}
+                onChange={(e) => handleProgramFormChange('description', e.target.value)}
+              />
             </div>
           </div>
           
           <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={closeAddSectionModal}>
+            <button className="btn btn-secondary" onClick={closeAddProgramModal}>
               Cancel
             </button>
-            <button className="btn btn-primary" onClick={handleAddSection}>
-              Create Section
+            <button className="btn btn-primary" onClick={handleAddProgram}>
+              Add Program
             </button>
           </div>
         </div>
@@ -861,4 +725,4 @@ const Course = () => {
 );
 };
 
-export default Course;
+export default CourseManagement;
