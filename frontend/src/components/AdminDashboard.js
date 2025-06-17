@@ -1,21 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './Sidebar';
+import { facultyAPI, programAPI } from '../services/api'; // Import both APIs
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  // State to hold the fetched lists
+  const [facultyList, setFacultyList] = useState([]);
+  const [programsList, setProgramsList] = useState([]);
+
   const [dashboardData, setAdminDashboardData] = useState({
     stats: {
-      totalStudents: '',
-      totalFaculty: '',
-      activeCourses: '',
+      totalStudents: 1250, // This remains a placeholder for now
+      activeCourses: 85,   // This remains a placeholder for now
       studentGrowth: '',
       facultyGrowth: '',
       courseGrowth: ''
     },
     recentActivities: []
   });
+
+  // Fetch all necessary data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Fetch both faculty and programs data in parallel
+        const [facultyResponse, programResponse] = await Promise.all([
+          facultyAPI.getAllFaculty(),
+          programAPI.getAllPrograms()
+        ]);
+        setFacultyList(facultyResponse.data);
+        setProgramsList(programResponse.data);
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Calculate stats from the fetched data
+  const totalFaculty = facultyList.length;
+  const activeFaculty = facultyList.filter(f => f.status === 'Active').length;
+  const inactiveFaculty = facultyList.filter(f => f.status === 'Inactive').length;
+  const totalPrograms = programsList.length; // New stat for total programs
+
 
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
@@ -271,30 +300,6 @@ const handleAddSchedule = () => {
   };
 
   // Add these missing data arrays
-  const scheduleData = [
-    {
-      id: 1,
-      time: "8:00 AM",
-      subject: "Mathematics",
-      room: "Room 101",
-      type: "blue"
-    },
-    {
-      id: 2,
-      time: "10:00 AM",
-      subject: "Physics",
-      room: "Lab 201",
-      type: "green"
-    },
-    {
-      id: 3,
-      time: "2:00 PM",
-      subject: "Chemistry",
-      room: "Lab 301",
-      type: "blue"
-    }
-  ];
-
   const departmentOptions = [
     "Computer Science",
     "Information Technology",
@@ -436,7 +441,7 @@ const handleAddSchedule = () => {
           <h1 className="dashboard-welcome-title">Welcome back, Admin</h1>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Updated with Faculty and Program Stats */}
         <div className="dashboard-stats-grid">
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Total Students</div>
@@ -444,7 +449,19 @@ const handleAddSchedule = () => {
           </div>
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Total Faculty</div>
-            <div className="dashboard-stat-value">{dashboardData.stats.totalFaculty}</div>
+            <div className="dashboard-stat-value">{totalFaculty}</div>
+          </div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-title">Active Faculty</div>
+            <div className="dashboard-stat-value">{activeFaculty}</div>
+          </div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-title">Inactive Faculty</div>
+            <div className="dashboard-stat-value">{inactiveFaculty}</div>
+          </div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-title">Total Programs</div>
+            <div className="dashboard-stat-value">{totalPrograms}</div>
           </div>
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Active Courses</div>
@@ -539,24 +556,8 @@ const handleAddSchedule = () => {
               </div>
             </div>
 
-            {/* Upcoming Schedule */}
-            <div className="dashboard-section-card">
-              <div className="dashboard-schedule-header-section">
-                <h2 className="dashboard-schedule-title">Upcoming Schedule</h2>
-              </div>
-              <div className="dashboard-schedule-content">
-                {scheduleData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className={`dashboard-schedule-item ${item.type === 'blue' ? 'dashboard-schedule-item-blue' : item.type === 'green' ? 'dashboard-schedule-item-green' : ''}`}
-                  >
-                    <div className="dashboard-schedule-time">{item.time}</div>
-                    <div className="dashboard-schedule-subject">{item.subject}</div>
-                    <div className="dashboard-schedule-room">{item.room}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Upcoming Schedule Section REMOVED */}
+
           </div>
         </div>
       </div>

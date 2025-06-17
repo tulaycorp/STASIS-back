@@ -126,7 +126,7 @@
 
 .dashboard-stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* MODIFIED FOR FLEXIBILITY */
   gap: 16px;
   margin-bottom: 25px;
 }
@@ -372,62 +372,6 @@
   background: #fff3cd;
   color: #856404;
   font-weight: 500;
-}
-
-.dashboard-schedule-header-section {
-  padding: 18px 20px;
-  border-bottom: 1px solid #f1f3f4;
-  background: #fafbfc;
-}
-
-.dashboard-schedule-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0;  
-}
-
-.dashboard-schedule-content {
-  padding: 20px;
-  min-height: 150px;
-}
-
-.dashboard-schedule-item {
-  padding: 12px 20px;
-  border-left: 3px solid #dc3545;
-  margin-bottom: 12px;
-  background: rgba(220, 53, 69, 0.02);
-  position: relative;
-  border-radius: 0 4px 4px 0;
-}
-
-.dashboard-schedule-item-blue {
-  border-left-color: #007bff;
-  background: rgba(0, 123, 255, 0.02);
-}
-
-.dashboard-schedule-item-green {
-  border-left-color: #28a745;
-  background: rgba(40, 167, 69, 0.02);
-}
-
-.dashboard-schedule-time {
-  font-size: 11px;
-  color: #6c757d;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.dashboard-schedule-subject {
-  font-weight: 600;
-  color: #212529;
-  margin-bottom: 2px;
-  font-size: 13px;
-}
-
-.dashboard-schedule-room {
-  font-size: 11px;
-  color: #6c757d;
 }
 
 /* Modal Styles */
