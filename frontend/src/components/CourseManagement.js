@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CourseManagement.css';
 import Sidebar from './Sidebar';
-import { courseAPI, courseSectionAPI, testConnection } from '../services/api';
+import { courseAPI, courseSectionAPI, testConnection, programAPI } from '../services/api';
+import axios from 'axios';
 
 const CourseManagement = () => {
   const [coursesData, setCoursesData] = useState([]);
@@ -12,7 +13,7 @@ const CourseManagement = () => {
   const [showEditCourseModal, setShowEditCourseModal] = useState(false);
   const [showAddProgramModal, setShowAddProgramModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState('BS Computer Science');
+  const [selectedProgram, setSelectedProgram] = useState('');
   const [editingCourse, setEditingCourse] = useState(null);
   
   const [courseForm, setCourseForm] = useState({
@@ -29,13 +30,15 @@ const CourseManagement = () => {
     facultyChairman: ''
   });
 
-  // Available programs
-  const programs = [
-    'BS Computer Science',
-    'BS Information Technology',
-    'BS Information Systems',
-    'BS Entertainment and Multimedia Computing'
-  ];
+  const [programs, setPrograms] = useState([]);
+  const [programsLoading, setProgramsLoading] = useState(true);
+  const [programsError, setProgramsError] = useState(null);
+
+  const [showDeleteProgramModal, setShowDeleteProgramModal] = useState(false);
+  const [programToDelete, setProgramToDelete] = useState('');
+  const [deleteProgramError, setDeleteProgramError] = useState('');
+
+  const [facultyList, setFacultyList] = useState([]);
 
   // Available Faculty Chairmen
   const facultyChairmen = [
@@ -63,6 +66,18 @@ const CourseManagement = () => {
   // Load courses from API on component mount
   useEffect(() => {
     testConnectionAndLoadCourses();
+  }, []);
+
+  // Fetch faculty on mount
+  useEffect(() => {
+    axios.get('/api/faculty')
+      .then(res => setFacultyList(res.data))
+      .catch(() => setFacultyList([]));
+  }, []);
+
+  // Fetch programs on mount
+  useEffect(() => {
+    loadPrograms();
   }, []);
 
   const testConnectionAndLoadCourses = async () => {
@@ -102,6 +117,18 @@ const CourseManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadPrograms = async () => {
+    setProgramsLoading(true);
+    try {
+      const res = await programAPI.getAllPrograms();
+      setPrograms(res.data);
+      setProgramsError(null);
+    } catch (err) {
+      setProgramsError('Failed to load programs.');
+    }
+    setProgramsLoading(false);
   };
 
   const handleConnectionError = (err) => {
@@ -278,24 +305,49 @@ const CourseManagement = () => {
   };
 
   const handleAddProgram = async () => {
-    if (!programForm.programName || !programForm.programCode) {
-      alert('Please fill in all required fields');
+    if (!programForm.programName) {
+      alert('Please enter a program name.');
       return;
     }
-    
+    const payload = { programName: programForm.programName };
+    if (programForm.facultyChairman) {
+      payload.chairFaculty = { facultyID: Number(programForm.facultyChairman) };
+    }
     try {
-      // Here you would typically call an API to save the program
-      // For now, we'll just add it to the local programs array
-      const newProgram = programForm.programName;
-      
-      // You would need to modify the programs state to be dynamic
-      // setPrograms(prev => [...prev, newProgram]);
-      
-      alert(`Program "${programForm.programName}" added successfully!`);
-      closeAddProgramModal();
-    } catch (error) {
-      console.error('Error adding program:', error);
-      alert('Failed to add program. Please try again.');
+      await programAPI.createProgram(payload);
+      setShowAddProgramModal(false);
+      setProgramForm({ programName: '', facultyChairman: '' });
+      loadPrograms();
+    } catch (err) {
+      alert('Failed to add program.');
+    }
+  };
+
+  const openDeleteProgramModal = () => {
+    setProgramToDelete('');
+    setDeleteProgramError('');
+    setShowDeleteProgramModal(true);
+  };
+
+  const closeDeleteProgramModal = () => {
+    setShowDeleteProgramModal(false);
+    setDeleteProgramError('');
+  };
+
+  const handleDeleteProgram = async () => {
+    if (!programToDelete) return;
+    try {
+      await programAPI.deleteProgram(programToDelete);
+      loadPrograms(); // <-- reload programs
+      setShowDeleteProgramModal(false);
+      setProgramToDelete('');
+      setDeleteProgramError('');
+    } catch (err) {
+      setDeleteProgramError(
+        err.response?.status === 409
+          ? 'Cannot delete: Program has courses assigned.'
+          : 'Failed to delete program.'
+      );
     }
   };
 
@@ -491,9 +543,9 @@ const CourseManagement = () => {
         
         <div className="dashboard-header">
           <h1 className="dashboard-welcome-title">Course Management</h1>
-          <div className="program-indicator">
-            {selectedProgram}
-          </div>
+          {selectedProgram && (
+            <div className="program-indicator">{selectedProgram}</div>
+          )}
         </div>
 
         <div className="course-content-wrapper">
@@ -504,25 +556,22 @@ const CourseManagement = () => {
             <div className="course-nav-list">
               {programs.map((program) => (
                 <div
-                  key={program}
-                  className={`course-nav-item ${selectedProgram === program ? 'course-nav-item-active' : ''}`}
-                  onClick={() => handleProgramSelect(program)}
+                  key={program.programID}
+                  className={`course-nav-item ${selectedProgram === program.programName ? 'course-nav-item-active' : ''}`}
+                  onClick={() => handleProgramSelect(program.programName)}
                 >
                   <span className="course-nav-icon">📚</span>
-                  {program}
+                  {program.programName}
                 </div>
               ))}
             </div>
             <div className="course-nav-actions">
               <button className="course-btn-add-program" onClick={showAddProgramForm}>
-                Add New Program
+                Add Program
               </button>
-            </div>
-            <div className="course-nav-info">
-              <div className="course-nav-info-item">
-                <div className="course-nav-info-label">{selectedProgram}</div>
-                <div className="course-nav-info-value">Total Courses: {filteredCourses.length}</div>
-              </div>
+              <button className="course-btn-delete-program" onClick={openDeleteProgramModal}>
+                Delete Program
+              </button>
             </div>
           </div>
 
@@ -657,7 +706,7 @@ const CourseManagement = () => {
                 >
                   <option value="">Select Program</option>
                   {programs.map((program) => (
-                    <option key={program} value={program}>{program}</option>
+                    <option key={program.programID} value={program.programName}>{program.programName}</option>
                   ))}
                 </select>
               </div>
@@ -713,13 +762,15 @@ const CourseManagement = () => {
             <div className="form-group">
               <label className="form-label">Faculty Chairman</label>
               <select
-                className="form-input"
+                className="form-select"
                 value={programForm.facultyChairman}
-                onChange={(e) => handleProgramFormChange('facultyChairman', e.target.value)}
+                onChange={e => setProgramForm({ ...programForm, facultyChairman: e.target.value })}
               >
                 <option value="">Select Faculty Chairman</option>
-                {facultyChairmen.map((chairman) => (
-                  <option key={chairman} value={chairman}>{chairman}</option>
+                {facultyList.map(faculty => (
+                  <option key={faculty.facultyID} value={faculty.facultyID}>
+                    {faculty.firstName} {faculty.lastName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -731,6 +782,51 @@ const CourseManagement = () => {
             </button>
             <button className="btn btn-primary" onClick={handleAddProgram}>
               Add Program
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Delete Program Modal */}
+    {showDeleteProgramModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h3 className="modal-title">Delete Program</h3>
+          </div>
+          <div className="modal-body">
+            <label htmlFor="delete-program-dropdown">Select Program to Delete:</label>
+            <select
+              id="delete-program-dropdown"
+              value={programToDelete}
+              onChange={e => setProgramToDelete(e.target.value)}
+              className="form-select"
+            >
+              <option value="">-- Select Program --</option>
+              {programs.map(program => (
+                <option key={program.programID} value={program.programID}>
+                  {program.programName}
+                </option>
+              ))}
+            </select>
+            <div style={{ color: 'red', marginTop: 12 }}>
+              Warning: Deleting a program is permanent. You cannot delete a program that has courses assigned.
+            </div>
+            {deleteProgramError && (
+              <div style={{ color: 'red', marginTop: 8 }}>{deleteProgramError}</div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={closeDeleteProgramModal}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={handleDeleteProgram}
+              disabled={!programToDelete}
+            >
+              Delete
             </button>
           </div>
         </div>

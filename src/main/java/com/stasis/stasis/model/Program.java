@@ -3,11 +3,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 @Entity
 @Data
 @NoArgsConstructor
@@ -22,5 +23,6 @@ public class Program {
     private String programName;
 
     @OneToOne
+    @JoinColumn(name = "chair_faculty_id", nullable = true)
     private Faculty chairFaculty;
 }

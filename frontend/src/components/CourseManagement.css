@@ -161,6 +161,9 @@
   padding: 12px 20px;
   border-top: 1px solid #f1f3f4;
   border-bottom: 1px solid #f1f3f4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Add padding between buttons */
 }
 
 .course-btn-add-program {
@@ -176,65 +179,21 @@
   transition: background-color 0.2s;
 }
 
-.course-btn-add-section:hover {
-  background-color: #c82333;
-}
-
-.course-nav-info {
-  padding: 12px 20px;
-}
-
-.course-nav-info-item {
-  margin-bottom: 10px;
-}
-
-.course-nav-info-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6c757d;
-  margin-bottom: 5px;
-}
-
-.course-nav-info-value {
-  font-size: 14px;
+.course-btn-delete-program {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #6c757d; /* Grayscale */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
   font-weight: 500;
-  color: #212529;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* Main Course Section Card */
-.course-main-section {
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  padding: 0;
-  height: fit-content;
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
-}
-
-.course-section-header {
-  padding: 24px 28px;
-  border-bottom: 1px solid #f1f3f4;
-  background: #fafbfc;
-  border-radius: 8px 8px 0 0;
-}
-
-.course-section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0 0 6px 0;
-}
-
-.course-section-desc {
-  font-size: 14px;
-  color: #6c757d;
-  margin: 0;
-}
-
-.course-section-content {
-  padding: 20px;
-  padding-bottom: 20px;
+.course-btn-delete-program:hover {
+  background-color: #5a6268;
 }
 
 /* Course Filters */
@@ -512,6 +471,27 @@
 
 .btn-secondary:hover {
   background-color: #5a6268;
+}
+
+/* Selected Program Button */
+.selected-program-btn {
+  display: inline-block;
+  background-color: #c0392b;
+  color: #fff;
+  padding: 12px 32px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 auto;
+  min-width: 180px;
+  min-height: 48px;
+  transition: background 0.2s;
+}
+
+/* Optionally, hide the button if there's no text (defensive) */
+.selected-program-btn:empty {
+  display: none;
 }
 
 /* Responsive Design */
