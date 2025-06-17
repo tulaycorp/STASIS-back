@@ -412,7 +412,32 @@ const Course = () => {
   if (error) {
     return (
       <div className="container">
-        {/* ...existing sidebar... */}
+        <Sidebar 
+          onNavigate={showSection}
+          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          sections={[
+            {
+              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️'},
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+              ]
+            }
+          ]}
+        />
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>

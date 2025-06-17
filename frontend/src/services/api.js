@@ -120,9 +120,114 @@ export const enrolledCourseAPI = {
   createEnrollment: (enrollmentData) => api.post('/enrolled-courses', enrollmentData),
 };
 
+// Course Prerequisites API endpoints
+export const coursePrerequisiteAPI = {
+  // Get all prerequisites
+  getAllPrerequisites: () => api.get('/course-prerequisites'),
+  
+  // Get prerequisites for a course
+  getPrerequisitesByCourse: (courseId) => api.get(`/course-prerequisites/course/${courseId}`),
+  
+  // Get courses that have a specific prerequisite
+  getCoursesByPrerequisite: (courseId) => api.get(`/course-prerequisites/prerequisite-for/${courseId}`),
+  
+  // Add prerequisite to course
+  addPrerequisite: (courseId, prerequisiteId) => 
+    api.post(`/course-prerequisites/course/${courseId}/prerequisite/${prerequisiteId}`),
+  
+  // Remove prerequisite from course
+  removePrerequisite: (courseId, prerequisiteId) => 
+    api.delete(`/course-prerequisites/course/${courseId}/prerequisite/${prerequisiteId}`),
+  
+  // Check if course has prerequisites
+  hasPrerequisites: (courseId) => api.get(`/course-prerequisites/course/${courseId}/has-prerequisites`),
+  
+  // Check if course is prerequisite for others
+  isPrerequisiteFor: (courseId) => api.get(`/course-prerequisites/course/${courseId}/is-prerequisite`),
+};
+
+// Program API endpoints
+export const programAPI = {
+  // Get all programs
+  getAllPrograms: () => {
+    console.log('Calling getAllPrograms API...');
+    return api.get('/programs');
+  },
+  
+  // Get program by ID
+  getProgramById: (id) => api.get(`/programs/${id}`),
+  
+  // Create new program
+  createProgram: (programData) => api.post('/programs', programData),
+  
+  // Update program
+  updateProgram: (id, programData) => api.put(`/programs/${id}`, programData),
+  
+  // Delete program
+  deleteProgram: (id) => api.delete(`/programs/${id}`),
+};
+
+// Faculty API endpoints
+export const facultyAPI = {
+  // Get all faculty
+  getAllFaculty: () => {
+    console.log('Calling getAllFaculty API...');
+    return api.get('/faculty');
+  },
+  
+  // Get faculty by ID
+  getFacultyById: (id) => api.get(`/faculty/${id}`),
+  
+  // Create new faculty
+  createFaculty: (facultyData) => {
+    console.log('Calling createFaculty API with data:', facultyData);
+    return api.post('/faculty', facultyData);
+  },
+  
+  // Update faculty
+  updateFaculty: (id, facultyData) => {
+    console.log('Calling updateFaculty API for ID:', id, 'with data:', facultyData);
+    return api.put(`/faculty/${id}`, facultyData);
+  },
+  
+  // Delete faculty
+  deleteFaculty: (id) => {
+    console.log('Calling deleteFaculty API for ID:', id);
+    return api.delete(`/faculty/${id}`);
+  },
+  
+  // Get faculty by program
+  getFacultyByProgram: (programId) => api.get(`/faculty/program/${programId}`),
+  
+  // Get faculty by status
+  getFacultyByStatus: (status) => api.get(`/faculty/status/${status}`),
+  
+  // Get faculty by position
+  getFacultyByPosition: (position) => api.get(`/faculty/position/${position}`),
+  
+  // Search faculty
+  searchFaculty: (searchTerm) => api.get(`/faculty/search?searchTerm=${encodeURIComponent(searchTerm)}`),
+  
+  // Get active faculty
+  getActiveFaculty: () => api.get('/faculty/active'),
+  
+  // Update faculty status
+  updateFacultyStatus: (id, status) => api.put(`/faculty/${id}/status?status=${encodeURIComponent(status)}`),
+  
+  // Get faculty by email
+  getFacultyByEmail: (email) => api.get(`/faculty/email/${encodeURIComponent(email)}`),
+  
+  // Check if email exists
+  checkEmailExists: (email) => api.get(`/faculty/email-exists/${encodeURIComponent(email)}`),
+  
+  // Validate faculty data
+  validateFaculty: (facultyData) => api.post('/faculty/validate', facultyData),
+};
+
 // Test connection function
 export const testConnection = async () => {
   try {
+    console.log('Testing connection to backend...');
     const response = await api.get('/courses');
     console.log('Connection test successful:', response.status);
     return { success: true, status: response.status };
@@ -135,6 +240,32 @@ export const testConnection = async () => {
       status: error.response?.status 
     };
   }
+};
+
+// Test all endpoints function
+export const testAllEndpoints = async () => {
+  const tests = [
+    { name: 'Courses', test: () => api.get('/courses') },
+    { name: 'Programs', test: () => api.get('/programs') },
+    { name: 'Faculty', test: () => api.get('/faculty') },
+  ];
+
+  const results = {};
+  
+  for (const { name, test } of tests) {
+    try {
+      await test();
+      results[name] = { success: true };
+    } catch (error) {
+      results[name] = { 
+        success: false, 
+        error: error.message,
+        status: error.response?.status 
+      };
+    }
+  }
+  
+  return results;
 };
 
 export default api;

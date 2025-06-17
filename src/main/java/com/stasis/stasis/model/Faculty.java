@@ -24,7 +24,8 @@ public class Faculty {
     private String lastName;
     private String email;
     private String status;
-
+    private String position; 
+    
     @ManyToOne
     private Program program;
 }

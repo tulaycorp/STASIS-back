@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultyManagement.css';
 import Sidebar from './Sidebar';
+import { facultyAPI, programAPI } from '../services/api';
 
 const FacultyManagement = () => {
+  const [facultyList, setFacultyList] = useState([]);
+  const [programsList, setProgramsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
   const [showEditFacultyModal, setShowEditFacultyModal] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState(null);
@@ -11,72 +16,13 @@ const FacultyManagement = () => {
     firstName: '',
     lastName: '',
     email: '',
-    department: '',
+    programId: '',
     position: '',
-    employmentStatus: ''
+    status: 'Active'
   });
 
-  // Sample faculty data
-  const [facultyList, setFacultyList] = useState([
-    {
-      id: 'FAC001',
-      name: 'Emily Thompson',
-      position: 'Associate Professor',
-      department: 'Computer Science',
-      email: 'emily.thompson@university.edu',
-      status: 'Full-time'
-    },
-    {
-      id: 'FAC002',
-      name: 'James Chen',
-      position: 'Professor',
-      department: 'Information Technology',
-      email: 'james.chen@university.edu',
-      status: 'Full-time'
-    },
-    {
-      id: 'FAC003',
-      name: 'Sarah Martinez',
-      position: 'Assistant Professor',
-      department: 'Business Administration',
-      email: 'sarah.martinez@university.edu',
-      status: 'Part-time'
-    },
-    {
-      id: 'FAC004',
-      name: 'Michael Roberts',
-      position: 'Professor',
-      department: 'Engineering',
-      email: 'michael.roberts@university.edu',
-      status: 'Full-time'
-    },
-    {
-      id: 'FAC005',
-      name: 'Rachel Williams',
-      position: 'Associate Professor',
-      department: 'Psychology',
-      email: 'rachel.williams@university.edu',
-      status: 'Part-time'
-    }
-  ]);
-
-  const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
+  const [selectedProgram, setSelectedProgram] = useState('All Programs');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Department options for faculty
-  const departmentOptions = [
-    'Computer Science',
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'English',
-    'History',
-    'Psychology',
-    'Business Administration',
-    'Engineering',
-    'Information Technology'
-  ];
 
   // Position options for faculty
   const positionOptions = [
@@ -89,31 +35,87 @@ const FacultyManagement = () => {
     'Dean'
   ];
 
-  // Employment status options
-  const employmentStatusOptions = [
-    'Full-time',
-    'Part-time',
-    'Contract',
-    'Adjunct'
+  // Status options
+  const statusOptions = [
+    'Active',
+    'Inactive',
+    'On Leave',
+    'Retired'
   ];
+
+  // Load data on component mount
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Load both faculty and programs
+      await Promise.all([
+        loadFaculty(),
+        loadPrograms()
+      ]);
+    } catch (err) {
+      console.error('Error loading initial data:', err);
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadFaculty = async () => {
+    try {
+      const response = await facultyAPI.getAllFaculty();
+      setFacultyList(response.data);
+    } catch (error) {
+      console.error('Error loading faculty:', error);
+      throw error;
+    }
+  };
+
+  const loadPrograms = async () => {
+    try {
+      const response = await programAPI.getAllPrograms();
+      setProgramsList(response.data);
+    } catch (error) {
+      console.error('Error loading programs:', error);
+      throw error;
+    }
+  };
 
   // Statistics calculations
   const totalFaculty = facultyList.length;
-  const fullTimeFaculty = facultyList.filter(f => f.status === 'Full-time').length;
-  const partTimeFaculty = facultyList.filter(f => f.status === 'Part-time').length;
-  const departments = [...new Set(facultyList.map(f => f.department))].length;
+  const activeFaculty = facultyList.filter(f => f.status === 'Active').length;
+  const inactiveFaculty = facultyList.filter(f => f.status === 'Inactive').length;
+  const totalPrograms = [...new Set(facultyList.map(f => f.program?.programName))].filter(Boolean).length;
 
-  // Filter faculty based on search and department
+  // Filter faculty based on search and program
   const filteredFaculty = facultyList.filter(faculty => {
-    const matchesSearch = faculty.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         faculty.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         faculty.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = selectedDepartment === 'All Departments' || faculty.department === selectedDepartment;
-    return matchesSearch && matchesDepartment;
+    const matchesSearch = 
+      faculty.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faculty.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faculty.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faculty.facultyID?.toString().includes(searchTerm.toLowerCase());
+    
+    const matchesProgram = selectedProgram === 'All Programs' || 
+      faculty.program?.programName === selectedProgram;
+    
+    return matchesSearch && matchesProgram;
   });
 
   // Add Faculty Modal functions
   const showAddFacultyForm = () => {
+    setFacultyForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      programId: '',
+      position: '',
+      status: 'Active'
+    });
     setShowAddFacultyModal(true);
   };
 
@@ -123,27 +125,22 @@ const FacultyManagement = () => {
       firstName: '',
       lastName: '',
       email: '',
-      department: '',
+      programId: '',
       position: '',
-      employmentStatus: ''
+      status: 'Active'
     });
   };
 
   // Edit Faculty Modal functions
   const showEditFacultyForm = (faculty) => {
     setEditingFaculty(faculty);
-    // Split the name into first and last name
-    const nameParts = faculty.name.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-    
     setFacultyForm({
-      firstName: firstName,
-      lastName: lastName,
+      firstName: faculty.firstName,
+      lastName: faculty.lastName,
       email: faculty.email,
-      department: faculty.department,
+      programId: faculty.program?.programID || '',
       position: faculty.position,
-      employmentStatus: faculty.status
+      status: faculty.status
     });
     setShowEditFacultyModal(true);
   };
@@ -155,9 +152,9 @@ const FacultyManagement = () => {
       firstName: '',
       lastName: '',
       email: '',
-      department: '',
+      programId: '',
       position: '',
-      employmentStatus: ''
+      status: 'Active'
     });
   };
 
@@ -168,65 +165,104 @@ const FacultyManagement = () => {
     }));
   };
 
-  const handleAddFaculty = () => {
+  const handleAddFaculty = async () => {
     // Validate required fields
-    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email || !facultyForm.department) {
+    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email) {
       alert('Please fill in all required fields');
       return;
     }
-    
-    // Generate new faculty ID
-    const newId = `FAC${String(facultyList.length + 1).padStart(3, '0')}`;
-    
-    // Create new faculty object
-    const newFaculty = {
-      id: newId,
-      name: `${facultyForm.firstName} ${facultyForm.lastName}`,
-      position: facultyForm.position || 'Assistant Professor',
-      department: facultyForm.department,
-      email: facultyForm.email,
-      status: facultyForm.employmentStatus || 'Full-time'
-    };
-    
-    // Add to faculty list
-    setFacultyList(prev => [...prev, newFaculty]);
-    
-    alert('Faculty added successfully!');
-    closeAddFacultyModal();
-  };
 
-  const handleEditFaculty = () => {
-    // Validate required fields
-    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email || !facultyForm.department) {
-      alert('Please fill in all required fields');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(facultyForm.email)) {
+      alert('Please enter a valid email address');
       return;
     }
     
-    // Create updated faculty object
-    const updatedFaculty = {
-      ...editingFaculty,
-      name: `${facultyForm.firstName} ${facultyForm.lastName}`,
-      position: facultyForm.position || 'Assistant Professor',
-      department: facultyForm.department,
-      email: facultyForm.email,
-      status: facultyForm.employmentStatus || 'Full-time'
-    };
-    
-    // Update faculty list
-    setFacultyList(prev => 
-      prev.map(faculty => 
-        faculty.id === editingFaculty.id ? updatedFaculty : faculty
-      )
-    );
-    
-    alert('Faculty updated successfully!');
-    closeEditFacultyModal();
+    try {
+      // Find the selected program object
+      const selectedProgramObj = programsList.find(p => p.programID.toString() === facultyForm.programId);
+      
+      const facultyData = {
+        firstName: facultyForm.firstName,
+        lastName: facultyForm.lastName,
+        email: facultyForm.email,
+        position: facultyForm.position || 'Assistant Professor',
+        status: facultyForm.status || 'Active',
+        program: selectedProgramObj || null
+      };
+
+      await facultyAPI.createFaculty(facultyData);
+      alert('Faculty added successfully!');
+      closeAddFacultyModal();
+      loadFaculty(); // Reload faculty list
+    } catch (error) {
+      console.error('Error adding faculty:', error);
+      if (error.response?.status === 400) {
+        alert('Email already exists or invalid data provided!');
+      } else {
+        alert('Failed to add faculty. Please try again.');
+      }
+    }
   };
 
-  const handleDeleteFaculty = (facultyId) => {
+  const handleEditFaculty = async () => {
+    // Validate required fields
+    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(facultyForm.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    try {
+      // Find the selected program object
+      const selectedProgramObj = programsList.find(p => p.programID.toString() === facultyForm.programId);
+      
+      const facultyData = {
+        firstName: facultyForm.firstName,
+        lastName: facultyForm.lastName,
+        email: facultyForm.email,
+        position: facultyForm.position || 'Assistant Professor',
+        status: facultyForm.status || 'Active',
+        program: selectedProgramObj || null
+      };
+
+      await facultyAPI.updateFaculty(editingFaculty.facultyID, facultyData);
+      alert('Faculty updated successfully!');
+      closeEditFacultyModal();
+      loadFaculty(); // Reload faculty list
+    } catch (error) {
+      console.error('Error updating faculty:', error);
+      if (error.response?.status === 400) {
+        alert('Email already exists or invalid data provided!');
+      } else if (error.response?.status === 404) {
+        alert('Faculty not found!');
+      } else {
+        alert('Failed to update faculty. Please try again.');
+      }
+    }
+  };
+
+  const handleDeleteFaculty = async (facultyId) => {
     if (window.confirm('Are you sure you want to delete this faculty member?')) {
-      setFacultyList(prev => prev.filter(faculty => faculty.id !== facultyId));
-      alert('Faculty deleted successfully!');
+      try {
+        await facultyAPI.deleteFaculty(facultyId);
+        alert('Faculty deleted successfully!');
+        loadFaculty(); // Reload faculty list
+      } catch (error) {
+        console.error('Error deleting faculty:', error);
+        if (error.response?.status === 404) {
+          alert('Faculty not found!');
+        } else {
+          alert('Failed to delete faculty. Please try again.');
+        }
+      }
     }
   };
 
@@ -261,8 +297,98 @@ const FacultyManagement = () => {
         // No action for unknown sections
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar 
+          onNavigate={showSection}
+          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          sections={[
+            {
+              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️'},
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+              ]
+            }
+          ]}
+        />
+        <div className="main-content">
+          <div className="content-wrapper">
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <p>Loading faculty data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar 
+          onNavigate={showSection}
+          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          sections={[
+            {
+              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️'},
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+              ]
+            }
+          ]}
+        />
+        <div className="main-content">
+          <div className="content-wrapper">
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <div style={{ color: '#ef4444', marginBottom: '1rem' }}>
+                <h3>Error Loading Faculty Data</h3>
+                <p>{error}</p>
+              </div>
+              <button onClick={loadInitialData} className="btn btn-primary">
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="dashboard-container">      {/* Sidebar */}
+    <div className="dashboard-container">
+      {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
         userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
@@ -316,23 +442,23 @@ const FacultyManagement = () => {
             </button>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards - Updated */}
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-label">Total Faculty</div>
               <div className="stat-value">{totalFaculty}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Full-time</div>
-              <div className="stat-value">{fullTimeFaculty}</div>
+              <div className="stat-label">Active</div>
+              <div className="stat-value">{activeFaculty}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Part-time</div>
-              <div className="stat-value">{partTimeFaculty}</div>
+              <div className="stat-label">Inactive</div>
+              <div className="stat-value">{inactiveFaculty}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Departments</div>
-              <div className="stat-value">{departments}</div>
+              <div className="stat-label">Programs</div>
+              <div className="stat-value">{totalPrograms}</div>
             </div>
           </div>
 
@@ -343,13 +469,15 @@ const FacultyManagement = () => {
                 <h2 className="list-title">Faculty List</h2>
                 <div className="controls">
                   <select 
-                    value={selectedDepartment}
-                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    value={selectedProgram}
+                    onChange={(e) => setSelectedProgram(e.target.value)}
                     className="select-input"
                   >
-                    <option>All Departments</option>
-                    {departmentOptions.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
+                    <option>All Programs</option>
+                    {programsList.map(program => (
+                      <option key={program.programID} value={program.programName}>
+                        {program.programName}
+                      </option>
                     ))}
                   </select>
                   <input
@@ -369,26 +497,28 @@ const FacultyManagement = () => {
                   <tr>
                     <th>Faculty ID</th>
                     <th>Name</th>
-                    <th>Department</th>
+                    <th>Program</th>
                     <th>Email</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredFaculty.map((faculty, index) => (
-                    <tr key={faculty.id}>
-                      <td>{faculty.id}</td>
+                  {filteredFaculty.map((faculty) => (
+                    <tr key={faculty.facultyID}>
+                      <td>{faculty.facultyID}</td>
                       <td>
                         <div className="faculty-info">
-                          <div className="faculty-name">{faculty.name}</div>
+                          <div className="faculty-name">
+                            {faculty.firstName} {faculty.lastName}
+                          </div>
                           <div className="faculty-position">{faculty.position}</div>
                         </div>
                       </td>
-                      <td>{faculty.department}</td>
+                      <td>{faculty.program?.programName || 'No Program'}</td>
                       <td>{faculty.email}</td>
                       <td>
-                        <span className={`status-badge ${faculty.status === 'Full-time' ? 'status-fulltime' : 'status-parttime'}`}>
+                        <span className={`status-badge ${faculty.status === 'Active' ? 'status-active' : 'status-inactive'}`}>
                           {faculty.status}
                         </span>
                       </td>
@@ -396,12 +526,16 @@ const FacultyManagement = () => {
                         <button 
                           className="btn-edit"
                           onClick={() => showEditFacultyForm(faculty)}
+                          title="Edit Faculty"
                         >
+                          ✏️
                         </button>
                         <button 
                           className="btn-delete"
-                          onClick={() => handleDeleteFaculty(faculty.id)}
+                          onClick={() => handleDeleteFaculty(faculty.facultyID)}
+                          title="Delete Faculty"
                         >
+                          🗑️
                         </button>
                       </td>
                     </tr>
@@ -414,30 +548,21 @@ const FacultyManagement = () => {
               <div className="table-info">
                 Showing 1 to {filteredFaculty.length} of {totalFaculty} entries
               </div>
-              <div className="pagination">
-                <button className="page-btn disabled">Previous</button>
-                <button className="page-btn active">1</button>
-                <button className="page-btn">2</button>
-                <button className="page-btn">Next</button>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Add Faculty Modal */}
+      {/* Add Faculty Modal - Updated with Program instead of Department */}
       {showAddFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-container">
-            {/* Modal Header */}
             <div className="modal-header">
               <h2 className="modal-title">Add New Faculty</h2>
             </div>
             
-            {/* Modal Content */}
             <div className="modal-content">
               <div className="form-grid">
-                {/* First Name */}
                 <div className="form-group">
                   <label className="form-label">First Name *</label>
                   <input
@@ -449,7 +574,6 @@ const FacultyManagement = () => {
                   />
                 </div>
                 
-                {/* Last Name */}
                 <div className="form-group">
                   <label className="form-label">Last Name *</label>
                   <input
@@ -461,7 +585,6 @@ const FacultyManagement = () => {
                   />
                 </div>
                 
-                {/* Email */}
                 <div className="form-group">
                   <label className="form-label">Email *</label>
                   <input
@@ -473,22 +596,22 @@ const FacultyManagement = () => {
                   />
                 </div>
                 
-                {/* Department */}
                 <div className="form-group">
-                  <label className="form-label">Department *</label>
+                  <label className="form-label">Program</label>
                   <select
                     className="form-input"
-                    value={facultyForm.department}
-                    onChange={(e) => handleFacultyFormChange('department', e.target.value)}
+                    value={facultyForm.programId}
+                    onChange={(e) => handleFacultyFormChange('programId', e.target.value)}
                   >
-                    <option value="">Select department</option>
-                    {departmentOptions.map((dept) => (
-                      <option key={dept} value={dept}>{dept}</option>
+                    <option value="">Select Program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programID}>
+                        {program.programName}
+                      </option>
                     ))}
                   </select>
                 </div>
                 
-                {/* Position */}
                 <div className="form-group">
                   <label className="form-label">Position</label>
                   <select
@@ -503,16 +626,14 @@ const FacultyManagement = () => {
                   </select>
                 </div>
                 
-                {/* Employment Status */}
                 <div className="form-group">
-                  <label className="form-label">Employment Status</label>
+                  <label className="form-label">Status</label>
                   <select
                     className="form-input"
-                    value={facultyForm.employmentStatus}
-                    onChange={(e) => handleFacultyFormChange('employmentStatus', e.target.value)}
+                    value={facultyForm.status}
+                    onChange={(e) => handleFacultyFormChange('status', e.target.value)}
                   >
-                    <option value="">Select status</option>
-                    {employmentStatusOptions.map((status) => (
+                    {statusOptions.map((status) => (
                       <option key={status} value={status}>{status}</option>
                     ))}
                   </select>
@@ -520,7 +641,6 @@ const FacultyManagement = () => {
               </div>
             </div>
             
-            {/* Modal Footer */}
             <div className="modal-footer">
               <button 
                 className="btn btn-secondary"
@@ -539,19 +659,17 @@ const FacultyManagement = () => {
         </div>
       )}
 
-      {/* Edit Faculty Modal */}
+      {/* Edit Faculty Modal - Updated with Program instead of Department */}
       {showEditFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-container">
-            {/* Modal Header */}
             <div className="modal-header">
               <h2 className="modal-title">Edit Faculty</h2>
             </div>
             
-            {/* Modal Content */}
             <div className="modal-content">
               <div className="form-grid">
-                {/* First Name */}
+                {/* Same form fields as Add Modal but with Edit handler */}
                 <div className="form-group">
                   <label className="form-label">First Name *</label>
                   <input
@@ -563,7 +681,6 @@ const FacultyManagement = () => {
                   />
                 </div>
                 
-                {/* Last Name */}
                 <div className="form-group">
                   <label className="form-label">Last Name *</label>
                   <input
@@ -575,7 +692,6 @@ const FacultyManagement = () => {
                   />
                 </div>
                 
-                {/* Email */}
                 <div className="form-group">
                   <label className="form-label">Email *</label>
                   <input
@@ -587,22 +703,22 @@ const FacultyManagement = () => {
                   />
                 </div>
                 
-                {/* Department */}
                 <div className="form-group">
-                  <label className="form-label">Department *</label>
+                  <label className="form-label">Program</label>
                   <select
                     className="form-input"
-                    value={facultyForm.department}
-                    onChange={(e) => handleFacultyFormChange('department', e.target.value)}
+                    value={facultyForm.programId}
+                    onChange={(e) => handleFacultyFormChange('programId', e.target.value)}
                   >
-                    <option value="">Select department</option>
-                    {departmentOptions.map((dept) => (
-                      <option key={dept} value={dept}>{dept}</option>
+                    <option value="">Select Program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programID}>
+                        {program.programName}
+                      </option>
                     ))}
                   </select>
                 </div>
                 
-                {/* Position */}
                 <div className="form-group">
                   <label className="form-label">Position</label>
                   <select
@@ -617,16 +733,14 @@ const FacultyManagement = () => {
                   </select>
                 </div>
                 
-                {/* Employment Status */}
                 <div className="form-group">
-                  <label className="form-label">Employment Status</label>
+                  <label className="form-label">Status</label>
                   <select
                     className="form-input"
-                    value={facultyForm.employmentStatus}
-                    onChange={(e) => handleFacultyFormChange('employmentStatus', e.target.value)}
+                    value={facultyForm.status}
+                    onChange={(e) => handleFacultyFormChange('status', e.target.value)}
                   >
-                    <option value="">Select status</option>
-                    {employmentStatusOptions.map((status) => (
+                    {statusOptions.map((status) => (
                       <option key={status} value={status}>{status}</option>
                     ))}
                   </select>
@@ -634,7 +748,6 @@ const FacultyManagement = () => {
               </div>
             </div>
             
-            {/* Modal Footer */}
             <div className="modal-footer">
               <button 
                 className="btn btn-secondary"
