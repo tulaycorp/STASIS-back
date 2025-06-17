@@ -12,8 +12,8 @@ const AdminDashboard = () => {
 
   const [dashboardData, setAdminDashboardData] = useState({
     stats: {
-      totalStudents: 1250, // This remains a placeholder for now
-      activeCourses: 85,   // This remains a placeholder for now
+      totalStudents: '', 
+      activeCourses: '',
       studentGrowth: '',
       facultyGrowth: '',
       courseGrowth: ''

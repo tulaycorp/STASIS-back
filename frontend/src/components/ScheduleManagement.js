@@ -530,23 +530,23 @@ const ScheduleManagement = () => {
 
           {/* Dynamic Statistics Cards */}
           <div className="schedule-stats">
-            <div className="stat-card">
-              <h3>Total Schedules</h3>
-              <div className="stat-number">{totalSchedules}</div>
-            </div>
-            <div className="stat-card">
-              <h3>Active</h3>
-              <div className="stat-number">{activeSchedules}</div>
-            </div>
-            <div className="stat-card">
-              <h3>Completed</h3>
-              <div className="stat-number">{completedSchedules}</div>
-            </div>
-            <div className="stat-card">
-              <h3>Cancelled</h3>
-              <div className="stat-number">{cancelledSchedules}</div>
-            </div>
-          </div>
+        <div className="stat-card">
+          <h3 className="stat-label">Total Schedules</h3>
+          <div className="stat-value">{totalSchedules}</div>
+        </div>
+        <div className="stat-card">
+          <h3 className="stat-label">Active</h3>
+          <div className="stat-value">{activeSchedules}</div>
+        </div>
+        <div className="stat-card">
+          <h3 className="stat-label">Completed</h3>
+          <div className="stat-value">{completedSchedules}</div>
+        </div>
+        <div className="stat-card">
+          <h3 className="stat-label">Cancelled</h3>
+          <div className="stat-value">{cancelledSchedules}</div>
+        </div>
+      </div>
 
           {/* Search and Filter */}
           <div className="schedule-controls">
@@ -559,7 +559,7 @@ const ScheduleManagement = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="filter-group">
+            <div className="schedule-filter-group">
               <select
                 className="form-input"
                 value={`${filter.type}:${filter.value}`}
@@ -620,29 +620,18 @@ const ScheduleManagement = () => {
                     </td>
                     <td className="actions">
                       <div className="action-buttons">
-                        <button 
+                        <button //Edit Button
                           className="btn-action btn-edit"
                           onClick={() => showEditScheduleForm(schedule)}
                           title="Edit Schedule"
                         >
-                          ✏️
                         </button>
-                        <button 
+                        <button   //Delete Button
                           className="btn-action btn-delete"
                           onClick={() => handleDeleteSchedule(schedule.id)}
                           title="Delete Schedule"
                         >
-                          🗑️
                         </button>
-                        {schedule.status === 'ACTIVE' && (
-                          <button 
-                            className="btn-action btn-cancel"
-                            onClick={() => handleUpdateStatus(schedule.id, 'CANCELLED')}
-                            title="Cancel Schedule"
-                          >
-                            ❌
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
