@@ -523,19 +523,17 @@ const FacultyManagement = () => {
                         </span>
                       </td>
                       <td className="action-buttons">
-                        <button 
+                        <button //Edit Button
                           className="btn-edit"
                           onClick={() => showEditFacultyForm(faculty)}
                           title="Edit Faculty"
                         >
-                          ✏️
                         </button>
-                        <button 
+                        <button //Delete Button
                           className="btn-delete"
                           onClick={() => handleDeleteFaculty(faculty.facultyID)}
                           title="Delete Faculty"
                         >
-                          🗑️
                         </button>
                       </td>
                     </tr>
