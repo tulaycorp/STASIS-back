@@ -31,9 +31,13 @@ public class CourseSectionService {
             .map(section -> {
                 section.setCourse(updatedSection.getCourse());
                 section.setFaculty(updatedSection.getFaculty());
+                section.setSectionName(updatedSection.getSectionName());
                 section.setSemester(updatedSection.getSemester());
                 section.setYear(updatedSection.getYear());
-                section.setSchedule(updatedSection.getSchedule());
+                section.setStartTime(updatedSection.getStartTime());
+                section.setEndTime(updatedSection.getEndTime());
+                section.setDay(updatedSection.getDay());
+                section.setStatus(updatedSection.getStatus());
                 section.setRoom(updatedSection.getRoom());
                 return courseSectionRepository.save(section);
             })
@@ -42,5 +46,31 @@ public class CourseSectionService {
 
     public void deleteSection(Long id) {
         courseSectionRepository.deleteById(id);
+    }
+
+    // Additional service methods for the new fields
+    public List<CourseSection> getSectionsByStatus(String status) {
+        return courseSectionRepository.findByStatus(status);
+    }
+
+    public List<CourseSection> getSectionsByDay(String day) {
+        return courseSectionRepository.findByDay(day);
+    }
+
+    public List<CourseSection> getSectionsBySectionName(String sectionName) {
+        return courseSectionRepository.findBySectionName(sectionName);
+    }
+
+    public List<CourseSection> getActiveSections() {
+        return courseSectionRepository.findByStatus("ACTIVE");
+    }
+
+    public CourseSection updateSectionStatus(Long id, String status) {
+        return courseSectionRepository.findById(id)
+            .map(section -> {
+                section.setStatus(status);
+                return courseSectionRepository.save(section);
+            })
+            .orElseThrow(() -> new RuntimeException("Section not found with ID " + id));
     }
 }
