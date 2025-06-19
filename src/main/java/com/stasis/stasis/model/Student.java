@@ -13,15 +13,17 @@ public class Student {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-     private Long id;
+    private Long id;
 
-     private String firstName;
-     private String lastName;
-     private String email;
-     private String dateOfBirth;
-     private int year_level;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String dateOfBirth;
 
-     @ManyToOne
-     @JoinColumn(name = "programID")
-     private Program program;
+    @Column(name = "grade_level")  // Add this annotation to map to the correct database column
+    private int year_level;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "program_id")
+    private Program program;
 }

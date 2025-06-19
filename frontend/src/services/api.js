@@ -185,16 +185,28 @@ export const programAPI = {
   },
   
   // Get program by ID
-  getProgramById: (id) => api.get(`/programs/${id}`),
+  getProgramById: (id) => {
+    console.log('Calling getProgramById API for ID:', id);
+    return api.get(`/programs/${id}`);
+  },
   
   // Create new program
-  createProgram: (programData) => api.post('/programs', programData),
+  createProgram: (programData) => {
+    console.log('Calling createProgram API with data:', programData);
+    return api.post('/programs', programData);
+  },
   
   // Update program
-  updateProgram: (id, programData) => api.put(`/programs/${id}`, programData),
+  updateProgram: (id, programData) => {
+    console.log('Calling updateProgram API for ID:', id, 'with data:', programData);
+    return api.put(`/programs/${id}`, programData);
+  },
   
   // Delete program
-  deleteProgram: (id) => api.delete(`/programs/${id}`),
+  deleteProgram: (id) => {
+    console.log('Calling deleteProgram API for ID:', id);
+    return api.delete(`/programs/${id}`);
+  },
 };
 
 // Faculty API endpoints
@@ -253,6 +265,53 @@ export const facultyAPI = {
   // Validate faculty data
   validateFaculty: (facultyData) => api.post('/faculty/validate', facultyData),
 };
+
+// Student API endpoints
+export const studentAPI = {
+  // Get all students
+  getAllStudents: () => {
+    console.log('Calling getAllStudents API...');
+    return api.get('/students');
+  },
+  
+  // Get student by ID
+  getStudentById: (id) => api.get(`/students/${id}`),
+  
+  // Create new student
+  createStudent: (studentData) => {
+    console.log('Calling createStudent API with data:', studentData);
+    return api.post('/students', studentData);
+  },
+  
+  // Update student
+  updateStudent: (id, studentData) => {
+    console.log('Calling updateStudent API for ID:', id, 'with data:', studentData);
+    return api.put(`/students/${id}`, studentData);
+  },
+  
+  // Delete student
+  deleteStudent: (id) => {
+    console.log('Calling deleteStudent API for ID:', id);
+    return api.delete(`/students/${id}`);
+  },
+  
+  // Promote student
+  promoteStudent: (id) => {
+    console.log('Calling promoteStudent API for ID:', id);
+    return api.put(`/students/${id}/promote`);
+  },
+  
+  // Get students by program
+  getStudentsByProgram: (programId) => api.get(`/students/program/${programId}`),
+  
+  // Search students
+  searchStudents: (searchTerm) => api.get(`/students/search?searchTerm=${encodeURIComponent(searchTerm)}`),
+  
+  // Validate student data
+  validateStudent: (studentData) => api.post('/students/validate', studentData),
+};
+
+
 
 // Test connection function
 export const testConnection = async () => {

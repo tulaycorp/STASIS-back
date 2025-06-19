@@ -2,12 +2,12 @@ package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.Student;
 import com.stasis.stasis.repository.StudentRepository;
+import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -27,27 +27,34 @@ public class StudentService {
         return studentRepository.save(student);
     }
 
-    public Student updateStudent(Long id, Student updated) {
+    public Student updateStudent(Long id, Student studentDetails) {
         return studentRepository.findById(id)
-                .map(student -> {
-                    student.setFirstName(updated.getFirstName());
-                    student.setLastName(updated.getLastName());
-                    student.setEmail(updated.getEmail());
-                    student.setDateOfBirth(updated.getDateOfBirth());
-                    // student.setProgram(updated.getProgram());
-                    return studentRepository.save(student);
-                })
-                .orElse(null);
+            .map(student -> {
+                student.setFirstName(studentDetails.getFirstName());
+                student.setLastName(studentDetails.getLastName());
+                student.setEmail(studentDetails.getEmail());
+                student.setDateOfBirth(studentDetails.getDateOfBirth());
+                student.setYear_level(studentDetails.getYear_level());
+                if (studentDetails.getProgram() != null) {
+                    student.setProgram(studentDetails.getProgram());
+                }
+                return studentRepository.save(student);
+            })
+            .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
     }
-    public Student promoteStudent(Long id) {
-        return studentRepository.findById(id)
-                .map(student -> {
-                    student.setYear_level(student.getYear_level() + 1); 
-                    return studentRepository.save(student);
-                })
-                .orElse(null);
-    }
+
     public void deleteStudent(Long id) {
         studentRepository.deleteById(id);
+    }
+
+    public Student promoteStudent(Long id) {
+        return studentRepository.findById(id)
+            .map(student -> {
+                if (student.getYear_level() < 4) {
+                    student.setYear_level(student.getYear_level() + 1);
+                }
+                return studentRepository.save(student);
+            })
+            .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
     }
 }

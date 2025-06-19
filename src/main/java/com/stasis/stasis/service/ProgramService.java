@@ -26,14 +26,16 @@ public class ProgramService {
         return programRepository.save(program);
     }
 
-    public Program updateProgram(Long id, Program updatedProgram) {
+    public Program updateProgram(Long id, Program programDetails) {
         return programRepository.findById(id)
             .map(program -> {
-                program.setProgramName(updatedProgram.getProgramName());
-                program.setChairFaculty(updatedProgram.getChairFaculty());
+                program.setProgramName(programDetails.getProgramName());
+                if (programDetails.getChairFaculty() != null) {
+                    program.setChairFaculty(programDetails.getChairFaculty());
+                }
                 return programRepository.save(program);
             })
-            .orElseThrow(() -> new RuntimeException("Program not found with ID " + id));
+            .orElseThrow(() -> new RuntimeException("Program not found with id: " + id));
     }
 
     public void deleteProgram(Long id) {

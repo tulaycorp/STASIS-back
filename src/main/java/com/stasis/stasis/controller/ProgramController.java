@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/programs")
-@CrossOrigin(origins = "http://localhost:3000") // Add CORS support
+@CrossOrigin(origins = "http://localhost:3000")
 public class ProgramController {
 
     @Autowired

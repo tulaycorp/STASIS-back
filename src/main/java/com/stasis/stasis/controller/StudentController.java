@@ -2,6 +2,7 @@ package com.stasis.stasis.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,15 +12,17 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.stasis.stasis.model.Student;
 import com.stasis.stasis.service.StudentService;
 
 import lombok.RequiredArgsConstructor;
 
-
 @RestController
 @RequestMapping("/api/students")
+@CrossOrigin(origins = "http://localhost:3000")
 @RequiredArgsConstructor
 public class StudentController {
 
@@ -33,26 +36,55 @@ public class StudentController {
     @GetMapping("/{id}")
     public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
         return studentService.getStudentById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build()); 
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Student createStudent(@RequestBody Student student) {
-        return studentService.createStudent(student);
+    public ResponseEntity<?> createStudent(@RequestBody Student student) {
+        try {
+            System.out.println("Received student data: " + student);
+            Student savedStudent = studentService.createStudent(student);
+            System.out.println("Saved student: " + savedStudent);
+            return ResponseEntity.ok(savedStudent);
+        } catch (DataIntegrityViolationException e) {
+            System.err.println("Data integrity violation: " + e.getMessage());
+            if (e.getMessage().contains("email")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Email already exists");
+            } else if (e.getMessage().contains("grade_level") || e.getMessage().contains("year_level")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Year level is required");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Data validation error: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            System.err.println("Error creating student: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error creating student: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student student) {
-        Student updated = studentService.updateStudent(id, student);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+        try {
+            return ResponseEntity.ok(studentService.updateStudent(id, student));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
     
     @PutMapping("/{id}/promote")
     public ResponseEntity<Student> promoteStudent(@PathVariable Long id) {
-        Student promoted = studentService.promoteStudent(id);
-        return promoted != null ? ResponseEntity.ok(promoted) : ResponseEntity.notFound().build();
+        try {
+            return ResponseEntity.ok(studentService.promoteStudent(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
         studentService.deleteStudent(id);
