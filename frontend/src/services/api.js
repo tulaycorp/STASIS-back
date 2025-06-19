@@ -311,7 +311,68 @@ export const studentAPI = {
   validateStudent: (studentData) => api.post('/students/validate', studentData),
 };
 
-
+// Curriculum API endpoints
+export const curriculumAPI = {
+  // Get all curriculums
+  getAllCurriculums: () => {
+    console.log('Calling getAllCurriculums API...');
+    return api.get('/curriculums');
+  },
+  
+  // Get curriculum by ID
+  getCurriculumById: (id) => {
+    console.log('Calling getCurriculumById API for ID:', id);
+    return api.get(`/curriculums/${id}`);
+  },
+  
+  // Create new curriculum
+  createCurriculum: (curriculumData) => {
+    console.log('Calling createCurriculum API with data:', curriculumData);
+    return api.post('/curriculums', curriculumData);
+  },
+  
+  // Update curriculum
+  updateCurriculum: (id, curriculumData) => {
+    console.log('Calling updateCurriculum API for ID:', id, 'with data:', curriculumData);
+    return api.put(`/curriculums/${id}`, curriculumData);
+  },
+  
+  // Delete curriculum
+  deleteCurriculum: (id) => {
+    console.log('Calling deleteCurriculum API for ID:', id);
+    return api.delete(`/curriculums/${id}`);
+  },
+  
+  // Get curriculums by program
+  getCurriculumsByProgram: (programId) => {
+    console.log('Calling getCurriculumsByProgram API for program ID:', programId);
+    return api.get(`/curriculums/program/${programId}`);
+  },
+  
+  // Get active curriculums
+  getActiveCurriculums: () => {
+    console.log('Calling getActiveCurriculums API...');
+    return api.get('/curriculums/active');
+  },
+  
+  // Activate curriculum
+  activateCurriculum: (id) => {
+    console.log('Calling activateCurriculum API for ID:', id);
+    return api.put(`/curriculums/${id}/activate`);
+  },
+  
+  // Deactivate curriculum
+  deactivateCurriculum: (id) => {
+    console.log('Calling deactivateCurriculum API for ID:', id);
+    return api.put(`/curriculums/${id}/deactivate`);
+  },
+  
+  // Search curriculums
+  searchCurriculums: (searchTerm) => {
+    console.log('Calling searchCurriculums API with term:', searchTerm);
+    return api.get(`/curriculums/search?name=${encodeURIComponent(searchTerm)}`);
+  }
+};
 
 // Test connection function
 export const testConnection = async () => {

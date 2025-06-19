@@ -17,14 +17,19 @@ public interface CurriculumRepository extends JpaRepository<Curriculum, Long> {
     @Query("SELECT c FROM Curriculum c WHERE c.program.programID = :programId")
     List<Curriculum> findByProgramId(@Param("programId") Long programId);
     
-    List<Curriculum> findByIsActive(boolean isActive);
+    List<Curriculum> findByStatus(String status);
     
-    @Query("SELECT c FROM Curriculum c WHERE c.isActive = true")
+    @Query("SELECT c FROM Curriculum c WHERE c.status = 'Active'")
     List<Curriculum> findActiveCurriculums();
     
-    @Query("SELECT c FROM Curriculum c WHERE c.program.programID = :programId AND c.isActive = true")
+    @Query("SELECT c FROM Curriculum c WHERE c.program.programID = :programId AND c.status = 'Active'")
     List<Curriculum> findActiveCurriculumsByProgram(@Param("programId") Long programId);
     
     @Query("SELECT c FROM Curriculum c WHERE c.curriculumName LIKE %:name%")
     List<Curriculum> findByCurriculumNameContaining(@Param("name") String name);
+    
+    @Query("SELECT c FROM Curriculum c WHERE c.curriculumCode LIKE %:code%")
+    List<Curriculum> findByCurriculumCodeContaining(@Param("code") String code);
+    
+    List<Curriculum> findByAcademicYear(String academicYear);
 }

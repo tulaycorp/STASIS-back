@@ -353,7 +353,6 @@ Global Reset */
 }
 
 .edit-btn::before {
-  content: "✏️";
   font-size: 14px;
 }
 
@@ -379,7 +378,6 @@ Global Reset */
 }
 
 .delete-btn::before {
-  content: "🗑️";
   font-size: 14px;
 }
 

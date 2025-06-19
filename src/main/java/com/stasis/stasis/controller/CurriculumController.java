@@ -25,7 +25,8 @@ public class CurriculumController {
     @GetMapping("/{id}")
     public ResponseEntity<Curriculum> getCurriculumById(@PathVariable Long id) {
         Optional<Curriculum> curriculum = curriculumService.getCurriculumById(id);
-        return curriculum.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        return curriculum.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -39,8 +40,9 @@ public class CurriculumController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteCurriculum(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCurriculum(@PathVariable Long id) {
         curriculumService.deleteCurriculum(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/program/{programId}")
@@ -61,5 +63,10 @@ public class CurriculumController {
     @PutMapping("/{id}/deactivate")
     public Curriculum deactivateCurriculum(@PathVariable Long id) {
         return curriculumService.deactivateCurriculum(id);
+    }
+
+    @GetMapping("/search")
+    public List<Curriculum> searchCurriculums(@RequestParam String name) {
+        return curriculumService.searchCurriculumsByName(name);
     }
 }

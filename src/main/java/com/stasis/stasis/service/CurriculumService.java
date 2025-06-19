@@ -6,6 +6,7 @@ import com.stasis.stasis.repository.ProgramRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,13 @@ public class CurriculumService {
     }
 
     public Curriculum createCurriculum(Curriculum curriculum) {
+        curriculum.setLastUpdated(LocalDate.now());
+        if (curriculum.getEffectiveStartDate() == null) {
+            curriculum.setEffectiveStartDate(LocalDate.now());
+        }
+        if (curriculum.getStatus() == null) {
+            curriculum.setStatus("Draft");
+        }
         return curriculumRepository.save(curriculum);
     }
 
@@ -34,9 +42,13 @@ public class CurriculumService {
         return curriculumRepository.findById(id)
             .map(curriculum -> {
                 curriculum.setCurriculumName(updatedCurriculum.getCurriculumName());
+                curriculum.setCurriculumCode(updatedCurriculum.getCurriculumCode());
+                curriculum.setAcademicYear(updatedCurriculum.getAcademicYear());
+                curriculum.setDescription(updatedCurriculum.getDescription());
                 curriculum.setEffectiveStartDate(updatedCurriculum.getEffectiveStartDate());
                 curriculum.setProgram(updatedCurriculum.getProgram());
-                curriculum.setActive(updatedCurriculum.isActive());
+                curriculum.setStatus(updatedCurriculum.getStatus());
+                curriculum.setLastUpdated(LocalDate.now());
                 return curriculumRepository.save(curriculum);
             })
             .orElseThrow(() -> new RuntimeException("Curriculum not found with ID " + id));
@@ -51,13 +63,14 @@ public class CurriculumService {
     }
 
     public List<Curriculum> getActiveCurriculums() {
-        return curriculumRepository.findByIsActive(true);
+        return curriculumRepository.findByStatus("Active");
     }
 
     public Curriculum activateCurriculum(Long id) {
         return curriculumRepository.findById(id)
             .map(curriculum -> {
-                curriculum.setActive(true);
+                curriculum.setStatus("Active");
+                curriculum.setLastUpdated(LocalDate.now());
                 return curriculumRepository.save(curriculum);
             })
             .orElseThrow(() -> new RuntimeException("Curriculum not found with ID " + id));
@@ -66,7 +79,8 @@ public class CurriculumService {
     public Curriculum deactivateCurriculum(Long id) {
         return curriculumRepository.findById(id)
             .map(curriculum -> {
-                curriculum.setActive(false);
+                curriculum.setStatus("Inactive");
+                curriculum.setLastUpdated(LocalDate.now());
                 return curriculumRepository.save(curriculum);
             })
             .orElseThrow(() -> new RuntimeException("Curriculum not found with ID " + id));
