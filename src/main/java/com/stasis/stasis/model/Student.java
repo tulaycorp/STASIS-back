@@ -21,7 +21,7 @@ public class Student {
     private String dateOfBirth;
 
     @Column(name = "grade_level")  // Add this annotation to map to the correct database column
-    private int year_level;
+    private Integer year_level;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "program_id")

@@ -72,7 +72,7 @@ const ScheduleManagement = () => {
         room: section.room || 'TBA',
         day: section.day || 'TBA',
         timeFrom: section.startTime || '00:00',
-        timeTo: section.endTime || '00:00',
+        timeTo: section.endTime || '00:00', 
         status: section.status || 'ACTIVE',
         semester: section.semester || 'Current',
         year: section.year || new Date().getFullYear()
