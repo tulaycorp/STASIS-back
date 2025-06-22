@@ -90,4 +90,9 @@ public class UserService {
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
+
+    public void deleteUserByStudentInfo(String firstName, String lastName) {
+        Optional<Users> user = userRepository.findByFirstNameAndLastNameAndRole(firstName, lastName, UserRole.STUDENT);
+        user.ifPresent(u -> userRepository.deleteById(u.getUserID()));
+    }
 }

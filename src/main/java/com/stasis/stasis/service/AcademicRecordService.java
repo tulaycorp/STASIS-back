@@ -1,6 +1,7 @@
 package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.AcademicRecord;
+import com.stasis.stasis.model.Student;
 import com.stasis.stasis.repository.AcademicRecordRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,10 @@ public class AcademicRecordService {
         return academicRecordRepository.findById(id);
     }
 
+    public Optional<AcademicRecord> getRecordByStudent(Student student) {
+        return academicRecordRepository.findByStudent(student);
+    }
+
     public AcademicRecord createRecord(AcademicRecord record) {
         return academicRecordRepository.save(record);
     }
@@ -40,5 +45,10 @@ public class AcademicRecordService {
 
     public void deleteRecord(Long id) {
         academicRecordRepository.deleteById(id);
+    }
+
+    public void deleteRecordByStudent(Student student) {
+        Optional<AcademicRecord> record = academicRecordRepository.findByStudent(student);
+        record.ifPresent(academicRecordRepository::delete);
     }
 }

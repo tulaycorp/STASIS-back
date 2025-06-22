@@ -1,11 +1,16 @@
 package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.AcademicRecord;
+import com.stasis.stasis.model.Advisor;
+import com.stasis.stasis.model.SemesterEnrollment;
 import com.stasis.stasis.model.Student;
 import com.stasis.stasis.model.Users;
 import com.stasis.stasis.model.UserRole;
+import com.stasis.stasis.repository.AdvisorRepository;
+import com.stasis.stasis.repository.SemesterEnrollmentRepository;
 import com.stasis.stasis.repository.StudentRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +24,8 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final AcademicRecordService academicRecordService;
     private final UserService userService;
+    private final AdvisorRepository advisorRepository;
+    private final SemesterEnrollmentRepository semesterEnrollmentRepository;
 
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
@@ -84,7 +91,32 @@ public class StudentService {
             .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
     }
 
+    @Transactional
     public void deleteStudent(Long id) {
+        Optional<Student> studentOpt = studentRepository.findById(id);
+        if (studentOpt.isEmpty()) {
+            throw new RuntimeException("Student not found with id: " + id);
+        }
+        
+        Student student = studentOpt.get();
+        
+        // Delete related records in the correct order to avoid foreign key constraint violations
+        
+        // 1. Delete semester enrollments (this will cascade to enrolled courses and grades)
+        List<SemesterEnrollment> semesterEnrollments = semesterEnrollmentRepository.findByStudent_Id(id);
+        semesterEnrollmentRepository.deleteAll(semesterEnrollments);
+        
+        // 2. Delete advisor relationships
+        List<Advisor> advisors = advisorRepository.findByStudent(student);
+        advisorRepository.deleteAll(advisors);
+        
+        // 3. Delete academic record
+        academicRecordService.deleteRecordByStudent(student);
+        
+        // 4. Delete associated user account
+        userService.deleteUserByStudentInfo(student.getFirstName(), student.getLastName());
+        
+        // 5. Finally delete the student
         studentRepository.deleteById(id);
     }
 
