@@ -19,8 +19,6 @@ public class Student {
     private String lastName;
     private String email;
     private String dateOfBirth;
-
-    @Column(name = "year_level")  // Add this annotation to map to the correct database column
     private Integer year_level;
 
     @ManyToOne(fetch = FetchType.EAGER)
