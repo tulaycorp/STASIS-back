@@ -374,6 +374,42 @@ export const curriculumAPI = {
   }
 };
 
+// User API endpoints
+export const userAPI = {
+  // Get all users
+  getAllUsers: () => {
+    console.log('Calling getAllUsers API...');
+    return api.get('/users');
+  },
+  
+  // Get user by ID
+  getUserById: (id) => api.get(`/users/${id}`),
+  
+  // Update user
+  updateUser: (id, userData) => {
+    console.log('Calling updateUser API for ID:', id, 'with data:', userData);
+    return api.put(`/users/${id}`, userData);
+  },
+  
+  // Delete user
+  deleteUser: (id) => {
+    console.log('Calling deleteUser API for ID:', id);
+    return api.delete(`/users/${id}`);
+  },
+  
+  // Reset user password
+  resetPassword: (id) => {
+    console.log('Calling resetPassword API for ID:', id);
+    return api.post(`/users/${id}/reset-password`);
+  },
+  
+  // Update user status
+  updateUserStatus: (id, status) => {
+    console.log('Calling updateUserStatus API for ID:', id, 'with status:', status);
+    return api.put(`/users/${id}/status?status=${encodeURIComponent(status)}`);
+  },
+};
+
 // Test connection function
 export const testConnection = async () => {
   try {

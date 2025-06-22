@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminTools.css';
 import Sidebar from './Sidebar';
+import { userAPI } from '../services/api';
 
 const AdminTools = () => {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ const AdminTools = () => {
   const [filterType, setFilterType] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // State for logs
   const [logs, setLogs] = useState([]);
@@ -85,11 +87,8 @@ const AdminTools = () => {
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      // Replace with actual API call
-      // const response = await fetch('/api/admin/users');
-      // const data = await response.json();
-      // setUsers(data);
-      setUsers([]); // Empty for now - will be populated by API
+      const response = await userAPI.getAllUsers();
+      setUsers(response.data);
     } catch (error) {
       console.error('Error loading users:', error);
     }
@@ -120,9 +119,9 @@ const AdminTools = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(user =>
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.id?.toLowerCase().includes(searchTerm.toLowerCase())
+        `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.userID?.toString().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -135,18 +134,30 @@ const AdminTools = () => {
     // Implement CSV export functionality
   };
 
-  const resetUserPassword = (userId) => {
+  const resetUserPassword = async (userId) => {
     if (window.confirm('Are you sure you want to reset this user\'s password? They will receive an email with a temporary password.')) {
-      console.log('Resetting password for user:', userId);
-      // Implement password reset functionality
+      try {
+        await userAPI.resetPassword(userId);
+        alert('Password has been reset successfully');
+      } catch (error) {
+        console.error('Error resetting password:', error);
+        alert('Failed to reset password');
+      }
     }
   };
 
-  const toggleUserStatus = (userId, currentStatus) => {
+  const toggleUserStatus = async (userId, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const action = currentStatus === 'active' ? 'deactivate' : 'activate';
+    
     if (window.confirm(`Are you sure you want to ${action} this user account?`)) {
-      console.log(`${action} user:`, userId);
-      // Implement user status toggle functionality
+      try {
+        await userAPI.updateUserStatus(userId, newStatus);
+        loadUsers(); // Reload users to get updated status
+      } catch (error) {
+        console.error('Error updating user status:', error);
+        alert('Failed to update user status');
+      }
     }
   };
 
@@ -156,6 +167,11 @@ const AdminTools = () => {
 
   const closeUserModal = () => {
     setSelectedUser(null);
+    setShowPassword(false);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   // Pagination
@@ -295,7 +311,7 @@ const AdminTools = () => {
         <div className="admin-empty-state">
           <div className="admin-empty-icon">👥</div>
           <h3>No users found</h3>
-          <p>No users match your current search criteria.</p>
+          <p>No users match your current search criteria. User accounts are automatically created when students and faculty are added through their respective management sections.</p>
         </div>
       ) : (
         <>
@@ -303,23 +319,22 @@ const AdminTools = () => {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th>Username</th>
                   <th>Name</th>
-                  <th>Email</th>
                   <th>Role</th>
                   <th>Status</th>
+                  <th>Created</th>
                   <th>Last Login</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {getCurrentPageData(filteredUsers).map((user) => (
-                  <tr key={user.id}>
-                    <td className="admin-table-id">{user.id}</td>
-                    <td className="admin-table-name">{user.name}</td>
-                    <td className="admin-table-email">{user.email}</td>
+                  <tr key={user.userID}>
+                    <td className="admin-table-id">{user.username}</td>
+                    <td className="admin-table-name">{`${user.firstName} ${user.lastName}`}</td>
                     <td>
-                      <span className={`admin-badge admin-badge-role-${user.role.toLowerCase()}`}>
+                      <span className={`admin-badge admin-badge-role-${user.role?.toLowerCase()}`}>
                         {user.role}
                       </span>
                     </td>
@@ -327,6 +342,9 @@ const AdminTools = () => {
                       <span className={`admin-badge admin-badge-status-${user.status}`}>
                         {user.status}
                       </span>
+                    </td>
+                    <td className="admin-table-timestamp">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="admin-table-timestamp">
                       {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
@@ -341,14 +359,14 @@ const AdminTools = () => {
                       </button>
                       <button
                         className="admin-action-btn admin-action-btn-reset"
-                        onClick={() => resetUserPassword(user.id)}
+                        onClick={() => resetUserPassword(user.userID)}
                         title="Reset Password"
                       >
                         🔑
                       </button>
                       <button
                         className={`admin-action-btn ${user.status === 'active' ? 'admin-action-btn-deactivate' : 'admin-action-btn-activate'}`}
-                        onClick={() => toggleUserStatus(user.id, user.status)}
+                        onClick={() => toggleUserStatus(user.userID, user.status)}
                         title={user.status === 'active' ? 'Deactivate' : 'Activate'}
                       >
                         {user.status === 'active' ? '🚫' : '✅'}
@@ -398,7 +416,7 @@ const AdminTools = () => {
       case 'users':
         return {
           title: 'User Management',
-          description: 'Manage user accounts, credentials, and access permissions',
+          description: 'Manage user accounts, credentials, and access permissions. User accounts are automatically created when students and faculty are added.',
           content: renderUsersSection()
         };
       default:
@@ -488,11 +506,11 @@ const AdminTools = () => {
             <div className="admin-modal-body">
               <div className="admin-user-details">
                 <div className="admin-user-avatar">
-                  {selectedUser.name?.charAt(0)?.toUpperCase()}
+                  {selectedUser.firstName?.charAt(0)?.toUpperCase()}
                 </div>
                 <div className="admin-user-info">
-                  <h4>{selectedUser.name}</h4>
-                  <p className="admin-user-email">{selectedUser.email}</p>
+                  <h4>{`${selectedUser.firstName} ${selectedUser.lastName}`}</h4>
+                  <p className="admin-user-email">{selectedUser.username}</p>
                   <p className="admin-user-role">{selectedUser.role}</p>
                 </div>
               </div>
@@ -500,7 +518,11 @@ const AdminTools = () => {
               <div className="admin-user-meta">
                 <div className="admin-meta-item">
                   <label>User ID:</label>
-                  <span>{selectedUser.id}</span>
+                  <span>{selectedUser.userID}</span>
+                </div>
+                <div className="admin-meta-item">
+                  <label>Username:</label>
+                  <span>{selectedUser.username}</span>
                 </div>
                 <div className="admin-meta-item">
                   <label>Status:</label>
@@ -509,16 +531,35 @@ const AdminTools = () => {
                   </span>
                 </div>
                 <div className="admin-meta-item">
+                  <label>Role:</label>
+                  <span>{selectedUser.role}</span>
+                </div>
+                <div className="admin-meta-item">
+                  <label>Email:</label>
+                  <span>{selectedUser.email || 'N/A'}</span>
+                </div>
+                <div className="admin-meta-item">
+                  <label>Password:</label>
+                  <div className="admin-password-field">
+                    <span className={`admin-password-value ${!showPassword ? 'admin-password-blurred' : ''}`}>
+                      {showPassword ? selectedUser.password || '••••••••' : '••••••••'}
+                    </span>
+                    <button 
+                      className="admin-password-toggle"
+                      onClick={togglePasswordVisibility}
+                      title={showPassword ? 'Hide Password' : 'Show Password'}
+                    >
+                      {showPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
+                </div>
+                <div className="admin-meta-item">
                   <label>Created:</label>
                   <span>{selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}</span>
                 </div>
                 <div className="admin-meta-item">
                   <label>Last Login:</label>
                   <span>{selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : 'Never'}</span>
-                </div>
-                <div className="admin-meta-item">
-                  <label>Department:</label>
-                  <span>{selectedUser.department || 'N/A'}</span>
                 </div>
               </div>
             </div>

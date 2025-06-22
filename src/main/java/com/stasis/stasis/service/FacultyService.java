@@ -1,6 +1,8 @@
 package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.Faculty;
+import com.stasis.stasis.model.Users;
+import com.stasis.stasis.model.UserRole;
 import com.stasis.stasis.repository.FacultyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,9 @@ public class FacultyService {
 
     @Autowired
     private FacultyRepository facultyRepository;
+    
+    @Autowired
+    private UserService userService;
 
     public List<Faculty> getAllFaculty() {
         return facultyRepository.findAll();
@@ -22,8 +27,35 @@ public class FacultyService {
         return facultyRepository.findById(id);
     }
 
-    public Faculty createFaculty(Faculty faculty) {
-        return facultyRepository.save(faculty);
+    public class FacultyWithCredentials {
+        private final Faculty faculty;
+        private final String username;
+        private final String password;
+
+        public FacultyWithCredentials(Faculty faculty, String username, String password) {
+            this.faculty = faculty;
+            this.username = username;
+            this.password = password;
+        }
+
+        public Faculty getFaculty() { return faculty; }
+        public String getUsername() { return username; }
+        public String getPassword() { return password; }
+    }
+
+    public FacultyWithCredentials createFaculty(Faculty faculty) {
+        Faculty savedFaculty = facultyRepository.save(faculty);
+
+        // Create User account for the faculty with auto-generated credentials
+        // Format: [year]-[counter starting from 10000]-[F for faculty]
+        // Password: randomly generated 7 character alphanumeric string
+        Users user = userService.createUserWithGeneratedCredentials(
+                savedFaculty.getFirstName(),
+                savedFaculty.getLastName(),
+                UserRole.FACULTY
+        );
+
+        return new FacultyWithCredentials(savedFaculty, user.getUsername(), user.getPassword());
     }
 
     public Faculty updateFaculty(Long id, Faculty updatedFaculty) {

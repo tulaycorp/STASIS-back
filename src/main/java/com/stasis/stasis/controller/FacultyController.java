@@ -29,13 +29,13 @@ public class FacultyController {
     }
 
     @PostMapping
-    public ResponseEntity<Faculty> createFaculty(@RequestBody Faculty faculty) {
+    public ResponseEntity<FacultyService.FacultyWithCredentials> createFaculty(@RequestBody Faculty faculty) {
         try {
             // Check if email already exists
             if (facultyService.existsByEmail(faculty.getEmail())) {
                 return ResponseEntity.badRequest().build();
             }
-            Faculty created = facultyService.createFaculty(faculty);
+            FacultyService.FacultyWithCredentials created = facultyService.createFaculty(faculty);
             return ResponseEntity.ok(created);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

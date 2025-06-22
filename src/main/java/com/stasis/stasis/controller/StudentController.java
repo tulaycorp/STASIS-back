@@ -44,9 +44,9 @@ public class StudentController {
     public ResponseEntity<?> createStudent(@RequestBody Student student) {
         try {
             System.out.println("Received student data: " + student);
-            Student savedStudent = studentService.createStudent(student);
-            System.out.println("Saved student: " + savedStudent);
-            return ResponseEntity.ok(savedStudent);
+            StudentService.StudentWithCredentials studentWithCredentials = studentService.createStudent(student);
+            System.out.println("Saved student: " + studentWithCredentials.getStudent());
+            return ResponseEntity.ok(studentWithCredentials);
         } catch (DataIntegrityViolationException e) {
             System.err.println("Data integrity violation: " + e.getMessage());
             if (e.getMessage().contains("email")) {

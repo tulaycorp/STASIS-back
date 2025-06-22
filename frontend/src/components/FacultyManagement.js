@@ -11,7 +11,9 @@ const FacultyManagement = () => {
   const [error, setError] = useState(null);
   const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
   const [showEditFacultyModal, setShowEditFacultyModal] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState(null);
+  const [generatedCredentials, setGeneratedCredentials] = useState(null);
   const [facultyForm, setFacultyForm] = useState({
     firstName: '',
     lastName: '',
@@ -201,9 +203,10 @@ const FacultyManagement = () => {
       };
 
       console.log('Sending faculty data:', facultyData);
-      await facultyAPI.createFaculty(facultyData);
-      alert('Faculty added successfully!');
+      const response = await facultyAPI.createFaculty(facultyData);
+      setGeneratedCredentials(response.data);
       closeAddFacultyModal();
+      setShowCredentialsModal(true);
       loadFaculty(); // Reload faculty list
     } catch (error) {
       console.error('Error adding faculty:', error);
@@ -787,6 +790,46 @@ const FacultyManagement = () => {
                 onClick={handleEditFaculty}
               >
                 Update Faculty
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials Modal */}
+      {showCredentialsModal && generatedCredentials && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h2 className="modal-title">Faculty Account Created</h2>
+              <button className="modal-close" onClick={() => setShowCredentialsModal(false)}>×</button>
+            </div>
+            
+            <div className="modal-content">
+              <div className="credentials-info">
+                <p>Faculty account has been created successfully. Please save these credentials:</p>
+                <div className="credentials-details">
+                  <div className="credential-item">
+                    <label>Username:</label>
+                    <span className="credential-value">{generatedCredentials.username}</span>
+                  </div>
+                  <div className="credential-item">
+                    <label>Password:</label>
+                    <span className="credential-value">{generatedCredentials.password}</span>
+                  </div>
+                </div>
+                <p className="credentials-note">
+                  Note: These credentials will be shown only once. Please make sure to save them.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowCredentialsModal(false)}
+              >
+                Close
               </button>
             </div>
           </div>

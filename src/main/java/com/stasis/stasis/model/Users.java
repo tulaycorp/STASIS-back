@@ -2,6 +2,7 @@ package com.stasis.stasis.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -16,6 +17,16 @@ public class Users {
 
     private String username;
     private String password;
+    private String firstName;
+    private String lastName;
+    
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+    
+    private LocalDateTime lastLogin;
+    
+    @Builder.Default
+    private String status = "active";
 
     @Enumerated(EnumType.STRING)
     private UserRole role;

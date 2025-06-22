@@ -1,6 +1,9 @@
 package com.stasis.stasis.service;
 
+import com.stasis.stasis.model.AcademicRecord;
 import com.stasis.stasis.model.Student;
+import com.stasis.stasis.model.Users;
+import com.stasis.stasis.model.UserRole;
 import com.stasis.stasis.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +17,8 @@ import java.util.Optional;
 public class StudentService {
 
     private final StudentRepository studentRepository;
+    private final AcademicRecordService academicRecordService;
+    private final UserService userService;
 
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
@@ -23,8 +28,44 @@ public class StudentService {
         return studentRepository.findById(id);
     }
 
-    public Student createStudent(Student student) {
-        return studentRepository.save(student);
+    public class StudentWithCredentials {
+        private final Student student;
+        private final String username;
+        private final String password;
+
+        public StudentWithCredentials(Student student, String username, String password) {
+            this.student = student;
+            this.username = username;
+            this.password = password;
+        }
+
+        public Student getStudent() { return student; }
+        public String getUsername() { return username; }
+        public String getPassword() { return password; }
+    }
+
+    public StudentWithCredentials createStudent(Student student) {
+        Student savedStudent = studentRepository.save(student);
+
+        // Create AcademicRecord for the student
+        AcademicRecord academicRecord = AcademicRecord.builder()
+                .student(savedStudent)
+                .GA(0.0)
+                .totalCredits(0)
+                .academicStanding("Good")
+                .build();
+        academicRecordService.createRecord(academicRecord);
+
+        // Create User account for the student with auto-generated credentials
+        // Format: [year]-[counter starting from 10000]-[S for student]
+        // Password: randomly generated 7 character alphanumeric string
+        Users user = userService.createUserWithGeneratedCredentials(
+                savedStudent.getFirstName(), 
+                savedStudent.getLastName(), 
+                UserRole.STUDENT
+        );
+
+        return new StudentWithCredentials(savedStudent, user.getUsername(), user.getPassword());
     }
 
     public Student updateStudent(Long id, Student studentDetails) {
