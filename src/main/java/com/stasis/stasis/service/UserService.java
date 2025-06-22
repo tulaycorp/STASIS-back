@@ -95,4 +95,9 @@ public class UserService {
         Optional<Users> user = userRepository.findByFirstNameAndLastNameAndRole(firstName, lastName, UserRole.STUDENT);
         user.ifPresent(u -> userRepository.deleteById(u.getUserID()));
     }
+
+    public void deleteUserByFacultyInfo(String firstName, String lastName) {
+        Optional<Users> user = userRepository.findByFirstNameAndLastNameAndRole(firstName, lastName, UserRole.FACULTY);
+        user.ifPresent(u -> userRepository.deleteById(u.getUserID()));
+    }
 }

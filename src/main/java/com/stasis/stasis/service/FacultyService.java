@@ -1,11 +1,14 @@
 package com.stasis.stasis.service;
 
+import com.stasis.stasis.model.Advisor;
 import com.stasis.stasis.model.Faculty;
 import com.stasis.stasis.model.Users;
 import com.stasis.stasis.model.UserRole;
+import com.stasis.stasis.repository.AdvisorRepository;
 import com.stasis.stasis.repository.FacultyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +21,9 @@ public class FacultyService {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private AdvisorRepository advisorRepository;
 
     public List<Faculty> getAllFaculty() {
         return facultyRepository.findAll();
@@ -72,7 +78,25 @@ public class FacultyService {
             .orElseThrow(() -> new RuntimeException("Faculty not found with ID " + id));
     }
 
+    @Transactional
     public void deleteFaculty(Long id) {
+        Optional<Faculty> facultyOpt = facultyRepository.findById(id);
+        if (facultyOpt.isEmpty()) {
+            throw new RuntimeException("Faculty not found with id: " + id);
+        }
+        
+        Faculty faculty = facultyOpt.get();
+        
+        // Delete related records in the correct order to avoid foreign key constraint violations
+        
+        // 1. Delete advisor relationships where this faculty is an advisor
+        List<Advisor> advisorships = advisorRepository.findByFaculty(faculty);
+        advisorRepository.deleteAll(advisorships);
+        
+        // 2. Delete associated user account
+        userService.deleteUserByFacultyInfo(faculty.getFirstName(), faculty.getLastName());
+        
+        // 3. Finally delete the faculty
         facultyRepository.deleteById(id);
     }
 
