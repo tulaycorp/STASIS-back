@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentSchedule.module.css';
 import Sidebar from './StudentSidebar';
+import { useStudentData } from '../hooks/useStudentData';
 
 const StudentSchedule = () => {
+  const { getUserInfo } = useStudentData();
   // Sample schedule data - removed status field
   const [scheduleList, setScheduleList] = useState([
     {
@@ -156,7 +158,7 @@ const StudentSchedule = () => {
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]

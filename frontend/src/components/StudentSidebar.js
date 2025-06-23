@@ -23,9 +23,19 @@ const getActivePageFromURL = () => {
   return '';
 };
 
-const StudentSidebar = ({ onNavigate }) => {
+const StudentSidebar = ({ onNavigate, userInfo }) => {
   // Automatically determine active page from URL instead of using prop
   const activePage = getActivePageFromURL();
+  
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!userInfo?.name) return 'S';
+    const names = userInfo.name.split(' ');
+    if (names.length >= 2) {
+      return names[0][0] + names[names.length - 1][0];
+    }
+    return names[0][0] || 'S';
+  };
   
   return (
     <div className="sidebar">
@@ -94,10 +104,10 @@ const StudentSidebar = ({ onNavigate }) => {
           🚪 Log Out
         </button>
         <div className="user-profile">
-          <div className="user-avatar">JS</div>
+          <div className="user-avatar">{getUserInitials()}</div>
           <div className="user-info">
-            <div className="user-name">John Smith</div>
-            <div className="user-role">Student</div>
+            <div className="user-name">{userInfo?.name || 'Student'}</div>
+            <div className="user-role">{userInfo?.role || 'Student'}</div>
           </div>
         </div>
       </div>

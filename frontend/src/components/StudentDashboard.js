@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './StudentSidebar';
+import { useStudentData } from '../hooks/useStudentData';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const { getStudentName, getUserInfo } = useStudentData();
   const [dashboardData, setStudentDashboardData] = useState({
     recentActivities: []
   });
@@ -210,13 +212,13 @@ const StudentDashboard = () => {
         alert("Enrollment page here");
         break;
       case 'StudentCurriculum':
-        alert("Curriculum page here");
+        navigate('/student-curriculum');
         break;
       case 'StudentGrades':
         navigate('/student-grades');
         break;
-      case 'Settings':
-        navigate('/settings');
+      case 'StudentSettings':
+        navigate('/student-settings');
         break;
       default:
         // No action for unknown sections
@@ -224,12 +226,13 @@ const StudentDashboard = () => {
   };
 
   const calendarDays = generateCalendarDays();
+
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]
@@ -246,7 +249,7 @@ const StudentDashboard = () => {
           {
             label: 'System',
             items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️'}
+              { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
             ]
           }
         ]}
@@ -255,7 +258,7 @@ const StudentDashboard = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="dashboard-header">
-          <h1 className="dashboard-welcome-title">Welcome back, Student</h1>
+          <h1 className="dashboard-welcome-title">Welcome back, {getStudentName()}</h1>
         </div>
 
         {/* Content Wrapper */}

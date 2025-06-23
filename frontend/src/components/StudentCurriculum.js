@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentCurriculum.module.css';
 import Sidebar from './StudentSidebar';
+import { useStudentData } from '../hooks/useStudentData';
 
 const CurriculumManagement = () => {
+  const { getUserInfo } = useStudentData();
   // Sample curriculum data
   const [curriculumData, setCurriculumData] = useState([
     /*
@@ -198,7 +200,7 @@ const CurriculumManagement = () => {
     <div className="container">
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]

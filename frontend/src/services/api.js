@@ -410,6 +410,51 @@ export const userAPI = {
   },
 };
 
+// Authentication API endpoints
+export const authAPI = {
+  // Login user
+  login: (loginData) => {
+    console.log('Calling login API with data:', loginData);
+    return api.post('/auth/login', loginData);
+  },
+  
+  // Logout user
+  logout: () => {
+    console.log('Calling logout API...');
+    return api.post('/auth/logout');
+  },
+  
+  // Refresh token
+  refreshToken: () => {
+    console.log('Calling refresh token API...');
+    return api.post('/auth/refresh');
+  },
+  
+  // Verify token
+  verifyToken: () => {
+    console.log('Calling verify token API...');
+    return api.get('/auth/verify');
+  },
+};
+
+// Convenience function for login (used by components)
+export const loginUser = async (loginData) => {
+  try {
+    console.log('Attempting login with data:', loginData);
+    const response = await authAPI.login(loginData);
+    return response.data;
+  } catch (error) {
+    console.error('Login error:', error);
+    if (error.response?.data) {
+      return error.response.data;
+    }
+    return {
+      success: false,
+      message: 'Network error occurred during login'
+    };
+  }
+};
+
 // Test connection function
 export const testConnection = async () => {
   try {

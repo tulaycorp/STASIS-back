@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultySchedule.module.css';
 import Sidebar from './FacultySidebar';
+import { useFacultyData } from '../hooks/useFacultyData';
 
 const FacultySchedule = () => {
+  const { getUserInfo } = useFacultyData();
   // Sample schedule data - removed status field
   const [scheduleList, setScheduleList] = useState([
     {
@@ -150,7 +152,7 @@ const FacultySchedule = () => {
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './StudentGrades.module.css';
 import Sidebar from './StudentSidebar';
+import { useStudentData } from '../hooks/useStudentData';
 
 const StudentGrades = () => {
+  const { getUserInfo } = useStudentData();
   
   const semesters = [
     '2025-2nd Semester',
@@ -138,7 +140,7 @@ const StudentGrades = () => {
       {/* Existing Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
             { items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }] },
             { label: 'Management', items: [

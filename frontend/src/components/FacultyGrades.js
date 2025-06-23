@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './FacultyGrades.module.css';
 import Sidebar from './FacultySidebar';
+import { useFacultyData } from '../hooks/useFacultyData';
 
 const FacultyGrades = () => {
+  const { getUserInfo } = useFacultyData();
   
   const programs = [
     'Computer Science',
@@ -129,7 +131,7 @@ const FacultyGrades = () => {
       <div className={styles.dashboardContainer}>
         <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
@@ -244,16 +246,24 @@ const FacultyGrades = () => {
     <div className={styles.dashboardContainer}>
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
-            { items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }] },
-            { label: 'Management', items: [
-                { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
-                { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
-                { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'StudentGrades', label: 'Grades', icon: '📈' }
-            ]},
-            { label: 'System', items: [{ id: 'StudentSettings', label: 'Settings', icon: '⚙️'}]}
+          {
+            items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
+          },
+          {
+            label: 'Management',
+            items: [
+              { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
+              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
+            ]
+          },
+          {
+            label: 'System',
+            items: [
+              { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
+            ]
+          }
         ]}
       />
 

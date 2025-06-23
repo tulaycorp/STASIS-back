@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './FacultySidebar';
+import { useFacultyData } from '../hooks/useFacultyData';
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
+  const { getFacultyName, getUserInfo } = useFacultyData();
   const [dashboardData, setStudentDashboardData] = useState({
     recentActivities: []
   });
@@ -116,7 +118,7 @@ const FacultyDashboard = () => {
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
@@ -140,7 +142,7 @@ const FacultyDashboard = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="dashboard-header">
-          <h1 className="dashboard-welcome-title">Welcome back, Faculty</h1>
+          <h1 className="dashboard-welcome-title">Welcome back, {getFacultyName()}</h1>
         </div>
 
         {/* Content Wrapper */}

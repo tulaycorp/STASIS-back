@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useFacultyData } from '../hooks/useFacultyData';
+import { loginUser } from '../services/api';
 
 // Basic styling (can share CSS later)
 const formStyle = {
@@ -18,43 +20,54 @@ const FacultyLoginForm = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { setFacultyInfo } = useFacultyData();
 
-     const handleSubmit = async (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
         setError('');
         setLoading(true);
-        // Temporary hardcoded login check
+        
+        // Temporary hardcoded login check for admin only
         if (username === 'admin123' && password === 'pass123') {
             setLoading(false);
             navigate('/admin-dashboard');
             return;
-        } else if (username === 'faculty123' && password === 'pass123') {
-            setLoading(false);
-            navigate('/faculty-dashboard');
-            return;
         }
 
         try {
-            const response = await fetch('/api/auth/login', { // Calls the same backend endpoint
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, role: 'faculty' }), // Role is 'faculty'
-            });
+            const loginData = {
+                username,
+                password,
+                role: 'FACULTY'
+            };
 
-            const data = await response.json();
+            const response = await loginUser(loginData);
             setLoading(false);
 
-             if (response.ok && data.success) {
-                console.log('Faculty Login Successful:', data);
-                alert(`Welcome ${data.userDisplayName}! Login successful. Redirecting...`);
-                 // TODO: Redirect to faculty dashboard
+            if (response.success) {
+                console.log('Faculty Login Successful:', response);
+                
+                // Store faculty data in the hook
+                setFacultyInfo({
+                    facultyId: response.facultyId,
+                    firstName: response.firstName,
+                    lastName: response.lastName,
+                    email: response.email,
+                    position: response.position,
+                    program: response.program,
+                    username: response.username,
+                    userId: response.userId
+                });
+
+                // Navigate to faculty dashboard
+                navigate('/faculty-dashboard');
             } else {
-                setError(data.message || 'Login failed. Please check your credentials.');
+                setError(response.message || 'Login failed. Please check your credentials.');
             }
         } catch (err) {
-             setLoading(false);
-             setError('An error occurred during login. Please try again.');
-             console.error('Login request failed:', err);
+            setLoading(false);
+            setError('An error occurred during login. Please try again.');
+            console.error('Login request failed:', err);
         }
     };
 

@@ -2,23 +2,25 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultySettings.module.css';
 import Sidebar from './FacultySidebar';
+import { useFacultyData } from '../hooks/useFacultyData';
 
 const FacultySettings = () => {
   const navigate = useNavigate();
+  const { facultyData, setFacultyInfo, getUserInfo } = useFacultyData();
   const [activeSection, setActiveSection] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Profile Settings State
+  // Profile Settings State - Initialize with faculty data if available
   const [profileSettings, setProfileSettings] = useState({
-    firstName: 'David',
-    lastName: 'Anderson',
-    email: 'david.anderson@school.edu',
-    phone: '+1 (555) 123-4567',
-    department: 'Computer Science',
-    position: 'Schedule Admin',
-    bio: 'Experienced administrator with 10+ years in educational technology and student information systems.',
-    officeLocation: 'Admin Building, Room 201',
-    workingHours: '8:00 AM - 5:00 PM'
+    firstName: facultyData?.firstName || 'David',
+    lastName: facultyData?.lastName || 'Anderson',
+    email: facultyData?.email || 'david.anderson@school.edu',
+    phone: facultyData?.phone || '+1 (555) 123-4567',
+    department: facultyData?.department || 'Computer Science',
+    position: facultyData?.position || 'Faculty',
+    bio: facultyData?.bio || 'Experienced faculty member dedicated to student success.',
+    officeLocation: facultyData?.officeLocation || 'Faculty Building, Room 201',
+    workingHours: facultyData?.workingHours || '8:00 AM - 5:00 PM'
   });
 
   // Account Settings State
@@ -70,6 +72,14 @@ const FacultySettings = () => {
 
   // Save functions
   const saveSettings = () => {
+    // Update faculty data if profile section is active
+    if (activeSection === 'profile') {
+      setFacultyInfo({
+        ...facultyData,
+        ...profileSettings
+      });
+    }
+    
     // Here you would typically send to API
     console.log('Saving settings for section:', activeSection);
     console.log('Profile:', profileSettings);
@@ -85,15 +95,15 @@ const FacultySettings = () => {
       switch(activeSection) {
         case 'profile':
           setProfileSettings({
-            firstName: 'David',
-            lastName: 'Anderson',
-            email: 'david.anderson@school.edu',
-            phone: '+1 (555) 123-4567',
-            department: 'Computer Science',
-            position: 'Schedule Admin',
-            bio: 'Experienced administrator with 10+ years in educational technology and student information systems.',
-            officeLocation: 'Admin Building, Room 201',
-            workingHours: '8:00 AM - 5:00 PM'
+            firstName: facultyData?.firstName || 'David',
+            lastName: facultyData?.lastName || 'Anderson',
+            email: facultyData?.email || 'david.anderson@school.edu',
+            phone: facultyData?.phone || '+1 (555) 123-4567',
+            department: facultyData?.department || 'Computer Science',
+            position: facultyData?.position || 'Faculty',
+            bio: facultyData?.bio || 'Experienced faculty member dedicated to student success.',
+            officeLocation: facultyData?.officeLocation || 'Faculty Building, Room 201',
+            workingHours: facultyData?.workingHours || '8:00 AM - 5:00 PM'
           });
           break;
         case 'account':
@@ -400,7 +410,7 @@ const FacultySettings = () => {
     <div className="settings-container">
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]

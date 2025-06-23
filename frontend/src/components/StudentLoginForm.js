@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/api';
 
 // Basic styling (add more in a CSS file if needed)
 const formStyle = {
@@ -23,38 +24,63 @@ const StudentLoginForm = () => {
         event.preventDefault();
         setError('');
         setLoading(true);
-        // Temporary hardcoded login check
-        if (username === 'student123' && password === 'pass123') {
-            setLoading(false);
-            navigate('/student-dashboard');
-            return;
-        }
 
         try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, role: 'student' }),
-            });
-
-            const data = await response.json();
+            const response = await authAPI.login({ username, password, role: 'student' });
+            const data = response.data;
             setLoading(false);
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 console.log('Student Login Successful:', data);
-                alert(`Welcome ${data.userDisplayName}! Login successful. Redirecting...`);
-                // TODO: Redirect to student dashboard (e.g., using navigate('/student/dashboard'))
-                // For now, maybe just clear form or show success message
+                
+                // Store user data in localStorage for use across the application
+                localStorage.setItem('userData', JSON.stringify({
+                    userId: data.userId,
+                    username: data.username,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    role: data.role,
+                    studentId: data.studentId,
+                    program: data.program,
+                    yearLevel: data.yearLevel,
+                    status: data.status
+                }));
+                
+                // Store authentication token if provided
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                }
+                
+                // Show success message and redirect
+                navigate('/student-dashboard');
             } else {
-                setError(data.message || 'Login failed. Please check your credentials.');
+                // Handle specific error cases
+                if (data.message === "Account is inactive") {
+                    setError('Your account is currently inactive. Please contact the administrator.');
+                } else if (data.message === "Invalid role for this account") {
+                    setError('This account does not have student access.');
+                } else {
+                    setError(data.message || 'Login failed. Please check your credentials.');
+                }
             }
         } catch (err) {
             setLoading(false);
-            setError('An error occurred during login. Please try again.');
+            // Handle axios error response
+            if (err.response && err.response.data) {
+                const errorData = err.response.data;
+                if (errorData.message === "Account is inactive") {
+                    setError('Your account is currently inactive. Please contact the administrator.');
+                } else if (errorData.message === "Invalid role for this account") {
+                    setError('This account does not have student access.');
+                } else {
+                    setError(errorData.message || 'Login failed. Please check your credentials.');
+                }
+            } else {
+                setError('An error occurred during login. Please try again.');
+            }
             console.error('Login request failed:', err);
         }
     };
-
 
     return (
         <div style={formStyle}>
@@ -69,6 +95,7 @@ const StudentLoginForm = () => {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
+                        placeholder="e.g., 2024-10001-S"
                         style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
@@ -80,11 +107,20 @@ const StudentLoginForm = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        placeholder="Enter your password"
                         style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
-                 {error && <p style={{ color: 'red' }}>{error}</p>}
-                <button type="submit" disabled={loading} style={{ padding: '10px 15px', cursor: 'pointer', width: '100%' }}>
+                {error && <p style={{ color: 'red', marginBottom: '15px' }}>{error}</p>}
+                <button type="submit" disabled={loading} style={{ 
+                    padding: '10px 15px', 
+                    cursor: loading ? 'not-allowed' : 'pointer', 
+                    width: '100%',
+                    backgroundColor: loading ? '#ccc' : '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px'
+                }}>
                    {loading ? 'Logging in...' : 'Login'}
                 </button>
             </form>

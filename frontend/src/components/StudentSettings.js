@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentSettings.module.css';
 import Sidebar from './StudentSidebar';
+import { useStudentData } from '../hooks/useStudentData';
 
 const StudentSettings = () => {
+  const { getUserInfo } = useStudentData();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -407,7 +409,7 @@ const StudentSettings = () => {
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "John Smith", role: "Student" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'StudentDashboard', label: 'StudentDashboard', icon: '📊' }]
