@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CourseManagement.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 import { courseAPI, courseSectionAPI, testConnection, programAPI } from '../services/api';
 import axios from 'axios';
 
 const CourseManagement = () => {
+  const { getUserInfo } = useAdminData();
   const [coursesData, setCoursesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -391,7 +393,7 @@ const CourseManagement = () => {
       <div className="container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -432,7 +434,7 @@ const CourseManagement = () => {
       <div className="container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -503,7 +505,7 @@ const CourseManagement = () => {
   <div className="container">
     <Sidebar 
       onNavigate={showSection}
-      userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+      userInfo={getUserInfo()}
       sections={[
         {
           items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]

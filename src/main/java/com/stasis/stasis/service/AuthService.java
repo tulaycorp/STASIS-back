@@ -122,6 +122,11 @@ public class AuthService {
                         }
                     }
                     break;
+
+                case ADMIN:
+                    // Admin users don't need additional data from other tables
+                    // All necessary information is already in the Users table
+                    break;
             }
 
             System.out.println("Auth: Successful login for " + requestedUsername + " (" + user.getRole() + ")");

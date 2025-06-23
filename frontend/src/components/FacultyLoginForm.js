@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFacultyData } from '../hooks/useFacultyData';
+import { useAdminData } from '../hooks/useAdminData';
 import { loginUser } from '../services/api';
 
 // Basic styling (can share CSS later)
@@ -21,46 +22,65 @@ const FacultyLoginForm = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { setFacultyInfo } = useFacultyData();
+    const { setAdminInfo } = useAdminData();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError('');
         setLoading(true);
-        
-        // Temporary hardcoded login check for admin only
-        if (username === 'admin123' && password === 'pass123') {
-            setLoading(false);
-            navigate('/admin-dashboard');
-            return;
-        }
 
         try {
-            const loginData = {
+            // First try FACULTY role
+            let loginData = {
                 username,
                 password,
                 role: 'FACULTY'
             };
 
-            const response = await loginUser(loginData);
+            let response = await loginUser(loginData);
+
+            // If faculty login fails, try ADMIN role
+            if (!response.success) {
+                loginData = {
+                    username,
+                    password,
+                    role: 'ADMIN'
+                };
+                response = await loginUser(loginData);
+            }
+
             setLoading(false);
 
             if (response.success) {
-                console.log('Faculty Login Successful:', response);
+                console.log('Login Successful:', response);
                 
-                // Store faculty data in the hook
-                setFacultyInfo({
-                    facultyId: response.facultyId,
-                    firstName: response.firstName,
-                    lastName: response.lastName,
-                    email: response.email,
-                    position: response.position,
-                    program: response.program,
-                    username: response.username,
-                    userId: response.userId
-                });
-
-                // Navigate to faculty dashboard
-                navigate('/faculty-dashboard');
+                // Check user role and navigate accordingly
+                if (response.role === 'ADMIN') {
+                    // Store admin data in the admin hook
+                    setAdminInfo({
+                        userId: response.userId,
+                        firstName: response.firstName,
+                        lastName: response.lastName,
+                        username: response.username,
+                        role: response.role
+                    });
+                    // Navigate to admin dashboard
+                    navigate('/admin-dashboard');
+                } else {
+                    // Store faculty data in the faculty hook
+                    setFacultyInfo({
+                        facultyId: response.facultyId,
+                        firstName: response.firstName,
+                        lastName: response.lastName,
+                        email: response.email,
+                        position: response.position,
+                        program: response.program,
+                        username: response.username,
+                        userId: response.userId
+                    });
+                    // Navigate to faculty dashboard
+                    navigate('/faculty-dashboard');
+                }
             } else {
                 setError(response.message || 'Login failed. Please check your credentials.');
             }
@@ -73,8 +93,8 @@ const FacultyLoginForm = () => {
 
     return (
          <div style={formStyle}>
-            <h2>Faculty Login Portal</h2> {/* Changed Title */}
-            <p>Enter your faculty credentials below.</p> {/* Changed Text */}
+            <h2>Faculty/Admin Login Portal</h2>
+            <p>Enter your credentials below.</p>
             <form onSubmit={handleSubmit}>
                  <div style={{ marginBottom: '15px' }}>
                      <label htmlFor="faculty-username" style={{ display: 'block', marginBottom: '5px' }}>Username:</label>

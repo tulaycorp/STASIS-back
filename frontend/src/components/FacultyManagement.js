@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultyManagement.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 import { facultyAPI, programAPI } from '../services/api';
 
 const FacultyManagement = () => {
+  const { getUserInfo } = useAdminData();
   const [facultyList, setFacultyList] = useState([]);
   const [programsList, setProgramsList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -319,7 +321,7 @@ const FacultyManagement = () => {
       <div className="dashboard-container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -360,7 +362,7 @@ const FacultyManagement = () => {
       <div className="dashboard-container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -406,7 +408,7 @@ const FacultyManagement = () => {
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]

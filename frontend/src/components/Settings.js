@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Settings.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 
 const Settings = () => {
+  const { getUserInfo } = useAdminData();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -412,7 +414,7 @@ const Settings = () => {
     <div className="settings-container">
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}        
+        userInfo={getUserInfo()}        
         sections={[
           {
             items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]

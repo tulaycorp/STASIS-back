@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminTools.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 import { userAPI } from '../services/api';
 
 const AdminTools = () => {
+  const { getUserInfo } = useAdminData();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('logs');
   const [searchTerm, setSearchTerm] = useState('');
@@ -434,7 +436,7 @@ const AdminTools = () => {
     <div className="admin-container">
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]

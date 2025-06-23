@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 import { facultyAPI, programAPI } from '../services/api'; // Import both APIs
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { getAdminName, getUserInfo } = useAdminData();
   // State to hold the fetched lists
   const [facultyList, setFacultyList] = useState([]);
   const [programsList, setProgramsList] = useState([]);
@@ -408,10 +410,12 @@ const handleAddSchedule = () => {
 
   const calendarDays = generateCalendarDays();
   return (
-    <div className="dashboard-container">      {/* Sidebar */}
+    <div className="dashboard-container">
+      {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}        sections={[
+        userInfo={getUserInfo()}
+        sections={[
           {
             items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
           },
@@ -438,7 +442,7 @@ const handleAddSchedule = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="dashboard-header">
-          <h1 className="dashboard-welcome-title">Welcome back, Admin</h1>
+          <h1 className="dashboard-welcome-title">Welcome back, {getAdminName()}</h1>
         </div>
 
         {/* Stats Cards - Updated with Faculty and Program Stats */}

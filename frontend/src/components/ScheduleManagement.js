@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 import { courseSectionAPI, courseAPI, facultyAPI } from '../services/api';
 
 const ScheduleManagement = () => {
+  const { getUserInfo } = useAdminData();
   // State management
   const [scheduleList, setScheduleList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -397,7 +399,7 @@ const ScheduleManagement = () => {
       <div className="dashboard-container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Schedule Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -438,7 +440,7 @@ const ScheduleManagement = () => {
       <div className="dashboard-container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Schedule Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -483,7 +485,7 @@ const ScheduleManagement = () => {
     <div className="dashboard-container">
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Schedule Admin" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]

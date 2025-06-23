@@ -35,7 +35,7 @@ function App() {
         {/* Route for the Student login form */}
         <Route path="/login/student" element={<StudentLoginForm />} />
 
-        {/* Route for the Faculty login form */}
+        {/* Route for the Faculty/Admin login form */}
         <Route path="/login/faculty" element={<FacultyLoginForm />} />
 
         {/* Route for the admin dashboard form */}

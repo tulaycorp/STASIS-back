@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentManagement.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 import { studentAPI, programAPI, testConnection } from '../services/api';
 
 const StudentManagement = () => {
+  const { getUserInfo } = useAdminData();
   const [studentsData, setStudentsData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -318,7 +320,7 @@ const StudentManagement = () => {
       <div className="dashboard-container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -359,7 +361,7 @@ const StudentManagement = () => {
       <div className="dashboard-container">
         <Sidebar 
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={[
             {
               items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
@@ -422,7 +424,7 @@ const StudentManagement = () => {
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+        userInfo={getUserInfo()}
         sections={[
           {
             items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]

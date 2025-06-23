@@ -27,9 +27,27 @@ const getActivePageFromURL = () => {
   return '';
 };
 
-const Sidebar = ({ onNavigate }) => {
+const Sidebar = ({ onNavigate, userInfo }) => {
   // Automatically determine active page from URL instead of using prop
   const activePage = getActivePageFromURL();
+  
+  // Default user info if not provided
+  const defaultUserInfo = {
+    name: "Admin User",
+    role: "Administrator"
+  };
+  
+  const user = userInfo || defaultUserInfo;
+  
+  // Generate user initials from name
+  const getUserInitials = (name) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
   
   return (
     <div className="sidebar">
@@ -109,10 +127,10 @@ const Sidebar = ({ onNavigate }) => {
             🚪 Log Out
         </button>
         <div className="user-profile">
-          <div className="user-avatar">DA</div>
+          <div className="user-avatar">{getUserInitials(user.name)}</div>
           <div className="user-info">
-            <div className="user-name">David Anderson</div>
-            <div className="user-role">Schedule Admin</div>
+            <div className="user-name">{user.name}</div>
+            <div className="user-role">{user.role}</div>
           </div>
         </div>
       </div>

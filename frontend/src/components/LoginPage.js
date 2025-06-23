@@ -14,8 +14,8 @@ const LoginPage = () => {
     console.log(`Navigating to ${role} login view`);
     if (role === 'student') {
       navigate('/login/student'); // Navigate to student route
-    } else if (role === 'faculty') {
-      navigate('/login/faculty'); // Navigate to faculty route
+    } else if (role === 'faculty' || role === 'admin') {
+      navigate('/login/faculty'); // Navigate to faculty/admin route
     }
   };
 
@@ -51,15 +51,15 @@ const LoginPage = () => {
           <span className="role-button-arrow"><FaChevronRight /></span>
         </button>
 
-        {/* Role Selection: Faculty */}
+        {/* Role Selection: Faculty/Admin */}
         <button
           className="role-button"
           onClick={() => handleRoleSelection('faculty')}
-          aria-label="Continue as Faculty"
+          aria-label="Continue as Faculty or Administrator"
         >
           <div className="role-button-content">
             <span className="role-button-icon"><FaUserTie /></span>
-            <span className="role-button-text">Faculty</span>
+            <span className="role-button-text">Faculty / Administrator</span>
           </div>
           <span className="role-button-arrow"><FaChevronRight /></span>
         </button>
