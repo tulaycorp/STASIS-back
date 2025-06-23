@@ -2,24 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentManagement.css';
 import Sidebar from './Sidebar';
-import { useAdminData } from '../hooks/useAdminData';
-import { studentAPI, programAPI, testConnection } from '../services/api';
+import { studentAPI, programAPI, courseSectionAPI, testConnection } from '../services/api';
 
 const StudentManagement = () => {
-  const { getUserInfo } = useAdminData();
   const [studentsData, setStudentsData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
-  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState('All Sections');
   const [selectedProgram, setSelectedProgram] = useState('All Programs');
+  const [sectionsList, setSectionsList] = useState([]);
+  const [selectedProgramSections, setSelectedProgramSections] = useState([]);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [generatedCredentials, setGeneratedCredentials] = useState(null);
-  
+  const [tempSections, setTempSections] = useState([]);
+  const [showAddSectionModal, setShowAddSectionModal] = useState(false);
+  const [sectionForm, setSectionForm] = useState({
+    sectionName: '',
+    programId: ''
+  });
+  const [showDeleteSectionModal, setShowDeleteSectionModal] = useState(false);
+  const [deleteSectionForm, setDeleteSectionForm] = useState({
+    programId: '',
+    sectionId: ''
+  });
+  const [availableSectionsForDelete, setAvailableSectionsForDelete] = useState([]);
+
   const [studentForm, setStudentForm] = useState({
     firstName: '',
     lastName: '',
@@ -28,9 +38,6 @@ const StudentManagement = () => {
     year_level: 1,
     programId: ''
   });
-
-  // Available sections for filtering
-  const sections = ['All Sections', 'Year 1', 'Year 2', 'Year 3', 'Year 4'];
 
   // Load data on component mount
   useEffect(() => {
@@ -41,7 +48,7 @@ const StudentManagement = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Test connection first
       const connectionTest = await testConnection();
       if (!connectionTest.success) {
@@ -49,19 +56,21 @@ const StudentManagement = () => {
       }
 
       // Load students and programs in parallel
-      const [studentsResponse, programsResponse] = await Promise.all([
+      const [studentsResponse, programsResponse, sectionsResponse] = await Promise.all([
         studentAPI.getAllStudents(),
-        programAPI.getAllPrograms()
+        programAPI.getAllPrograms(),
+        courseSectionAPI.getAllSections()
       ]);
 
       setStudentsData(studentsResponse.data);
       setProgramsList(programsResponse.data);
-      
+      setSectionsList(sectionsResponse.data);
+
       // Set default selected program if programs exist
       if (programsResponse.data.length > 0) {
         setSelectedProgram('All Programs');
       }
-      
+
     } catch (err) {
       console.error('Error loading data:', err);
       handleConnectionError(err);
@@ -84,17 +93,35 @@ const StudentManagement = () => {
     }
   };
 
-  // Filter students based on search term and selected program
+  // Filter students based on search term, selected program, and selected section
   const filteredStudents = studentsData.filter(student => {
-    const matchesSearch = 
+    // Search term matching
+    const matchesSearch =
       student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesProgram = selectedProgram === 'All Programs' || 
+
+    // Program matching
+    const matchesProgram = selectedProgram === 'All Programs' ||
       student.program?.programName === selectedProgram;
-    
-    return matchesSearch && matchesProgram;
+
+    // Section matching - Enhanced logic
+    let matchesSection;
+    if (selectedSection === 'All Sections') {
+      matchesSection = true;
+    } else {
+      // Check if student belongs to the selected section
+      matchesSection = student.section?.sectionName === selectedSection ||
+        student.sectionName === selectedSection;
+
+      // If no direct section match, check year level mapping
+      if (!matchesSection && selectedSection.includes('Year')) {
+        const yearNumber = selectedSection.replace('Year ', '');
+        matchesSection = student.year_level?.toString() === yearNumber;
+      }
+    }
+
+    return matchesSearch && matchesProgram && matchesSection;
   });
 
   // Student Modal functions
@@ -148,12 +175,143 @@ const StudentManagement = () => {
     });
   };
 
+  const showAddSectionForm = () => {
+    setSectionForm({
+      sectionName: '',
+      programId: ''
+    });
+    setShowAddSectionModal(true);
+  };
+
+  const closeAddSectionModal = () => {
+    setShowAddSectionModal(false);
+    setSectionForm({
+      sectionName: '',
+      programId: ''
+    });
+  };
+
+  const handleSectionFormChange = (field, value) => {
+    setSectionForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddSection = () => {
+    // Validate required fields
+    if (!sectionForm.sectionName || !sectionForm.programId) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Find the selected program
+    const selectedProgramObj = programsList.find(p => p.programID.toString() === sectionForm.programId);
+
+    // Create temporary section object
+    const newTempSection = {
+      sectionID: Date.now(), // Temporary ID
+      sectionName: sectionForm.sectionName,
+      programId: parseInt(sectionForm.programId),
+      program: selectedProgramObj,
+      programName: selectedProgramObj?.programName || 'Unknown Program'
+    };
+
+    // Add to temporary sections
+    setTempSections(prev => [...prev, newTempSection]);
+
+    alert('Section added temporarily!');
+    closeAddSectionModal();
+  };
+
   const handleStudentFormChange = (field, value) => {
     setStudentForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
+
+  const showDeleteSectionForm = () => {
+    setDeleteSectionForm({
+      programId: '',
+      sectionId: ''
+    });
+    setAvailableSectionsForDelete([]);
+    setShowDeleteSectionModal(true);
+  };
+
+  const closeDeleteSectionModal = () => {
+    setShowDeleteSectionModal(false);
+    setDeleteSectionForm({
+      programId: '',
+      sectionId: ''
+    });
+    setAvailableSectionsForDelete([]);
+  };
+
+  const handleDeleteSectionFormChange = (field, value) => {
+  setDeleteSectionForm(prev => ({
+    ...prev,
+    [field]: value
+  }));
+
+  // When program is selected, filter sections for that program
+  if (field === 'programId') {
+    // Include both permanent and temporary sections
+    const sectionsForProgram = sectionsList.filter(section =>
+      section.program?.programID?.toString() === value ||
+      section.programId?.toString() === value
+    );
+    const tempSectionsForProgram = tempSections.filter(temp =>
+      temp.programId?.toString() === value
+    );
+    
+    setAvailableSectionsForDelete([...sectionsForProgram, ...tempSectionsForProgram]);
+    
+    // Reset section selection when program changes
+    setDeleteSectionForm(prev => ({
+      ...prev,
+      programId: value,
+      sectionId: ''
+    }));
+  }
+};
+
+  const handleDeleteSection = async () => {
+  if (!deleteSectionForm.sectionId) {
+    alert('Please select a section to delete');
+    return;
+  }
+
+  if (window.confirm('Are you sure you want to delete this section? This action cannot be undone.')) {
+    try {
+      // Check if it's a temporary section first
+      const isTempSection = tempSections.find(temp => temp.sectionID.toString() === deleteSectionForm.sectionId);
+      
+      if (isTempSection) {
+        // Remove from temporary sections
+        setTempSections(prev => prev.filter(temp => temp.sectionID.toString() !== deleteSectionForm.sectionId));
+        alert('Section deleted successfully!');
+      } else {
+        // It's a permanent section from the database - try API call
+        await courseSectionAPI.deleteSection(deleteSectionForm.sectionId);
+        alert('Section deleted successfully!');
+        loadInitialData(); // Reload data only for permanent sections
+      }
+      
+      closeDeleteSectionModal();
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      if (error.response?.status === 404) {
+        alert('Section not found!');
+      } else if (error.response?.status === 400) {
+        alert('Cannot delete section. It may have associated students.');
+      } else {
+        alert('Failed to delete section. Please try again.');
+      }
+    }
+  }
+};
 
   const handleAddStudent = async () => {
     // Validate required fields
@@ -168,11 +326,11 @@ const StudentManagement = () => {
       alert('Please enter a valid email address');
       return;
     }
-    
+
     try {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === studentForm.programId);
-      
+
       const studentData = {
         firstName: studentForm.firstName,
         lastName: studentForm.lastName,
@@ -182,10 +340,9 @@ const StudentManagement = () => {
         program: selectedProgramObj || null
       };
 
-      const response = await studentAPI.createStudent(studentData);
-      setGeneratedCredentials(response.data);
+      await studentAPI.createStudent(studentData);
+      alert('Student added successfully!');
       closeAddStudentModal();
-      setShowCredentialsModal(true);
       loadInitialData(); // Reload student list
     } catch (error) {
       console.error('Error adding student:', error);
@@ -210,11 +367,11 @@ const StudentManagement = () => {
       alert('Please enter a valid email address');
       return;
     }
-    
+
     try {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === studentForm.programId);
-      
+
       const studentData = {
         firstName: studentForm.firstName,
         lastName: studentForm.lastName,
@@ -276,9 +433,9 @@ const StudentManagement = () => {
 
   // Navigation
   const navigate = useNavigate();
-  
+
   const showSection = (section) => {
-    switch(section){
+    switch (section) {
       case 'Dashboard':
         navigate('/admin-dashboard');
         break;
@@ -304,49 +461,85 @@ const StudentManagement = () => {
         navigate('/admin-tools');
         break;
       default:
-        // No action for unknown sections
+      // No action for unknown sections
     }
   };
 
   // Handle program selection
   const handleProgramSelect = (programName) => {
     setSelectedProgram(programName);
+    // Always reset to "All Sections" when changing programs
     setSelectedSection('All Sections');
+
+    if (programName === 'All Programs') {
+      // When "All Programs" is selected, we don't need to filter sections by program
+      setSelectedProgramSections([]);
+    } else {
+      // Filter sections for the selected program (including temp sections)
+      const programSections = sectionsList.filter(section =>
+        section.programName === programName ||
+        section.program?.programName === programName
+      );
+      const tempProgramSections = tempSections.filter(temp =>
+        temp.programName === programName ||
+        temp.program?.programName === programName
+      );
+      setSelectedProgramSections([...programSections, ...tempProgramSections]);
+    }
+  };
+
+  // Handle section selection with program context
+  const handleSectionSelect = (sectionName) => {
+    setSelectedSection(sectionName);
+
+    // Optional: If a specific section is selected while "All Programs" is active,
+    // you might want to automatically filter to show only the program that has this section
+    if (selectedProgram === 'All Programs' && sectionName !== 'All Sections') {
+      // Find which program this section belongs to
+      const sectionProgram = sectionsList.find(section => section.sectionName === sectionName);
+      if (sectionProgram && sectionProgram.program?.programName) {
+        // Optionally auto-select the program (uncomment if desired)
+        // setSelectedProgram(sectionProgram.program.programName);
+      }
+    }
   };
 
   // Show loading state
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
+        <Sidebar
           onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
+          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          sections={
+            [
+              {
+                items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+              },
+              {
+                label: 'Management',
+                items: [
+                  { id: 'Students', label: 'Students', icon: '👥' },
+                  { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                  { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                  { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                  { id: 'Courses', label: 'Courses', icon: '📖' }
+                ]
+              },
+              {
+                label: 'System',
+                items: [
+                  { id: 'Settings', label: 'Settings', icon: '⚙️' },
+                  { id: 'AdminTools', label: 'Admin Tools', icon: '🔧' }
+                ]
+              }
+            ]
+          }
         />
         <div className="main-content">
           <div className="content-wrapper">
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <div style={
+              { padding: '2rem', textAlign: 'center' }}>
               <h3>Loading students...</h3>
             </div>
           </div>
@@ -359,55 +552,62 @@ const StudentManagement = () => {
   if (error) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
+        <Sidebar
           onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
+          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          sections={
+            [
+              {
+                items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+              },
+              {
+                label: 'Management',
+                items: [
+                  { id: 'Students', label: 'Students', icon: '👥' },
+                  { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                  { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                  { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                  { id: 'Courses', label: 'Courses', icon: '📖' }
+                ]
+              },
+              {
+                label: 'System',
+                items: [
+                  { id: 'Settings', label: 'Settings', icon: '⚙️' },
+                  { id: 'AdminTools', label: 'Admin Tools', icon: '🔧' }
+                ]
+              }
+            ]
+          }
         />
         <div className="main-content">
           <div className="content-wrapper">
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <div style={
+              { padding: '2rem', textAlign: 'center' }}>
               <div className="error-container">
                 <h3>Connection Error</h3>
-                <p style={{ whiteSpace: 'pre-line', margin: '1rem 0' }}>{error}</p>
-                <div style={{ marginTop: '1rem' }}>
+                <p style={
+                  { whiteSpace: 'pre-line', margin: '1rem 0' }}>{error}</p>
+                <div style={
+                  { marginTop: '1rem' }}>
                   <h4>Troubleshooting Steps:</h4>
-                  <ol style={{ textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
+                  <ol style={
+                    { textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
                     <li>Check if Spring Boot is running: <code>http://localhost:8080</code></li>
                     <li>Check browser console for additional errors</li>
                     <li>Verify backend logs for any startup errors</li>
                     <li>Try accessing the API directly: <code>http://localhost:8080/api/students</code></li>
                   </ol>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
-                  <button onClick={loadInitialData} className="btn btn-primary">
+                <div style={
+                  { display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+                  <button onClick={loadInitialData}
+                    className="btn btn-primary">
                     Retry Connection
                   </button>
-                  <button 
-                    onClick={() => window.open('http://localhost:8080/api/students', '_blank')} 
-                    className="btn btn-secondary"
-                  >
+                  <button onClick={
+                    () => window.open('http://localhost:8080/api/students', '_blank')}
+                    className="btn btn-secondary">
                     Test API Directly
                   </button>
                 </div>
@@ -422,38 +622,40 @@ const StudentManagement = () => {
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <Sidebar 
+      <Sidebar
         onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'Students', label: 'Students', icon: '👥' },
-              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'Schedule', label: 'Schedule', icon: '📅' },
-              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-              { id: 'Courses', label: 'Courses', icon: '📖' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️'},
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-            ]
-          }
-        ]}
+        userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+        sections={
+          [
+            {
+              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️' },
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧' }
+              ]
+            }
+          ]
+        }
       />
 
       <div className="main-content">
         <div className="content-wrapper">
           <div className="breadcrumb">
-            <span 
-              className="breadcrumb-link" 
+            <span
+              className="breadcrumb-link"
               onClick={() => navigate('/admin-dashboard')}
             >
               Dashboard
@@ -461,7 +663,7 @@ const StudentManagement = () => {
             <span className="breadcrumb-separator"> / </span>
             <span className="breadcrumb-current">Student Management</span>
           </div>
-          
+
           <div className="dashboard-header">
             <h1 className="dashboard-welcome-title">Student Management</h1>
             {selectedProgram && selectedProgram !== 'All Programs' && (
@@ -470,29 +672,88 @@ const StudentManagement = () => {
           </div>
 
           <div className="student-content-wrapper">
-            {/* Program Navigation Card - Adapted from Course Management */}
-            <div className="student-nav-section">
-              <div className="student-nav-header">
-                <h2 className="student-nav-title">Programs</h2>
-              </div>
-              <div className="student-nav-list">
-                <div
-                  className={`student-nav-item ${selectedProgram === 'All Programs' ? 'student-nav-item-active' : ''}`}
-                  onClick={() => handleProgramSelect('All Programs')}
-                >
-                  <span className="student-nav-icon">📚</span>
-                  All Programs
+            {/* Sidebar Container - NEW: Wraps both Programs and Sections */}
+            <div className="student-sidebar">
+              {/* Program Navigation Card */}
+              <div className="student-nav-section">
+                <div className="student-nav-header">
+                  <h2 className="student-nav-title">Programs</h2>
                 </div>
-                {programsList.map((program) => (
+                <div className="student-nav-list">
                   <div
-                    key={program.programID}
-                    className={`student-nav-item ${selectedProgram === program.programName ? 'student-nav-item-active' : ''}`}
-                    onClick={() => handleProgramSelect(program.programName)}
+                    className={`student-nav-item ${selectedProgram === 'All Programs' ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleProgramSelect('All Programs')}
                   >
                     <span className="student-nav-icon">📚</span>
-                    {program.programName}
+                    All Programs
                   </div>
-                ))}
+                  {programsList.map((program) => (
+                    <div
+                      key={program.programID}
+                      className={`student-nav-item ${selectedProgram === program.programName ? 'student-nav-item-active' : ''}`}
+                      onClick={() => handleProgramSelect(program.programName)}
+                    >
+                      <span className="student-nav-icon">📚</span>
+                      {program.programName}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section Navigation Card - UPDATED: Add proper container for button */}
+              <div className="student-nav-section">
+                <div className="student-nav-header">
+                  <h2 className="student-nav-title">Sections</h2>
+                </div>
+                <div className="student-nav-list">
+                  <div
+                    className={`student-nav-item ${selectedSection === 'All Sections' ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleSectionSelect('All Sections')}
+                  >
+                    <span className="student-nav-icon">📋</span>
+                    All Sections
+                  </div>
+
+                  {selectedProgram === 'All Programs'
+                    ? // If "All Programs" is selected, show all sections from all programs
+                    [...sectionsList, ...tempSections].map((section) => (
+                      <div
+                        key={section.sectionID}
+                        className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
+                        onClick={() => handleSectionSelect(section.sectionName)}
+                      >
+                        <span className="student-nav-icon">📋</span>
+                        {section.sectionName}
+                        {/* Show program name for context */}
+                        <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '4px' }}>
+                          ({section.program?.programName || section.programName || 'No Program'})
+                        </span>
+                      </div>
+                    ))
+                    : // If specific program is selected, show only that program's sections
+                    [...selectedProgramSections, ...tempSections.filter(temp =>
+                      temp.programId.toString() === programsList.find(p => p.programName === selectedProgram)?.programID?.toString()
+                    )].map((section) => (
+                      <div
+                        key={section.sectionID}
+                        className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
+                        onClick={() => handleSectionSelect(section.sectionName)}
+                      >
+                        <span className="student-nav-icon">📋</span>
+                        {section.sectionName}
+                      </div>
+                    ))
+                  }
+                </div>
+                {/* Add Section Button - UPDATED: Wrap in proper container */}
+                <div className="add-section-container">
+                  <button className="btn-add-section" onClick={showAddSectionForm}>
+                    Add New Section
+                  </button>
+                  <button className="btn-delete-section" onClick={showDeleteSectionForm}>
+                    Delete Section
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -502,7 +763,7 @@ const StudentManagement = () => {
                 <h2 className="student-section-title">Students</h2>
                 <p className="student-section-desc">Manage student records and information</p>
               </div>
-              
+
               <div className="student-section-content">
                 <div className="student-filters">
                   <div className="student-search-group">
@@ -547,19 +808,20 @@ const StudentManagement = () => {
                           <td>{student.dateOfBirth}</td>
                           <td>
                             <div className="action-buttons">
-                              <button 
-                                className="btn-action btn-edit"
+                              <button
+                                className="btn-action btn-edit" // Edit Student
                                 onClick={() => showEditStudentForm(student)}
                                 title="Edit Student"
                               >
                               </button>
-                              <button 
+                              <button
                                 className="btn-action btn-promote"
                                 onClick={() => handlePromoteStudent(student.id)}
                                 title="Promote Student"
                               >
+                                ⬆️
                               </button>
-                              <button 
+                              <button // Delete Student
                                 className="btn-action btn-delete"
                                 onClick={() => handleDeleteStudent(student.id)}
                                 title="Delete Student"
@@ -571,7 +833,7 @@ const StudentManagement = () => {
                       ))}
                     </tbody>
                   </table>
-                  
+
                   {filteredStudents.length === 0 && (
                     <div className="no-students">
                       <p>No students found matching your criteria.</p>
@@ -591,7 +853,7 @@ const StudentManagement = () => {
             <div className="modal-header">
               <h2 className="modal-title">Add New Student</h2>
             </div>
-            
+
             <div className="modal-body">
               <div className="modal-grid">
                 <div className="form-group">
@@ -604,7 +866,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('firstName', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Last Name *</label>
                   <input
@@ -615,7 +877,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('lastName', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Email *</label>
                   <input
@@ -626,7 +888,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('email', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Date of Birth</label>
                   <input
@@ -636,7 +898,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('dateOfBirth', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Year Level</label>
                   <select
@@ -650,7 +912,7 @@ const StudentManagement = () => {
                     <option value={4}>Year 4</option>
                   </select>
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Program</label>
                   <select
@@ -668,7 +930,7 @@ const StudentManagement = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={closeAddStudentModal}>
                 Cancel
@@ -688,7 +950,7 @@ const StudentManagement = () => {
             <div className="modal-header">
               <h2 className="modal-title">Edit Student</h2>
             </div>
-            
+
             <div className="modal-body">
               <div className="modal-grid">
                 <div className="form-group">
@@ -701,7 +963,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('firstName', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Last Name *</label>
                   <input
@@ -712,7 +974,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('lastName', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Email *</label>
                   <input
@@ -723,7 +985,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('email', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Date of Birth</label>
                   <input
@@ -733,7 +995,7 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('dateOfBirth', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Year Level</label>
                   <select
@@ -747,7 +1009,7 @@ const StudentManagement = () => {
                     <option value={4}>Year 4</option>
                   </select>
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Program</label>
                   <select
@@ -765,7 +1027,7 @@ const StudentManagement = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={closeEditStudentModal}>
                 Cancel
@@ -778,40 +1040,118 @@ const StudentManagement = () => {
         </div>
       )}
 
-      {/* Credentials Modal */}
-      {showCredentialsModal && generatedCredentials && (
+      {/* Add Section Modal */}
+      {showAddSectionModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2 className="modal-title">Student Account Created</h2>
-              <button className="modal-close" onClick={() => setShowCredentialsModal(false)}>×</button>
+              <h2 className="modal-title">Add New Section</h2>
             </div>
-            
+
             <div className="modal-body">
-              <div className="credentials-info">
-                <p>Student account has been created successfully. Please save these credentials:</p>
-                <div className="credentials-details">
-                  <div className="credential-item">
-                    <label>Username:</label>
-                    <span className="credential-value">{generatedCredentials.username}</span>
-                  </div>
-                  <div className="credential-item">
-                    <label>Password:</label>
-                    <span className="credential-value">{generatedCredentials.password}</span>
-                  </div>
+              <div className="modal-grid">
+                <div className="form-group">
+                  <label className="form-label">Section Name *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter section name (e.g., BSIT-1A, Year 1 - Section A)"
+                    value={sectionForm.sectionName}
+                    onChange={(e) => handleSectionFormChange('sectionName', e.target.value)}
+                  />
                 </div>
-                <p className="credentials-note">
-                  Note: These credentials will be shown only once. Please make sure to save them.
-                </p>
+
+                <div className="form-group">
+                  <label className="form-label">Program *</label>
+                  <select
+                    className="form-input"
+                    value={sectionForm.programId}
+                    onChange={(e) => handleSectionFormChange('programId', e.target.value)}
+                  >
+                    <option value="">Select Program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programID}>
+                        {program.programName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-            
+
             <div className="modal-footer">
-              <button 
-                className="btn btn-primary" 
-                onClick={() => setShowCredentialsModal(false)}
+              <button className="btn btn-secondary" onClick={closeAddSectionModal}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleAddSection}>
+                Add Section
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Section Modal */}
+      {showDeleteSectionModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Delete Section</h2>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-grid">
+                <div className="form-group">
+                  <label className="form-label">Program *</label>
+                  <select
+                    className="form-input"
+                    value={deleteSectionForm.programId}
+                    onChange={(e) => handleDeleteSectionFormChange('programId', e.target.value)}
+                  >
+                    <option value="">Select Program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programID}>
+                        {program.programName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Section *</label>
+                  <select
+                    className="form-input"
+                    value={deleteSectionForm.sectionId}
+                    onChange={(e) => handleDeleteSectionFormChange('sectionId', e.target.value)}
+                    disabled={!deleteSectionForm.programId}
+                  >
+                    <option value="">Select Section</option>
+                    {availableSectionsForDelete.map((section) => (
+                      <option key={section.sectionID} value={section.sectionID}>
+                        {section.sectionName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {deleteSectionForm.programId && availableSectionsForDelete.length === 0 && (
+                <p style={{ color: '#6c757d', fontSize: '14px', marginTop: '10px' }}>
+                  No sections found for this program.
+                </p>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeDeleteSectionModal}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleDeleteSection}
+                disabled={!deleteSectionForm.sectionId}
               >
-                Close
+                Delete Section
               </button>
             </div>
           </div>
