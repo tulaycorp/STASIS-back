@@ -28,11 +28,28 @@ public class StudentService {
     private final SemesterEnrollmentRepository semesterEnrollmentRepository;
 
     public List<Student> getAllStudents() {
-        return studentRepository.findAll();
+        List<Student> students = studentRepository.findAll();
+        // Populate username for each student
+        for (Student student : students) {
+            Optional<Users> user = userService.getUserByStudentInfo(student.getFirstName(), student.getLastName());
+            if (user.isPresent()) {
+                student.setUsername(user.get().getUsername());
+            }
+        }
+        return students;
     }
 
     public Optional<Student> getStudentById(Long id) {
-        return studentRepository.findById(id);
+        Optional<Student> studentOpt = studentRepository.findById(id);
+        if (studentOpt.isPresent()) {
+            Student student = studentOpt.get();
+            // Populate username
+            Optional<Users> user = userService.getUserByStudentInfo(student.getFirstName(), student.getLastName());
+            if (user.isPresent()) {
+                student.setUsername(user.get().getUsername());
+            }
+        }
+        return studentOpt;
     }
 
     public class StudentWithCredentials {

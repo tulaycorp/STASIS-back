@@ -1,10 +1,6 @@
 package com.stasis.stasis.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -28,4 +24,7 @@ public class Faculty {
     
     @ManyToOne
     private Program program;
+
+    @Transient
+    private String username;
 }

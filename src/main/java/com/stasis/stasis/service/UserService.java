@@ -1,4 +1,4 @@
-package com.stasis.stasis.service;
+ package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.Users;
 import com.stasis.stasis.model.UserRole;
@@ -99,5 +99,13 @@ public class UserService {
     public void deleteUserByFacultyInfo(String firstName, String lastName) {
         Optional<Users> user = userRepository.findByFirstNameAndLastNameAndRole(firstName, lastName, UserRole.FACULTY);
         user.ifPresent(u -> userRepository.deleteById(u.getUserID()));
+    }
+
+    public Optional<Users> getUserByStudentInfo(String firstName, String lastName) {
+        return userRepository.findByFirstNameAndLastNameAndRole(firstName, lastName, UserRole.STUDENT);
+    }
+
+    public Optional<Users> getUserByFacultyInfo(String firstName, String lastName) {
+        return userRepository.findByFirstNameAndLastNameAndRole(firstName, lastName, UserRole.FACULTY);
     }
 }

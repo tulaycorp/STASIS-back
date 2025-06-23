@@ -512,7 +512,7 @@ const FacultyManagement = () => {
               <table className="faculty-table">
                 <thead>
                   <tr>
-                    <th>Faculty ID</th>
+                    <th>Faculty Number</th>
                     <th>Name</th>
                     <th>Program</th>
                     <th>Email</th>
@@ -523,7 +523,7 @@ const FacultyManagement = () => {
                 <tbody>
                   {filteredFaculty.map((faculty) => (
                     <tr key={faculty.facultyID}>
-                      <td>{faculty.facultyID}</td>
+                      <td>{faculty.username || 'N/A'}</td>
                       <td>
                         <div className="faculty-info">
                           <div className="faculty-name">

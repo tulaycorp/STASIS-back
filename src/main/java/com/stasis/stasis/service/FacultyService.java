@@ -26,11 +26,28 @@ public class FacultyService {
     private AdvisorRepository advisorRepository;
 
     public List<Faculty> getAllFaculty() {
-        return facultyRepository.findAll();
+        List<Faculty> faculty = facultyRepository.findAll();
+        // Populate username for each faculty member
+        for (Faculty facultyMember : faculty) {
+            Optional<Users> user = userService.getUserByFacultyInfo(facultyMember.getFirstName(), facultyMember.getLastName());
+            if (user.isPresent()) {
+                facultyMember.setUsername(user.get().getUsername());
+            }
+        }
+        return faculty;
     }
 
     public Optional<Faculty> getFacultyById(Long id) {
-        return facultyRepository.findById(id);
+        Optional<Faculty> facultyOpt = facultyRepository.findById(id);
+        if (facultyOpt.isPresent()) {
+            Faculty faculty = facultyOpt.get();
+            // Populate username
+            Optional<Users> user = userService.getUserByFacultyInfo(faculty.getFirstName(), faculty.getLastName());
+            if (user.isPresent()) {
+                faculty.setUsername(user.get().getUsername());
+            }
+        }
+        return facultyOpt;
     }
 
     public class FacultyWithCredentials {

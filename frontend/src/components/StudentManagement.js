@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentManagement.css';
 import Sidebar from './Sidebar';
+import { useAdminData } from '../hooks/useAdminData';
 import { studentAPI, programAPI, courseSectionAPI, testConnection } from '../services/api';
 
 const StudentManagement = () => {
+  const { getUserInfo } = useAdminData();
   const [studentsData, setStudentsData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -510,7 +512,7 @@ const StudentManagement = () => {
       <div className="dashboard-container">
         <Sidebar
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={
             [
               {
@@ -554,7 +556,7 @@ const StudentManagement = () => {
       <div className="dashboard-container">
         <Sidebar
           onNavigate={showSection}
-          userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+          userInfo={getUserInfo()}
           sections={
             [
               {
@@ -624,7 +626,7 @@ const StudentManagement = () => {
       {/* Sidebar */}
       <Sidebar
         onNavigate={showSection}
-        userInfo={{ name: "David Anderson", role: "Faculty Admin" }}
+        userInfo={getUserInfo()}
         sections={
           [
             {
@@ -786,7 +788,7 @@ const StudentManagement = () => {
                   <table className="student-table">
                     <thead>
                       <tr>
-                        <th>Student ID</th>
+                        <th>Student Number</th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Program</th>
@@ -798,7 +800,7 @@ const StudentManagement = () => {
                     <tbody>
                       {filteredStudents.map((student) => (
                         <tr key={student.id}>
-                          <td className="student-id">{student.id}</td>
+                          <td className="student-id">{student.username || 'N/A'}</td>
                           <td className="student-name">
                             {student.firstName} {student.lastName}
                           </td>

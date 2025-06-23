@@ -24,4 +24,7 @@ public class Student {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "program_id")
     private Program program;
+
+    @Transient
+    private String username;
 }
