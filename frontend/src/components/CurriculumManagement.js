@@ -967,31 +967,31 @@ const CurriculumManagement = () => {
                       <p>No curricula found matching your criteria.</p>
                     </div>
                   )}
-                </div>
 
-                <div className="pagination">
-                  <div className="pagination-info">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
-                  </div>
-                  <div className="pagination-controls">
-                    <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
-                      Previous
-                    </button>
-                    {[...Array(Math.min(3, totalPages))].map((_, index) => {
-                      const pageNum = index + 1;
-                      return (
-                        <button
-                          key={pageNum}
-                          className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
-                          onClick={() => goToPage(pageNum)}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
-                      Next
-                    </button>
+                  <div className="pagination">
+                    <div className="pagination-info">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
+                    </div>
+                    <div className="pagination-controls">
+                      <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
+                        Previous
+                      </button>
+                      {[...Array(Math.min(3, totalPages))].map((_, index) => {
+                        const pageNum = index + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                            onClick={() => goToPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
