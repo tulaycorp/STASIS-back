@@ -396,19 +396,19 @@ const CurriculumManagement = () => {
       }
 
       // Save curriculum details (selected courses) with correct field names
-      if (formData.selectedCourses && formData.selectedCourses.length > 0) {
-        const detailPromises = formData.selectedCourses.map(courseId => {
-          const course = availableCourses.find(c => c.id === courseId);
-          if (course) {
-            return curriculumDetailAPI.createCurriculumDetail({
-              curriculum: { curriculumID: curriculumId },
-              course: { id: courseId },
-              YearLevel: formData.courseYearLevels?.[courseId] || 1,    // Send as YearLevel
-              Semester: formData.courseSemesters?.[courseId] || "1"     // Send as Semester
-            });
-          }
-          return null;
-        }).filter(promise => promise !== null);
+              if (formData.selectedCourses && formData.selectedCourses.length > 0) {
+                const detailPromises = formData.selectedCourses.map(courseId => {
+                  const course = availableCourses.find(c => c.id === courseId);
+                  if (course) {
+                    return curriculumDetailAPI.createCurriculumDetail({
+                      curriculum: { curriculumID: curriculumId },
+                      course: { id: courseId },
+                      yearLevel: formData.courseYearLevels?.[courseId] || 1,    // Corrected field name casing
+                      semester: formData.courseSemesters?.[courseId] || "1"     // Corrected field name casing
+                    });
+                  }
+                  return null;
+                }).filter(promise => promise !== null);
 
         if (detailPromises.length > 0) {
           await Promise.all(detailPromises);
