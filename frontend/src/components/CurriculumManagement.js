@@ -25,7 +25,9 @@ const CurriculumManagement = () => {
     academicYear: '',
     status: 'Draft',
     description: '',
-    selectedCourses: []
+    selectedCourses: [],
+    courseYearLevels: {}, // Maps courseId to YearLevel
+    courseSemesters: {}   // Maps courseId to Semester
   });
   const [availableCourses, setAvailableCourses] = useState([]);
   const [expandedCurricula, setExpandedCurricula] = useState(new Set());
@@ -243,8 +245,12 @@ const CurriculumManagement = () => {
       programId: '',
       academicYear: '',
       status: 'Draft',
-      description: ''
+      description: '',
+      selectedCourses: [],
+      courseYearLevels: {},
+      courseSemesters: {}
     });
+    setAvailableCourses([]); // Clear available courses
   };
 
   const closeModal = () => {
@@ -256,8 +262,12 @@ const CurriculumManagement = () => {
       programId: '',
       academicYear: '',
       status: 'Draft',
-      description: ''
+      description: '',
+      selectedCourses: [],
+      courseYearLevels: {},
+      courseSemesters: {}
     });
+    setAvailableCourses([]); // Clear available courses
   };
 
   // Edit curriculum
@@ -268,19 +278,26 @@ const CurriculumManagement = () => {
         // Load curriculum details to get selected courses
         const detailsResponse = await curriculumDetailAPI.getDetailsByCurriculum(id);
         const selectedCourseIds = detailsResponse.data.map(detail => detail.course.id);
+        
+        // Build year levels and semesters mapping using actual field names
+        const courseYearLevels = {};
+        const courseSemesters = {};
+        detailsResponse.data.forEach(detail => {
+          courseYearLevels[detail.course.id] = detail.yearLevel; // Using yearLevel (lowercase from JSON)
+          courseSemesters[detail.course.id] = detail.semester;   // Using semester (lowercase from JSON)
+        });
 
         // Load available courses for the program
         const program = programsList.find(p => p.programID === curriculum.programId);
         if (program) {
-        const coursesResponse = await courseAPI.getCoursesByProgram(program.programName);
-        // Transform course data to match frontend expectations
-        const transformedCourses = coursesResponse.data.map(course => ({
-          id: course.id,
-          courseCode: course.courseCode,
-          courseDescription: course.courseDescription,
-          credits: course.credits
-        }));
-        setAvailableCourses(transformedCourses);
+          const coursesResponse = await courseAPI.getCoursesByProgram(program.programName);
+          const transformedCourses = coursesResponse.data.map(course => ({
+            id: course.id,
+            courseCode: course.courseCode,
+            courseDescription: course.courseDescription,
+            credits: course.credits
+          }));
+          setAvailableCourses(transformedCourses);
         }
 
         setEditingId(id);
@@ -291,7 +308,9 @@ const CurriculumManagement = () => {
           academicYear: curriculum.academicYear,
           status: curriculum.status,
           description: curriculum.description,
-          selectedCourses: selectedCourseIds
+          selectedCourses: selectedCourseIds,
+          courseYearLevels: courseYearLevels,
+          courseSemesters: courseSemesters
         });
         setIsModalOpen(true);
       } catch (error) {
@@ -303,75 +322,104 @@ const CurriculumManagement = () => {
 
   // Save curriculum
   const saveCurriculum = async () => {
+    // Enhanced validation
+    if (!formData.curriculumName?.trim()) {
+      alert('Please enter a curriculum name');
+      return;
+    }
+    
+    if (!formData.curriculumCode?.trim()) {
+      alert('Please enter a curriculum code');
+      return;
+    }
+    
+    if (!formData.programId) {
+      alert('Please select a program');
+      return;
+    }
+    
+    if (!formData.academicYear) {
+      alert('Please select an academic year');
+      return;
+    }
+    
+    if (!formData.status) {
+      alert('Please select a status');
+      return;
+    }
+
     try {
-      // Validate required fields
-      if (!formData.curriculumName || !formData.curriculumCode || !formData.programId || 
-          !formData.academicYear || !formData.status) {
-        alert('Please fill in all required fields.');
+      const selectedProgramObj = programsList.find(p => p.programID.toString() === formData.programId);
+      
+      if (!selectedProgramObj) {
+        alert('Selected program not found');
         return;
       }
-
-      // Find the selected program object - send full Program object
-      const selectedProgram = programsList.find(p => p.programID.toString() === formData.programId);
       
-      const curriculumToSave = {
-        curriculumName: formData.curriculumName,
-        curriculumCode: formData.curriculumCode,
+      const curriculumDataPayload = {
+        curriculumName: formData.curriculumName.trim(),
+        curriculumCode: formData.curriculumCode.trim(),
+        program: selectedProgramObj,
         academicYear: formData.academicYear,
         status: formData.status,
-        description: formData.description,
-        program: selectedProgram
+        description: formData.description?.trim() || '',
+        effectiveStartDate: new Date().toISOString().split('T')[0]
       };
 
       let curriculumId;
       if (editingId) {
         // Update existing curriculum
-        await curriculumAPI.updateCurriculum(editingId, curriculumToSave);
+        await curriculumAPI.updateCurriculum(editingId, curriculumDataPayload);
         curriculumId = editingId;
-
-        // Clear existing curriculum details for editing
+        
+        // Delete existing curriculum details
         try {
-          const existingDetails = await curriculumDetailAPI.getDetailsByCurriculum(curriculumId);
-          const deletePromises = existingDetails.data.map(detail => 
-            curriculumDetailAPI.deleteCurriculumDetail(detail.curriculumDetailID)
-          );
-          await Promise.all(deletePromises);
-        } catch (error) {
-          console.log('No existing details to clear or error clearing:', error);
+          const existingDetails = await curriculumDetailAPI.getDetailsByCurriculum(editingId);
+          if (existingDetails.data && existingDetails.data.length > 0) {
+            for (const detail of existingDetails.data) {
+              await curriculumDetailAPI.deleteCurriculumDetail(detail.curriculumDetailID);
+            }
+          }
+        } catch (detailError) {
+          console.warn('No existing details to delete or error deleting:', detailError);
         }
       } else {
         // Create new curriculum
-        const response = await curriculumAPI.createCurriculum(curriculumToSave);
+        const response = await curriculumAPI.createCurriculum(curriculumDataPayload);
         curriculumId = response.data.curriculumID;
       }
 
-      // Save curriculum details (selected courses)
-      if (formData.selectedCourses.length > 0) {
+      // Save curriculum details (selected courses) with correct field names
+      if (formData.selectedCourses && formData.selectedCourses.length > 0) {
         const detailPromises = formData.selectedCourses.map(courseId => {
           const course = availableCourses.find(c => c.id === courseId);
           if (course) {
             return curriculumDetailAPI.createCurriculumDetail({
               curriculum: { curriculumID: curriculumId },
               course: { id: courseId },
-              suggestedYearLevel: 1, // Default to first year for now
-              suggestedSemester: "1" // Default to first semester, as string
+              YearLevel: formData.courseYearLevels?.[courseId] || 1,    // Send as YearLevel
+              Semester: formData.courseSemesters?.[courseId] || "1"     // Send as Semester
             });
           }
           return null;
         }).filter(promise => promise !== null);
 
-        await Promise.all(detailPromises);
+        if (detailPromises.length > 0) {
+          await Promise.all(detailPromises);
+        }
       }
 
       alert(editingId ? 'Curriculum updated successfully!' : 'Curriculum created successfully!');
       closeModal();
-      loadCurriculums(); // Reload the list
+      loadCurriculums(); // Fixed function name
     } catch (error) {
       console.error('Error saving curriculum:', error);
+      
+      // Better error handling
       if (error.response?.status === 400) {
         alert('Invalid data provided. Please check your input.');
-      } else if (error.response?.status === 404) {
-        alert('Curriculum not found!');
+      } else if (error.response?.status === 409) {
+        alert('A curriculum with this code already exists.');
       } else if (error.response?.status === 500) {
         alert('Server error. Please try again later.');
       } else {
@@ -431,8 +479,12 @@ const CurriculumManagement = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      // Reset selected courses when program changes
-      ...(name === 'programId' && { selectedCourses: [] })
+      // Reset selected courses and their mappings when program changes
+      ...(name === 'programId' && { 
+        selectedCourses: [],
+        courseYearLevels: {},
+        courseSemesters: {}
+      })
     }));
 
     // Load courses when program is selected
@@ -447,16 +499,59 @@ const CurriculumManagement = () => {
         console.error('Error loading courses:', error);
         setAvailableCourses([]);
       }
+    } else if (name === 'programId' && !value) {
+      // Clear courses when no program is selected
+      setAvailableCourses([]);
     }
   };
 
   const handleCourseSelection = (courseId) => {
     setFormData(prev => {
-      const selectedCourses = prev.selectedCourses.includes(courseId)
+      const isSelected = prev.selectedCourses.includes(courseId);
+      const selectedCourses = isSelected
         ? prev.selectedCourses.filter(id => id !== courseId)
         : [...prev.selectedCourses, courseId];
-      return { ...prev, selectedCourses };
+    
+      const courseYearLevels = { ...prev.courseYearLevels };
+      const courseSemesters = { ...prev.courseSemesters };
+    
+      if (isSelected) {
+        // Remove year level and semester when unchecking
+        delete courseYearLevels[courseId];
+        delete courseSemesters[courseId];
+      } else {
+        // Set default values when checking
+        courseYearLevels[courseId] = 1;
+        courseSemesters[courseId] = "1";
+      }
+    
+      return { 
+        ...prev, 
+        selectedCourses,
+        courseYearLevels,
+        courseSemesters
+      };
     });
+  };
+
+  const handleCourseYearChange = (courseId, yearLevel) => {
+    setFormData(prev => ({
+      ...prev,
+      courseYearLevels: {
+        ...prev.courseYearLevels,
+        [courseId]: parseInt(yearLevel)
+      }
+    }));
+  };
+
+  const handleCourseSemesterChange = (courseId, semester) => {
+    setFormData(prev => ({
+      ...prev,
+      courseSemesters: {
+        ...prev.courseSemesters,
+        [courseId]: semester
+      }
+    }));
   };
 
   // Pagination functions
@@ -842,7 +937,7 @@ const CurriculumManagement = () => {
                                             <div className="course-name">{detail.course.courseDescription}</div>
                                             <div className="course-meta">
                                               <span>Credits: {detail.course.credits}</span>
-                                              <span>Year {detail.suggestedYearLevel}, Semester {detail.suggestedSemester}</span>
+                                              <span>Year {detail.yearLevel}, Semester {detail.semester}</span>
                                             </div>
                                           </div>
                                         ))}
@@ -1010,6 +1105,37 @@ const CurriculumManagement = () => {
                             <small>({course.credits} credits)</small>
                           </span>
                         </label>
+                        
+                        {/* Show year and semester selectors for selected courses */}
+                        {formData.selectedCourses.includes(course.id) && (
+                          <div className="course-details">
+                            <div className="course-detail-group">
+                              <label className="detail-label">Year Level:</label>
+                              <select
+                                value={formData.courseYearLevels[course.id] || 1}
+                                onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
+                                className="detail-select"
+                              >
+                                <option value={1}>Year 1</option>
+                                <option value={2}>Year 2</option>
+                                <option value={3}>Year 3</option>
+                                <option value={4}>Year 4</option>
+                              </select>
+                            </div>
+                            <div className="course-detail-group">
+                              <label className="detail-label">Semester:</label>
+                              <select
+                                value={formData.courseSemesters[course.id] || "1"}
+                                onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
+                                className="detail-select"
+                              >
+                                <option value="1">1st Semester</option>
+                                <option value="2">2nd Semester</option>
+                                <option value="Summer">Summer</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                     {availableCourses.length === 0 && (
