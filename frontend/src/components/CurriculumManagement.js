@@ -799,10 +799,8 @@ const CurriculumManagement = () => {
                             </td>
                             <td>{formatDate(curriculum.lastUpdated)}</td>
                             <td>
-                              <div className="actions-container">
-                                <span className="expand-icon">
-                                  {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
-                                </span>
+                      
+
                                 <div className="action-buttons">
                                   <button 
                                     className="btn-action btn-edit" 
@@ -811,8 +809,7 @@ const CurriculumManagement = () => {
                                       editCurriculum(curriculum.id);
                                     }}
                                     title="Edit"
-                                  >
-                                    ✏️
+                                  >              
                                   </button>
                                   <button 
                                     className="btn-action btn-delete" 
@@ -821,9 +818,12 @@ const CurriculumManagement = () => {
                                       deleteCurriculum(curriculum.id);
                                     }}
                                     title="Delete"
-                                  >
-                                    🗑️
+                                  >                       
                                   </button>
+                                          <div className="actions-container">
+                                <span className="expand-icon">
+                                  {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
+                                </span>
                                 </div>
                               </div>
                             </td>
