@@ -209,38 +209,43 @@ const StudentManagement = () => {
     }
 
     try {
-      // Find the selected program
-      const selectedProgramObj = programsList.find(p => p.programID.toString() === sectionForm.programId);
-
-      // Create section data for API
-      const sectionData = {
-        sectionName: sectionForm.sectionName,
-        program: selectedProgramObj,
-        // Add any other required fields based on your backend model
-        status: 'ACTIVE', // Assuming sections have a status
-        // Add other fields as needed
-      };
-
-      // Call API to create section
-      await courseSectionAPI.createSection(sectionData);
-      
-      alert('Section added successfully!');
-      closeAddSectionModal();
-      
-      // Reload data to get the updated sections list
-      loadInitialData();
-      
-    } catch (error) {
-      console.error('Error adding section:', error);
-      if (error.response?.status === 400) {
-        alert('Invalid section data provided!');
-      } else if (error.response?.status === 409) {
-        alert('Section already exists!');
-      } else {
-        alert('Failed to add section. Please try again.');
-      }
+    // 2. Find the full program object from the programId stored in the form state.
+    // The backend needs the whole object, not just the ID.
+    const selectedProgramObj = programsList.find(
+      (p) => p.programID.toString() === sectionForm.programId
+    );
+    
+    // Add a check in case the program isn't found (unlikely but good practice)
+    if (!selectedProgramObj) {
+        alert('Could not find the selected program. Please refresh and try again.');
+        return;
     }
-  };
+
+    const sectionData = {
+      sectionName: sectionForm.sectionName,
+      program: selectedProgramObj, 
+      status: 'ACTIVE', 
+    };
+
+    console.log("Sending this data to create section:", sectionData);
+    await courseSectionAPI.createSection(sectionData);
+    
+    alert('Section added successfully!');
+    closeAddSectionModal(); // Close the modal
+    loadInitialData();     // Reload all data to show the new section in the list
+    
+  } catch (error) {
+    console.error('Error adding section:', error);
+    if (error.response?.status === 409) { // 409 Conflict
+      alert('A section with this name already exists for the selected program.');
+    } else if (error.response?.data?.message) {
+      alert(`Failed to add section: ${error.response.data.message}`);
+    }
+    else {
+      alert('Failed to add section. Please check the console for details.');
+    }
+  }
+};
 
   const handleStudentFormChange = (field, value) => {
     setStudentForm(prev => ({
