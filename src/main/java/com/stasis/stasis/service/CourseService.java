@@ -41,4 +41,8 @@ public class CourseService {
     public void deleteCourse(Long id) {
         courseRepository.deleteById(id);
     }
+
+    public List<Course> getCoursesByProgram(String program) {
+        return courseRepository.findByProgram(program);
+    }
 }

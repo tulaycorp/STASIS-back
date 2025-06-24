@@ -2,7 +2,10 @@ package com.stasis.stasis.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -27,4 +30,9 @@ public class Curriculum {
     private Program program;
     
     private String status; // Use String instead of boolean for "Active", "Draft", "Inactive"
+    
+    @JsonManagedReference
+    @OneToMany(mappedBy = "curriculum", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<CurriculumDetail> curriculumDetails = new ArrayList<>();
 }

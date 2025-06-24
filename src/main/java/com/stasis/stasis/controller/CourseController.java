@@ -48,4 +48,9 @@ public class CourseController {
         courseService.deleteCourse(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/program/{program}")
+    public List<Course> getCoursesByProgram(@PathVariable String program) {
+        return courseService.getCoursesByProgram(program);
+    }
 }

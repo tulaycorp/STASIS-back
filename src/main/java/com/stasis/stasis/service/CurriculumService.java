@@ -49,6 +49,14 @@ public class CurriculumService {
                 curriculum.setProgram(updatedCurriculum.getProgram());
                 curriculum.setStatus(updatedCurriculum.getStatus());
                 curriculum.setLastUpdated(LocalDate.now());
+                
+                // Update curriculum details if provided
+                if (updatedCurriculum.getCurriculumDetails() != null) {
+                    curriculum.getCurriculumDetails().clear();
+                    curriculum.getCurriculumDetails().addAll(updatedCurriculum.getCurriculumDetails());
+                    // Set the curriculum reference in each detail
+                    curriculum.getCurriculumDetails().forEach(detail -> detail.setCurriculum(curriculum));
+                }
                 return curriculumRepository.save(curriculum);
             })
             .orElseThrow(() -> new RuntimeException("Curriculum not found with ID " + id));

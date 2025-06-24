@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './CurriculumManagement.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { curriculumAPI, programAPI, testConnection } from '../services/api';
+import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnection } from '../services/api';
 
 const CurriculumManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -15,6 +15,7 @@ const CurriculumManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProgramFilter, setSelectedProgramFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -23,8 +24,12 @@ const CurriculumManagement = () => {
     programId: '',
     academicYear: '',
     status: 'Draft',
-    description: ''
+    description: '',
+    selectedCourses: []
   });
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [expandedCurricula, setExpandedCurricula] = useState(new Set());
+  const [curriculumCourses, setCurriculumCourses] = useState({});
 
   // Load data on component mount
   useEffect(() => {
@@ -60,40 +65,109 @@ const CurriculumManagement = () => {
     try {
       console.log('Loading curriculums from API...');
       const response = await curriculumAPI.getAllCurriculums();
-      console.log('Curriculums loaded:', response.data);
+      console.log('Curriculums response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      console.log('Raw response data:', response.data);
       
-      // Transform backend data to match frontend expectations - using backend entities
-      const transformedData = response.data.map(curriculum => ({
-        id: curriculum.curriculumID,
-        name: curriculum.curriculumName,
-        code: curriculum.curriculumCode || 'N/A',
-        program: curriculum.program?.programName || 'No Program', // Extract programName from Program object
-        programId: curriculum.program?.programID || null,
-        academicYear: curriculum.academicYear || 'N/A',
-        status: curriculum.status || 'Draft', // Use status string directly
-        lastUpdated: curriculum.lastUpdated || curriculum.effectiveStartDate, // Use backend date fields
-        description: curriculum.description || '',
-        effectiveStartDate: curriculum.effectiveStartDate,
-        // Keep the full program object for editing
-        programObject: curriculum.program
-      }));
+      // Validate response
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server');
+      }
       
+      // Handle empty response
+      if (response.data === '') {
+        console.log('Empty response from server');
+        setCurriculumData([]);
+        return;
+      }
+      
+      // Check if response.data is an array
+      if (!Array.isArray(response.data)) {
+        console.error('Expected array but got:', typeof response.data);
+        console.error('Response data:', response.data);
+        setCurriculumData([]);
+        setError('Invalid data format received from server. Expected array but got ' + typeof response.data);
+        return;
+      }
+      
+      // Transform backend data to match frontend expectations
+      const transformedData = response.data.map(curriculum => {
+        console.log('Processing curriculum:', curriculum);
+        return {
+          id: curriculum.curriculumID,
+          name: curriculum.curriculumName,
+          code: curriculum.curriculumCode || 'N/A',
+          program: curriculum.program?.programName || 'No Program',
+          programId: curriculum.program?.programID || null,
+          academicYear: curriculum.academicYear || 'N/A',
+          status: curriculum.status || 'Draft',
+          lastUpdated: curriculum.lastUpdated || curriculum.effectiveStartDate,
+          description: curriculum.description || '',
+          effectiveStartDate: curriculum.effectiveStartDate,
+          programObject: curriculum.program
+        };
+      });
+      
+      console.log('Transformed data:', transformedData);
       setCurriculumData(transformedData);
       setError(null);
     } catch (err) {
       console.error('Error loading curriculums:', err);
-      throw err;
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      setError(`Failed to load curricula: ${err.message}`);
+      setCurriculumData([]);
     }
   };
 
   const loadPrograms = async () => {
     try {
+      console.log('Loading programs from API...');
       const response = await programAPI.getAllPrograms();
-      console.log('Programs loaded:', response.data);
+      console.log('Programs response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      console.log('Raw response data:', response.data);
+      
+      // Validate response
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server');
+      }
+      
+      // Handle empty response
+      if (response.data === '') {
+        console.log('Empty response from server');
+        setProgramsList([]);
+        return;
+      }
+      
+      // Check if response.data is an array
+      if (!Array.isArray(response.data)) {
+        console.error('Expected array but got:', typeof response.data);
+        console.error('Response data:', response.data);
+        setProgramsList([]);
+        setError('Invalid program data format received from server');
+        return;
+      }
+      
+      console.log('Setting programs list:', response.data);
       setProgramsList(response.data);
     } catch (err) {
       console.error('Error loading programs:', err);
-      // Don't throw here, programs are optional for curriculum creation
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      setProgramsList([]);
     }
   };
 
@@ -113,12 +187,17 @@ const CurriculumManagement = () => {
     }
   };
 
-  // Filter data based on search
-  const filteredData = curriculumData.filter(curriculum =>
-    curriculum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    curriculum.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    curriculum.program.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter data based on search and program
+  const filteredData = curriculumData.filter(curriculum => {
+    const matchesSearch = curriculum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      curriculum.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      curriculum.program.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesProgram = selectedProgramFilter === '' || 
+      curriculum.programId?.toString() === selectedProgramFilter;
+    
+    return matchesSearch && matchesProgram;
+  });
 
   // Pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -128,6 +207,15 @@ const CurriculumManagement = () => {
 
   // Statistics
   const activeCurricula = curriculumData.filter(c => c.status === 'Active').length;
+  
+  // Program statistics
+  const getProgramCurriculumCount = (programId) => {
+    return curriculumData.filter(c => c.programId === programId).length;
+  };
+  
+  const getProgramActiveCurriculumCount = (programId) => {
+    return curriculumData.filter(c => c.programId === programId && c.status === 'Active').length;
+  };
 
   // Format date using backend LocalDate
   const formatDate = (dateString) => {
@@ -173,19 +261,43 @@ const CurriculumManagement = () => {
   };
 
   // Edit curriculum
-  const editCurriculum = (id) => {
+  const editCurriculum = async (id) => {
     const curriculum = curriculumData.find(c => c.id === id);
     if (curriculum) {
-      setEditingId(id);
-      setFormData({
-        curriculumName: curriculum.name,
-        curriculumCode: curriculum.code,
-        programId: curriculum.programId?.toString() || '',
-        academicYear: curriculum.academicYear,
-        status: curriculum.status,
-        description: curriculum.description
-      });
-      setIsModalOpen(true);
+      try {
+        // Load curriculum details to get selected courses
+        const detailsResponse = await curriculumDetailAPI.getDetailsByCurriculum(id);
+        const selectedCourseIds = detailsResponse.data.map(detail => detail.course.id);
+
+        // Load available courses for the program
+        const program = programsList.find(p => p.programID === curriculum.programId);
+        if (program) {
+        const coursesResponse = await courseAPI.getCoursesByProgram(program.programName);
+        // Transform course data to match frontend expectations
+        const transformedCourses = coursesResponse.data.map(course => ({
+          id: course.id,
+          courseCode: course.courseCode,
+          courseDescription: course.courseDescription,
+          credits: course.credits
+        }));
+        setAvailableCourses(transformedCourses);
+        }
+
+        setEditingId(id);
+        setFormData({
+          curriculumName: curriculum.name,
+          curriculumCode: curriculum.code,
+          programId: curriculum.programId?.toString() || '',
+          academicYear: curriculum.academicYear,
+          status: curriculum.status,
+          description: curriculum.description,
+          selectedCourses: selectedCourseIds
+        });
+        setIsModalOpen(true);
+      } catch (error) {
+        console.error('Error loading curriculum details:', error);
+        alert('Failed to load curriculum details. Please try again.');
+      }
     }
   };
 
@@ -206,21 +318,52 @@ const CurriculumManagement = () => {
         curriculumName: formData.curriculumName,
         curriculumCode: formData.curriculumCode,
         academicYear: formData.academicYear,
-        status: formData.status, // Use status string directly
+        status: formData.status,
         description: formData.description,
-        program: selectedProgram // Send full Program object to backend
+        program: selectedProgram
       };
 
+      let curriculumId;
       if (editingId) {
         // Update existing curriculum
         await curriculumAPI.updateCurriculum(editingId, curriculumToSave);
-        alert('Curriculum updated successfully!');
+        curriculumId = editingId;
+
+        // Clear existing curriculum details for editing
+        try {
+          const existingDetails = await curriculumDetailAPI.getDetailsByCurriculum(curriculumId);
+          const deletePromises = existingDetails.data.map(detail => 
+            curriculumDetailAPI.deleteCurriculumDetail(detail.curriculumDetailID)
+          );
+          await Promise.all(deletePromises);
+        } catch (error) {
+          console.log('No existing details to clear or error clearing:', error);
+        }
       } else {
         // Create new curriculum
-        await curriculumAPI.createCurriculum(curriculumToSave);
-        alert('Curriculum created successfully!');
+        const response = await curriculumAPI.createCurriculum(curriculumToSave);
+        curriculumId = response.data.curriculumID;
       }
 
+      // Save curriculum details (selected courses)
+      if (formData.selectedCourses.length > 0) {
+        const detailPromises = formData.selectedCourses.map(courseId => {
+          const course = availableCourses.find(c => c.id === courseId);
+          if (course) {
+            return curriculumDetailAPI.createCurriculumDetail({
+              curriculum: { curriculumID: curriculumId },
+              course: { id: courseId },
+              suggestedYearLevel: 1, // Default to first year for now
+              suggestedSemester: "1" // Default to first semester, as string
+            });
+          }
+          return null;
+        }).filter(promise => promise !== null);
+
+        await Promise.all(detailPromises);
+      }
+
+      alert(editingId ? 'Curriculum updated successfully!' : 'Curriculum created successfully!');
       closeModal();
       loadCurriculums(); // Reload the list
     } catch (error) {
@@ -235,6 +378,31 @@ const CurriculumManagement = () => {
         alert('Failed to save curriculum. Please try again.');
       }
     }
+  };
+
+  // Toggle curriculum expansion
+  const toggleCurriculumExpansion = async (curriculumId) => {
+    const newExpandedCurricula = new Set(expandedCurricula);
+    
+    if (expandedCurricula.has(curriculumId)) {
+      newExpandedCurricula.delete(curriculumId);
+    } else {
+      newExpandedCurricula.add(curriculumId);
+      // Load courses if not already loaded
+      if (!curriculumCourses[curriculumId]) {
+        try {
+          const response = await curriculumDetailAPI.getDetailsByCurriculum(curriculumId);
+          setCurriculumCourses(prev => ({
+            ...prev,
+            [curriculumId]: response.data
+          }));
+        } catch (error) {
+          console.error('Error loading curriculum courses:', error);
+        }
+      }
+    }
+    
+    setExpandedCurricula(newExpandedCurricula);
   };
 
   // Delete curriculum
@@ -258,12 +426,37 @@ const CurriculumManagement = () => {
   };
 
   // Handle form input changes
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      // Reset selected courses when program changes
+      ...(name === 'programId' && { selectedCourses: [] })
     }));
+
+    // Load courses when program is selected
+    if (name === 'programId' && value) {
+      try {
+        const program = programsList.find(p => p.programID.toString() === value);
+        if (program) {
+          const response = await courseAPI.getCoursesByProgram(program.programName);
+          setAvailableCourses(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading courses:', error);
+        setAvailableCourses([]);
+      }
+    }
+  };
+
+  const handleCourseSelection = (courseId) => {
+    setFormData(prev => {
+      const selectedCourses = prev.selectedCourses.includes(courseId)
+        ? prev.selectedCourses.filter(id => id !== courseId)
+        : [...prev.selectedCourses, courseId];
+      return { ...prev, selectedCourses };
+    });
   };
 
   // Pagination functions
@@ -478,18 +671,15 @@ const CurriculumManagement = () => {
             <div>
               <h1 className="page-title">Curriculum Management</h1>
             </div>
-            <button className="create-btn" onClick={openModal}>
-              + Create New Curriculum
-            </button>
           </div>
 
           {/* Stats Cards */}
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-icon blue">📘</div>
+              <div className="stat-icon blue">📚</div>
               <div className="stat-content">
-                <h3>Active Curricula</h3>
-                <div className="stat-value">{activeCurricula}</div>
+                <h3>Total Programs</h3>
+                <div className="stat-value">{programsList.length}</div>
               </div>
             </div>
             <div className="stat-card">
@@ -500,103 +690,210 @@ const CurriculumManagement = () => {
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-icon blue">📚</div>
+              <div className="stat-icon blue">📘</div>
               <div className="stat-content">
-                <h3>Programs</h3>
-                <div className="stat-value">{programsList.length}</div>
+                <h3>Active Curricula</h3>
+                <div className="stat-value">{activeCurricula}</div>
               </div>
             </div>
           </div>
 
-          {/* Curriculum Section */}
-          <div className="curriculum-section">
-            <div className="section-header">
-              <h2 className="section-title">Curriculum List</h2>
-              <div className="search-filter">
-                <input
-                  type="text"
-                  className="search-input"
-                  placeholder="Search curricula by name, code, or program..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="table-container">
-              <table className="curriculum-table">
-                <thead>
-                  <tr>
-                    <th>Curriculum</th>
-                    <th>Program</th>
-                    <th>Academic Year</th>
-                    <th>Status</th>
-                    <th>Last Updated</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.map(curriculum => (
-                    <tr key={curriculum.id}>
-                      <td>
-                        <div className="curriculum-name">{curriculum.name}</div>
-                        <div className="curriculum-code">{curriculum.code}</div>
-                      </td>
-                      <td>{curriculum.program}</td>
-                      <td>{curriculum.academicYear}</td>
-                      <td>
-                        <span className={`status-badge status-${curriculum.status.toLowerCase()}`}>
-                          {curriculum.status}
-                        </span>
-                      </td>
-                      <td>{formatDate(curriculum.lastUpdated)}</td>
-                      <td>
-                        <div className="action-buttons">
-                          <button 
-                            className="action-btn edit-btn" 
-                            onClick={() => editCurriculum(curriculum.id)}
-                            title="Edit"
-                          >
-                            ✏️
-                          </button>
-                          <button 
-                            className="action-btn delete-btn" 
-                            onClick={() => deleteCurriculum(curriculum.id)}
-                            title="Delete"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pagination">
-              <div className="pagination-info">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
-              </div>
-              <div className="pagination-controls">
-                <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
-                  Previous
-                </button>
-                {[...Array(Math.min(3, totalPages))].map((_, index) => {
-                  const pageNum = index + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
-                      onClick={() => goToPage(pageNum)}
+          {/* Curriculum Content Wrapper with Sidebar */}
+          <div className="curriculum-content-wrapper">
+            {/* Program Sidebar */}
+            <div className="curriculum-sidebar">
+              <div className="curriculum-nav-section">
+                <div className="curriculum-nav-header">
+                  <h2 className="curriculum-nav-title">Programs</h2>
+                </div>
+                <div className="curriculum-nav-list">
+                  <div
+                    className={`curriculum-nav-item ${selectedProgramFilter === '' ? 'curriculum-nav-item-active' : ''}`}
+                    onClick={() => setSelectedProgramFilter('')}
+                  >
+                    <span className="curriculum-nav-icon">📚</span>
+                    All Programs
+                    <span className="curriculum-nav-count">{curriculumData.length}</span>
+                  </div>
+                  {programsList.map((program) => (
+                    <div
+                      key={program.programID}
+                      className={`curriculum-nav-item ${selectedProgramFilter === program.programID.toString() ? 'curriculum-nav-item-active' : ''}`}
+                      onClick={() => setSelectedProgramFilter(program.programID.toString())}
                     >
-                      {pageNum}
+                      <span className="curriculum-nav-icon">📚</span>
+                      {program.programName}
+                      <span className="curriculum-nav-count">{getProgramCurriculumCount(program.programID)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Curriculum Section */}
+            <div className="curriculum-main-section">
+              <div className="curriculum-section-header">
+                <h2 className="curriculum-section-title">
+                  {selectedProgramFilter ? 
+                    `Curricula for ${programsList.find(p => p.programID.toString() === selectedProgramFilter)?.programName}` : 
+                    'All Curricula'
+                  }
+                </h2>
+                <p className="curriculum-section-desc">Manage curriculum records and information</p>
+              </div>
+
+              <div className="curriculum-section-content">
+                <div className="curriculum-filters">
+                  <div className="curriculum-search-group">
+                    <input
+                      type="text"
+                      className="form-input curriculum-search-input"
+                      placeholder="Search curricula by name, code..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="curriculum-filter-actions">
+                    <button 
+                      className="btn-add-curriculum"
+                      onClick={openModal}
+                    >
+                      + Add New Curriculum
                     </button>
-                  );
-                })}
-                <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
-                  Next
-                </button>
+                  </div>
+                </div>
+
+                <div className="curriculum-table-container">
+                  <table className="curriculum-table">
+                    <thead>
+                      <tr>
+                        <th>Curriculum</th>
+                        <th>Program</th>
+                        <th>Academic Year</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedData.map(curriculum => (
+                        <React.Fragment key={curriculum.id}>
+                          <tr 
+                            className={`curriculum-row ${expandedCurricula.has(curriculum.id) ? 'expanded' : ''}`}
+                            onClick={() => toggleCurriculumExpansion(curriculum.id)}
+                          >
+                            <td>
+                              <div className="curriculum-name">
+                                <div>
+                                  <div>{curriculum.name}</div>
+                                  <div className="curriculum-code">{curriculum.code}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>{curriculum.program}</td>
+                            <td>{curriculum.academicYear}</td>
+                            <td>
+                              <span className={`status-badge status-${curriculum.status.toLowerCase()}`}>
+                                {curriculum.status}
+                              </span>
+                            </td>
+                            <td>{formatDate(curriculum.lastUpdated)}</td>
+                            <td>
+                              <div className="actions-container">
+                                <span className="expand-icon">
+                                  {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
+                                </span>
+                                <div className="action-buttons">
+                                  <button 
+                                    className="btn-action btn-edit" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      editCurriculum(curriculum.id);
+                                    }}
+                                    title="Edit"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button 
+                                    className="btn-action btn-delete" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteCurriculum(curriculum.id);
+                                    }}
+                                    title="Delete"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          {expandedCurricula.has(curriculum.id) && (
+                            <tr className="curriculum-details-row">
+                              <td colSpan="6">
+                                <div className="curriculum-courses">
+                                  <h4>Courses</h4>
+                                  {curriculumCourses[curriculum.id] ? (
+                                    curriculumCourses[curriculum.id].length > 0 ? (
+                                      <div className="courses-grid">
+                                        {curriculumCourses[curriculum.id].map(detail => (
+                                          <div key={detail.curriculumDetailID} className="course-card">
+                                            <div className="course-code">{detail.course.courseCode}</div>
+                                            <div className="course-name">{detail.course.courseDescription}</div>
+                                            <div className="course-meta">
+                                              <span>Credits: {detail.course.credits}</span>
+                                              <span>Year {detail.suggestedYearLevel}, Semester {detail.suggestedSemester}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p>No courses assigned to this curriculum.</p>
+                                    )
+                                  ) : (
+                                    <div className="loading-courses">Loading courses...</div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {filteredData.length === 0 && (
+                    <div className="no-curricula">
+                      <p>No curricula found matching your criteria.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pagination">
+                  <div className="pagination-info">
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
+                  </div>
+                  <div className="pagination-controls">
+                    <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
+                      Previous
+                    </button>
+                    {[...Array(Math.min(3, totalPages))].map((_, index) => {
+                      const pageNum = index + 1;
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                          onClick={() => goToPage(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
+                      Next
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -695,6 +992,32 @@ const CurriculumManagement = () => {
                   placeholder="Enter curriculum description..."
                 />
               </div>
+
+              {formData.programId && (
+                <div className="form-group">
+                  <label className="form-label">Available Courses</label>
+                  <div className="courses-list">
+                    {availableCourses.map(course => (
+                      <div key={course.id} className="course-item">
+                        <label className="course-label">
+                          <input
+                            type="checkbox"
+                            checked={formData.selectedCourses.includes(course.id)}
+                            onChange={() => handleCourseSelection(course.id)}
+                          />
+                          <span className="course-info">
+                            <strong>{course.courseCode}</strong> - {course.courseDescription}
+                            <small>({course.credits} credits)</small>
+                          </span>
+                        </label>
+                      </div>
+                    ))}
+                    {availableCourses.length === 0 && (
+                      <p className="no-courses">No courses available for this program.</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button type="button" className="btn-secondary" onClick={closeModal}>

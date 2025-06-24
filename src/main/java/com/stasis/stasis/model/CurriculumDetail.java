@@ -2,6 +2,7 @@ package com.stasis.stasis.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Data
@@ -14,6 +15,7 @@ public class CurriculumDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long curriculumDetailID;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "curriculumID")
     private Curriculum curriculum;

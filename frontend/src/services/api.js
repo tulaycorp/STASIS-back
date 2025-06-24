@@ -66,6 +66,12 @@ export const courseAPI = {
   
   // Get course by ID
   getCourseById: (id) => api.get(`/courses/${id}`),
+
+  // Get courses by program
+  getCoursesByProgram: (program) => {
+    console.log('Calling getCoursesByProgram API for program:', program);
+    return api.get(`/courses/program/${program}`);
+  },
   
   // Create new course
   createCourse: (courseData) => {
@@ -497,6 +503,49 @@ export const testAllEndpoints = async () => {
   }
   
   return results;
+};
+
+// Curriculum Detail API endpoints
+export const curriculumDetailAPI = {
+  // Get all curriculum details
+  getAllCurriculumDetails: () => {
+    console.log('Calling getAllCurriculumDetails API...');
+    return api.get('/curriculum-details');
+  },
+  
+  // Get curriculum detail by ID
+  getCurriculumDetailById: (id) => api.get(`/curriculum-details/${id}`),
+  
+  // Create new curriculum detail
+  createCurriculumDetail: (detailData) => {
+    console.log('Calling createCurriculumDetail API with data:', detailData);
+    return api.post('/curriculum-details', detailData);
+  },
+  
+  // Update curriculum detail
+  updateCurriculumDetail: (id, detailData) => {
+    console.log('Calling updateCurriculumDetail API for ID:', id, 'with data:', detailData);
+    return api.put(`/curriculum-details/${id}`, detailData);
+  },
+  
+  // Delete curriculum detail
+  deleteCurriculumDetail: (id) => {
+    console.log('Calling deleteCurriculumDetail API for ID:', id);
+    return api.delete(`/curriculum-details/${id}`);
+  },
+  
+  // Get details by curriculum
+  getDetailsByCurriculum: (curriculumId) => {
+    console.log('Calling getDetailsByCurriculum API for curriculum ID:', curriculumId);
+    return api.get(`/curriculum-details/curriculum/${curriculumId}`);
+  },
+  
+  // Get details by year level
+  getDetailsByYearLevel: (yearLevel) => api.get(`/curriculum-details/year/${yearLevel}`),
+  
+  // Get details by curriculum and year
+  getDetailsByCurriculumAndYear: (curriculumId, yearLevel) => 
+    api.get(`/curriculum-details/curriculum/${curriculumId}/year/${yearLevel}`)
 };
 
 export default api;
