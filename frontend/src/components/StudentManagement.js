@@ -19,7 +19,7 @@ const StudentManagement = () => {
   const [sectionsList, setSectionsList] = useState([]);
   const [selectedProgramSections, setSelectedProgramSections] = useState([]);
   const [editingStudent, setEditingStudent] = useState(null);
-  // Removed tempSections state - no longer needed
+  const [availableSectionsForStudent, setAvailableSectionsForStudent] = useState([]);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionForm, setSectionForm] = useState({
     sectionName: '',
@@ -38,7 +38,8 @@ const StudentManagement = () => {
     email: '',
     dateOfBirth: '',
     year_level: 1,
-    programId: ''
+    programId: '',
+    sectionId: ''
   });
 
   // Load data on component mount
@@ -134,7 +135,8 @@ const StudentManagement = () => {
       email: '',
       dateOfBirth: '',
       year_level: 1,
-      programId: ''
+      programId: '',
+      sectionId: ''
     });
     setShowAddStudentModal(true);
   };
@@ -147,7 +149,8 @@ const StudentManagement = () => {
       email: '',
       dateOfBirth: '',
       year_level: 1,
-      programId: ''
+      programId: '',
+      sectionId: ''
     });
   };
 
@@ -159,7 +162,8 @@ const StudentManagement = () => {
       email: student.email || '',
       dateOfBirth: student.dateOfBirth || '',
       year_level: student.year_level || 1,
-      programId: student.program?.programID?.toString() || ''
+      programId: student.program?.programID?.toString() || '',
+      sectionId: student.section?.sectionID?.toString() || ''
     });
     setShowEditStudentModal(true);
   };
@@ -173,7 +177,8 @@ const StudentManagement = () => {
       email: '',
       dateOfBirth: '',
       year_level: 1,
-      programId: ''
+      programId: '',
+      sectionId: ''
     });
   };
 
@@ -209,43 +214,43 @@ const StudentManagement = () => {
     }
 
     try {
-    // 2. Find the full program object from the programId stored in the form state.
-    // The backend needs the whole object, not just the ID.
-    const selectedProgramObj = programsList.find(
-      (p) => p.programID.toString() === sectionForm.programId
-    );
-    
-    // Add a check in case the program isn't found (unlikely but good practice)
-    if (!selectedProgramObj) {
+      // 2. Find the full program object from the programId stored in the form state.
+      // The backend needs the whole object, not just the ID.
+      const selectedProgramObj = programsList.find(
+        (p) => p.programID.toString() === sectionForm.programId
+      );
+
+      // Add a check in case the program isn't found (unlikely but good practice)
+      if (!selectedProgramObj) {
         alert('Could not find the selected program. Please refresh and try again.');
         return;
-    }
+      }
 
-    const sectionData = {
-      sectionName: sectionForm.sectionName,
-      program: selectedProgramObj, 
-      status: 'ACTIVE', 
-    };
+      const sectionData = {
+        sectionName: sectionForm.sectionName,
+        program: selectedProgramObj,
+        status: 'ACTIVE',
+      };
 
-    console.log("Sending this data to create section:", sectionData);
-    await courseSectionAPI.createSection(sectionData);
-    
-    alert('Section added successfully!');
-    closeAddSectionModal(); // Close the modal
-    loadInitialData();     // Reload all data to show the new section in the list
-    
-  } catch (error) {
-    console.error('Error adding section:', error);
-    if (error.response?.status === 409) { // 409 Conflict
-      alert('A section with this name already exists for the selected program.');
-    } else if (error.response?.data?.message) {
-      alert(`Failed to add section: ${error.response.data.message}`);
+      console.log("Sending this data to create section:", sectionData);
+      await courseSectionAPI.createSection(sectionData);
+
+      alert('Section added successfully!');
+      closeAddSectionModal(); // Close the modal
+      loadInitialData();     // Reload all data to show the new section in the list
+
+    } catch (error) {
+      console.error('Error adding section:', error);
+      if (error.response?.status === 409) { // 409 Conflict
+        alert('A section with this name already exists for the selected program.');
+      } else if (error.response?.data?.message) {
+        alert(`Failed to add section: ${error.response.data.message}`);
+      }
+      else {
+        alert('Failed to add section. Please check the console for details.');
+      }
     }
-    else {
-      alert('Failed to add section. Please check the console for details.');
-    }
-  }
-};
+  };
 
   const handleStudentFormChange = (field, value) => {
     setStudentForm(prev => ({
@@ -285,9 +290,9 @@ const StudentManagement = () => {
         section.program?.programID?.toString() === value ||
         section.programId?.toString() === value
       );
-      
+
       setAvailableSectionsForDelete(sectionsForProgram);
-      
+
       // Reset section selection when program changes
       setDeleteSectionForm(prev => ({
         ...prev,
@@ -308,13 +313,13 @@ const StudentManagement = () => {
       try {
         // Call API to delete section
         await courseSectionAPI.deleteSection(deleteSectionForm.sectionId);
-        
+
         alert('Section deleted successfully!');
         closeDeleteSectionModal();
-        
+
         // Reload data to get the updated sections list
         loadInitialData();
-        
+
       } catch (error) {
         console.error('Error deleting section:', error);
         if (error.response?.status === 404) {
@@ -345,6 +350,7 @@ const StudentManagement = () => {
     try {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === studentForm.programId);
+      const selectedSectionObj = sectionsList.find(s => s.sectionID.toString() === studentForm.sectionId);
 
       const studentData = {
         firstName: studentForm.firstName,
@@ -352,7 +358,8 @@ const StudentManagement = () => {
         email: studentForm.email,
         dateOfBirth: studentForm.dateOfBirth,
         year_level: parseInt(studentForm.year_level),
-        program: selectedProgramObj || null
+        program: selectedProgramObj || null,
+        section: selectedSectionObj || null
       };
 
       await studentAPI.createStudent(studentData);
@@ -369,7 +376,19 @@ const StudentManagement = () => {
     }
   };
 
-  const handleEditStudent = async () => {
+  const handleStudentProgramChange = (programId) => {
+    handleStudentFormChange('programId', programId);
+    handleStudentFormChange('sectionId', ''); // Reset section when program changes
+
+    // Filter sections for the selected program
+    const programSections = sectionsList.filter(section =>
+      section.program?.programID?.toString() === programId ||
+      section.programId?.toString() === programId
+    );
+    setAvailableSectionsForStudent(programSections);
+  };
+
+  const Student = async () => {
     // Validate required fields
     if (!studentForm.firstName || !studentForm.lastName || !studentForm.email) {
       alert('Please fill in all required fields');
@@ -386,6 +405,7 @@ const StudentManagement = () => {
     try {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === studentForm.programId);
+      const selectedSectionObj = sectionsList.find(s => s.sectionID.toString() === studentForm.sectionId);
 
       const studentData = {
         firstName: studentForm.firstName,
@@ -393,7 +413,8 @@ const StudentManagement = () => {
         email: studentForm.email,
         dateOfBirth: studentForm.dateOfBirth,
         year_level: parseInt(studentForm.year_level),
-        program: selectedProgramObj || null
+        program: selectedProgramObj || null,
+        section: selectedSectionObj || null
       };
 
       await studentAPI.updateStudent(editingStudent.id, studentData);
@@ -515,7 +536,6 @@ const StudentManagement = () => {
       // Find which program this section belongs to
       const sectionProgram = sectionsList.find(section => section.sectionName === sectionName);
       if (sectionProgram && sectionProgram.program?.programName) {
-        // Optionally auto-select the program (uncomment if desired)
         // setSelectedProgram(sectionProgram.program.programName);
       }
     }
@@ -804,6 +824,7 @@ const StudentManagement = () => {
                         <th>Name</th>
                         <th>Email</th>
                         <th>Program</th>
+                        <th>Section</th>
                         <th>Year Level</th>
                         <th>Date of Birth</th>
                         <th>Actions</th>
@@ -818,6 +839,7 @@ const StudentManagement = () => {
                           </td>
                           <td className="student-email">{student.email}</td>
                           <td>{student.program?.programName || 'No Program'}</td>
+                          <td>{student.section?.sectionName || student.sectionName || 'No Section'}</td>
                           <td>Year {student.year_level}</td>
                           <td>{student.dateOfBirth}</td>
                           <td>
@@ -932,7 +954,7 @@ const StudentManagement = () => {
                   <select
                     className="form-input"
                     value={studentForm.programId}
-                    onChange={(e) => handleStudentFormChange('programId', e.target.value)}
+                    onChange={(e) => handleStudentProgramChange(e.target.value)}
                   >
                     <option value="">Select Program</option>
                     {programsList.map((program) => (
@@ -941,6 +963,36 @@ const StudentManagement = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Section</label>
+                  <select
+                    className="form-input"
+                    value={studentForm.sectionId}
+                    onChange={(e) => handleStudentFormChange('sectionId', e.target.value)}
+                    disabled={!studentForm.programId}
+                  >
+                    <option value="">Select Section</option>
+                    {sectionsList
+                      .filter(section =>
+                        section.program?.programID?.toString() === studentForm.programId ||
+                        section.programId?.toString() === studentForm.programId
+                      )
+                      .map((section) => (
+                        <option key={section.sectionID} value={section.sectionID}>
+                          {section.sectionName}
+                        </option>
+                      ))}
+                  </select>
+                  {studentForm.programId && sectionsList.filter(section =>
+                    section.program?.programID?.toString() === studentForm.programId ||
+                    section.programId?.toString() === studentForm.programId
+                  ).length === 0 && (
+                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                        No sections available for this program.
+                      </p>
+                    )}
                 </div>
               </div>
             </div>
@@ -1039,6 +1091,35 @@ const StudentManagement = () => {
                     ))}
                   </select>
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Section</label>
+                  <select
+                    className="form-input"
+                    value={studentForm.sectionId}
+                    onChange={(e) => handleStudentFormChange('sectionId', e.target.value)}
+                    disabled={!studentForm.programId}
+                  >
+                    <option value="">Select Section</option>
+                    {sectionsList
+                      .filter(section =>
+                        section.program?.programID?.toString() === studentForm.programId ||
+                        section.programId?.toString() === studentForm.programId
+                      )
+                      .map((section) => (
+                        <option key={section.sectionID} value={section.sectionID}>
+                          {section.sectionName}
+                        </option>
+                      ))}
+                  </select>
+                  {studentForm.programId && sectionsList.filter(section =>
+                    section.program?.programID?.toString() === studentForm.programId ||
+                    section.programId?.toString() === studentForm.programId
+                  ).length === 0 && (
+                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                        No sections available for this program.
+                      </p>
+                    )}
+                </div>
               </div>
             </div>
 
@@ -1046,7 +1127,7 @@ const StudentManagement = () => {
               <button className="btn btn-secondary" onClick={closeEditStudentModal}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleEditStudent}>
+              <button className="btn btn-primary" onClick={Student}>
                 Update Student
               </button>
             </div>
