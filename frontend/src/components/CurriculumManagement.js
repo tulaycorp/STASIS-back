@@ -874,6 +874,7 @@ const CurriculumManagement = () => {
                         <th>Status</th>
                         <th>Last Updated</th>
                         <th>Actions</th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -919,17 +920,17 @@ const CurriculumManagement = () => {
                                   title="Delete"
                                 >                       
                                 </button>
-                                <div className="actions-container">
-                                  <span className="expand-icon">
-                                    {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
-                                  </span>
-                                </div>
                               </div>
+                            </td>
+                            <td>
+                              <span className="expand-icon">
+                                {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
+                              </span>
                             </td>
                           </tr>
                           {expandedCurricula.has(curriculum.id) && (
                             <tr className="curriculum-details-row">
-                              <td colSpan="6">
+                              <td colSpan="7">
                                 <div className="curriculum-courses">
                                   <h4>Courses</h4>
                                   {curriculumCourses[curriculum.id] ? (

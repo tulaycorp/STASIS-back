@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { courseSectionAPI, courseAPI, facultyAPI } from '../services/api';
+import { courseSectionAPI, courseAPI, facultyAPI, programAPI, testConnection } from '../services/api';
 
 const ScheduleManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -16,6 +16,13 @@ const ScheduleManagement = () => {
   const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
   const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
+
+  // Program and Section Navigation States
+  const [programsList, setProgramsList] = useState([]);
+  const [sectionsList, setSectionsList] = useState([]);
+  const [selectedProgram, setSelectedProgram] = useState('All Programs');
+  const [selectedSection, setSelectedSection] = useState('All Sections');
+  const [selectedProgramSections, setSelectedProgramSections] = useState([]);
 
   // Form state
   const [scheduleForm, setScheduleForm] = useState({
@@ -50,22 +57,95 @@ const ScheduleManagement = () => {
 
   // Load data on component mount
   useEffect(() => {
-    loadSchedules();
-    loadCourses();
-    loadInstructors();
-    loadStatusOptions();
+    loadInitialData();
   }, []);
 
-  // Load schedules from API
-  const loadSchedules = async () => {
+  const loadInitialData = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      // Test connection first
+      const connectionTest = await testConnection();
+      if (!connectionTest.success) {
+        throw new Error(`Connection failed: ${connectionTest.error}`);
+      }
+
+      // Load all data in parallel
+      const [schedulesResponse, coursesResponse, instructorsResponse, programsResponse, sectionsResponse] = await Promise.all([
+        courseSectionAPI.getAllSections(),
+        courseAPI.getAllCourses(),
+        facultyAPI.getAllFaculty(),
+        programAPI.getAllPrograms(),
+        courseSectionAPI.getAllSections()
+      ]);
+
+      // Transform and set schedule data
+      const transformedSchedules = schedulesResponse.data.map(section => ({
+        id: section.sectionID,
+        course: section.course?.courseDescription || 'Unknown Course',
+        section: section.sectionName,
+        instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
+        room: section.room || 'TBA',
+        day: section.day || 'TBA',
+        timeFrom: section.startTime || '00:00',
+        timeTo: section.endTime || '00:00',
+        status: section.status || 'ACTIVE',
+        semester: section.semester || 'Current',
+        year: section.year || new Date().getFullYear(),
+        program: section.course?.program?.programName
+      }));
       
+      setScheduleList(transformedSchedules);
+      
+      // Set course options
+      setCourseOptions(coursesResponse.data.map(course => ({
+        id: course.id,
+        label: `${course.courseCode} - ${course.courseDescription}`,
+        value: course.courseCode
+      })));
+
+      // Set instructor options
+      setInstructorOptions(instructorsResponse.data.map(faculty => ({
+        id: faculty.facultyID,
+        label: `${faculty.firstName} ${faculty.lastName}`,
+        value: faculty.facultyID
+      })));
+
+      // Set programs and sections
+      setProgramsList(programsResponse.data);
+      setSectionsList(sectionsResponse.data);
+
+      // Load status options
+      const uniqueStatuses = [...new Set(schedulesResponse.data.map(section => section.status).filter(Boolean))];
+      setStatusOptions(uniqueStatuses.length > 0 ? uniqueStatuses.sort() : ['ACTIVE', 'CANCELLED', 'COMPLETED', 'FULL']);
+
+    } catch (err) {
+      console.error('Error loading data:', err);
+      handleConnectionError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnectionError = (err) => {
+    if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
+      setError('Cannot connect to server. Please check if the backend is running on http://localhost:8080');
+    } else if (err.code === 'ECONNREFUSED') {
+      setError('Connection refused. The backend server is not running.');
+    } else if (err.response?.status === 404) {
+      setError('API endpoint not found. Please check if the server is properly configured.');
+    } else if (err.response?.status === 500) {
+      setError('Server error. Please check the backend console for error details.');
+    } else {
+      setError(`Failed to load data: ${err.message}`);
+    }
+  };
+
+  // Reload schedules after operations
+  const reloadSchedules = async () => {
+    try {
       const response = await courseSectionAPI.getAllSections();
-      console.log('Loaded schedules:', response.data);
-      
-      // Transform API data to match frontend format
       const transformedData = response.data.map(section => ({
         id: section.sectionID,
         course: section.course?.courseDescription || 'Unknown Course',
@@ -74,67 +154,15 @@ const ScheduleManagement = () => {
         room: section.room || 'TBA',
         day: section.day || 'TBA',
         timeFrom: section.startTime || '00:00',
-        timeTo: section.endTime || '00:00', 
+        timeTo: section.endTime || '00:00',
         status: section.status || 'ACTIVE',
         semester: section.semester || 'Current',
-        year: section.year || new Date().getFullYear()
+        year: section.year || new Date().getFullYear(),
+        program: section.course?.program?.programName
       }));
-      
       setScheduleList(transformedData);
     } catch (err) {
-      console.error('Error loading schedules:', err);
-      setError('Failed to load schedules. Please check if the backend is running.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load courses for dropdown
-  const loadCourses = async () => {
-    try {
-      const response = await courseAPI.getAllCourses();
-      setCourseOptions(response.data.map(course => ({
-        id: course.id,
-        label: `${course.courseCode} - ${course.courseDescription}`,
-        value: course.courseCode
-      })));
-    } catch (err) {
-      console.error('Error loading courses:', err);
-      setCourseOptions([]);
-    }
-  };
-
-  // Load instructors for dropdown
-  const loadInstructors = async () => {
-    try {
-      const response = await facultyAPI.getAllFaculty();
-      setInstructorOptions(response.data.map(faculty => ({
-        id: faculty.facultyID,
-        label: `${faculty.firstName} ${faculty.lastName}`,
-        value: faculty.facultyID
-      })));
-    } catch (err) {
-      console.error('Error loading instructors:', err);
-      setInstructorOptions([]);
-    }
-  };
-
-  // Load status options from existing schedules
-  const loadStatusOptions = async () => {
-    try {
-      const response = await courseSectionAPI.getAllSections();
-      const uniqueStatuses = [...new Set(response.data.map(section => section.status).filter(Boolean))];
-      
-      // If no statuses found in data, provide default options
-      if (uniqueStatuses.length === 0) {
-        setStatusOptions(['ACTIVE', 'CANCELLED', 'COMPLETED', 'FULL']);
-      } else {
-        setStatusOptions(uniqueStatuses.sort());
-      }
-    } catch (err) {
-      console.error('Error loading status options:', err);
-      // Fallback to minimal status options
-      setStatusOptions(['ACTIVE', 'CANCELLED']);
+      console.error('Error reloading schedules:', err);
     }
   };
 
@@ -187,8 +215,7 @@ const ScheduleManagement = () => {
       await courseSectionAPI.createSection(sectionData);
       alert('Schedule added successfully!');
       closeAddScheduleModal();
-      loadSchedules(); // Reload the list
-      loadStatusOptions(); // Reload status options in case new status was added
+      reloadSchedules();
     } catch (error) {
       console.error('Error adding schedule:', error);
       if (error.response?.status === 400) {
@@ -247,8 +274,7 @@ const ScheduleManagement = () => {
       await courseSectionAPI.updateSection(editingSchedule.id, sectionData);
       alert('Schedule updated successfully!');
       closeEditScheduleModal();
-      loadSchedules();
-      loadStatusOptions(); // Reload status options in case status was changed
+      reloadSchedules();
     } catch (error) {
       console.error('Error updating schedule:', error);
       alert('Failed to update schedule. Please try again.');
@@ -259,10 +285,9 @@ const ScheduleManagement = () => {
   const handleDeleteSchedule = async (scheduleId) => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
       try {
-        await courseSectionAPI.deleteSection(scheduleId);
-        alert('Schedule deleted successfully!');
-        loadSchedules();
-        loadStatusOptions(); // Reload status options after deletion
+      await courseSectionAPI.deleteSection(scheduleId);
+      alert('Schedule deleted successfully!');
+      reloadSchedules();
       } catch (error) {
         console.error('Error deleting schedule:', error);
         alert('Failed to delete schedule. Please try again.');
@@ -275,8 +300,7 @@ const ScheduleManagement = () => {
     try {
       await courseSectionAPI.updateSectionStatus(scheduleId, newStatus);
       alert('Status updated successfully!');
-      loadSchedules();
-      loadStatusOptions(); // Reload status options in case new status was used
+      reloadSchedules();
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Failed to update status. Please try again.');
@@ -342,7 +366,42 @@ const ScheduleManagement = () => {
     return [...new Set(scheduleList.map(s => s.status).filter(Boolean))];
   };
 
-  // Filter schedules
+  // Handle program selection
+  const handleProgramSelect = (programName) => {
+    setSelectedProgram(programName);
+    // Always reset to "All Sections" when changing programs
+    setSelectedSection('All Sections');
+
+    if (programName === 'All Programs') {
+      // When "All Programs" is selected, we don't need to filter sections by program
+      setSelectedProgramSections([]);
+    } else {
+      // Filter sections for the selected program
+      const programSections = sectionsList.filter(section =>
+        section.programName === programName ||
+        section.program?.programName === programName
+      );
+      setSelectedProgramSections(programSections);
+    }
+  };
+
+  // Handle section selection
+  const handleSectionSelect = (sectionName) => {
+    setSelectedSection(sectionName);
+
+    // Optional: If a specific section is selected while "All Programs" is active,
+    // you might want to automatically filter to show only the program that has this section
+    if (selectedProgram === 'All Programs' && sectionName !== 'All Sections') {
+      // Find which program this section belongs to
+      const sectionProgram = sectionsList.find(section => section.sectionName === sectionName);
+      if (sectionProgram && sectionProgram.program?.programName) {
+        // Optionally auto-select the program (uncomment if desired)
+        // setSelectedProgram(sectionProgram.program.programName);
+      }
+    }
+  };
+
+  // Filter schedules with program and section filtering
   const filteredSchedules = scheduleList.filter(schedule => {
     const matchesSearch = schedule.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -353,8 +412,12 @@ const ScheduleManagement = () => {
                          (filter.type === 'status' && schedule.status === filter.value) ||
                          (filter.type === 'day' && schedule.day === filter.value) ||
                          (filter.type === 'instructor' && schedule.instructor === filter.value);
+
+    // Add program and section filtering
+    const matchesProgram = selectedProgram === 'All Programs' || schedule.program === selectedProgram;
+    const matchesSection = selectedSection === 'All Sections' || schedule.section === selectedSection;
     
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesFilter && matchesProgram && matchesSection;
   });
 
   // Calculate dynamic statistics
@@ -470,7 +533,7 @@ const ScheduleManagement = () => {
               <div className="error-container">
                 <h3>Connection Error</h3>
                 <p>{error}</p>
-                <button onClick={loadSchedules} className="btn btn-primary">
+                <button onClick={reloadSchedules} className="btn btn-primary">
                   Retry
                 </button>
               </div>
@@ -530,116 +593,209 @@ const ScheduleManagement = () => {
             </button>
           </div>
 
-          {/* Dynamic Statistics Cards */}
-          <div className="schedule-stats">
-        <div className="stat-card">
-          <h3 className="stat-label">Total Schedules</h3>
-          <div className="stat-value">{totalSchedules}</div>
-        </div>
-        <div className="stat-card">
-          <h3 className="stat-label">Active</h3>
-          <div className="stat-value">{activeSchedules}</div>
-        </div>
-        <div className="stat-card">
-          <h3 className="stat-label">Completed</h3>
-          <div className="stat-value">{completedSchedules}</div>
-        </div>
-        <div className="stat-card">
-          <h3 className="stat-label">Cancelled</h3>
-          <div className="stat-value">{cancelledSchedules}</div>
-        </div>
-      </div>
-
-          {/* Search and Filter */}
-          <div className="schedule-controls">
-            <div className="search-group">
-              <input
-                type="text"
-                className="form-input search-input"
-                placeholder="Search schedules..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+          {/* Stats Cards */}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon blue">📅</div>
+              <div className="stat-content">
+                <h3>Total Schedules</h3>
+                <div className="stat-value">{filteredSchedules.length}</div>
+              </div>
             </div>
-            <div className="schedule-filter-group">
-              <select
-                className="form-input"
-                value={`${filter.type}:${filter.value}`}
-                onChange={(e) => {
-                  const [type, value] = e.target.value.split(':');
-                  setFilter({ type, value });
-                }}
-              >
-                <option value="all:All">All Schedules</option>
-                {/* Dynamic status filters */}
-                {getUniqueStatuses().map(status => (
-                  <option key={status} value={`status:${status}`}>{status} Only</option>
-                ))}
-                {/* Dynamic day filters */}
-                {dayOptions.map(day => (
-                  <option key={day} value={`day:${day}`}>{day}</option>
-                ))}
-                {/* Dynamic instructor filters */}
-                {getUniqueInstructors().map(instructor => (
-                  <option key={instructor} value={`instructor:${instructor}`}>{instructor}</option>
-                ))}
-              </select>
+            <div className="stat-card">
+              <div className="stat-icon purple">✅</div>
+              <div className="stat-content">
+                <h3>Active</h3>
+                <div className="stat-value">{filteredSchedules.filter(s => s.status === 'ACTIVE').length}</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon green">✔️</div>
+              <div className="stat-content">
+                <h3>Completed</h3>
+                <div className="stat-value">{filteredSchedules.filter(s => s.status === 'COMPLETED').length}</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon red">❌</div>
+              <div className="stat-content">
+                <h3>Cancelled</h3>
+                <div className="stat-value">{filteredSchedules.filter(s => s.status === 'CANCELLED').length}</div>
+              </div>
             </div>
           </div>
 
-          {/* Schedule Table */}
-          <div className="schedule-table-container">
-            <table className="schedule-table">
-              <thead>
-                <tr>
-                  <th>Schedule ID</th>
-                  <th>Course & Section</th>
-                  <th>Instructor</th>
-                  <th>Room</th>
-                  <th>Day & Time</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSchedules.map((schedule) => (
-                  <tr key={schedule.id}>
-                    <td className="schedule-id">{schedule.id}</td>
-                    <td className="course-section">
-                      <div className="course-name">{schedule.course}</div>
-                      <div className="section-name">{schedule.section}</div>
-                    </td>
-                    <td className="instructor">{schedule.instructor}</td>
-                    <td className="room">{schedule.room}</td>
-                    <td className="day-time">
-                      <div className="day">{schedule.day}</div>
-                      <div className="time">{schedule.timeFrom} - {schedule.timeTo}</div>
-                    </td>
-                    <td className="status">
-                      <span className={`status-badge status-${schedule.status.toLowerCase()}`}>
-                        {schedule.status}
-                      </span>
-                    </td>
-                    <td className="actions">
-                      <div className="action-buttons">
-                        <button //Edit Button
-                          className="btn-action btn-edit"
-                          onClick={() => showEditScheduleForm(schedule)}
-                          title="Edit Schedule"
-                        >
-                        </button>
-                        <button   //Delete Button
-                          className="btn-action btn-delete"
-                          onClick={() => handleDeleteSchedule(schedule.id)}
-                          title="Delete Schedule"
-                        >
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Student Content Wrapper with Sidebar */}
+          <div className="student-content-wrapper">
+            {/* Sidebar Container */}
+            <div className="student-sidebar">
+              {/* Program Navigation Card */}
+              <div className="student-nav-section">
+                <div className="student-nav-header">
+                  <h3 className="student-nav-title">Programs</h3>
+                </div>
+                <div className="student-nav-list">
+                  <div
+                    className={`student-nav-item ${selectedProgram === 'All Programs' ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleProgramSelect('All Programs')}
+                  >
+                    <span className="student-nav-icon">📚</span>
+                    All Programs
+                  </div>
+                  {programsList.map((program) => (
+                    <div
+                      key={program.id}
+                      className={`student-nav-item ${selectedProgram === program.programName ? 'student-nav-item-active' : ''}`}
+                      onClick={() => handleProgramSelect(program.programName)}
+                    >
+                      <span className="student-nav-icon">📚</span>
+                      {program.programName}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Section Navigation Card */}
+              <div className="student-nav-section">
+                <div className="student-nav-header">
+                  <h3 className="student-nav-title">Sections</h3>
+                </div>
+                <div className="student-nav-list">
+                  <div
+                    className={`student-nav-item ${selectedSection === 'All Sections' ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleSectionSelect('All Sections')}
+                  >
+                    <span className="student-nav-icon">📋</span>
+                    All Sections
+                  </div>
+                  {(selectedProgram === 'All Programs' ? sectionsList : selectedProgramSections).map((section) => (
+                    <div
+                      key={section.sectionID}
+                      className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
+                      onClick={() => handleSectionSelect(section.sectionName)}
+                    >
+                      <span className="student-nav-icon">📋</span>
+                      {section.sectionName}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Schedule Section */}
+            <div className="student-main-section">
+              <div className="student-section-header">
+                <h2 className="student-section-title">
+                  {selectedProgram === 'All Programs' ? 'All Schedules' : `${selectedProgram} Schedules`}
+                  {selectedSection !== 'All Sections' && ` - ${selectedSection}`}
+                </h2>
+                <p className="student-section-desc">
+                  {filteredSchedules.length} schedule{filteredSchedules.length !== 1 ? 's' : ''} found
+                </p>
+              </div>
+
+              <div className="student-section-content">
+                {/* Search and Filter */}
+                <div className="student-filters">
+                  <div className="student-search-group">
+                    <input
+                      type="text"
+                      className="student-search-input"
+                      placeholder="Search schedules..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="student-header-actions">
+                    <select
+                      className="form-input"
+                      value={`${filter.type}:${filter.value}`}
+                      onChange={(e) => {
+                        const [type, value] = e.target.value.split(':');
+                        setFilter({ type, value });
+                      }}
+                    >
+                      <option value="all:All">All Schedules</option>
+                      {/* Dynamic status filters */}
+                      {getUniqueStatuses().map(status => (
+                        <option key={status} value={`status:${status}`}>{status} Only</option>
+                      ))}
+                      {/* Dynamic day filters */}
+                      {dayOptions.map(day => (
+                        <option key={day} value={`day:${day}`}>{day}</option>
+                      ))}
+                      {/* Dynamic instructor filters */}
+                      {getUniqueInstructors().map(instructor => (
+                        <option key={instructor} value={`instructor:${instructor}`}>{instructor}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Schedule Table */}
+                <div className="student-table-container">
+                  <table className="student-table">
+                    <thead>
+                      <tr>
+                        <th>Schedule ID</th>
+                        <th>Course & Section</th>
+                        <th>Instructor</th>
+                        <th>Room</th>
+                        <th>Day & Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSchedules.length > 0 ? (
+                        filteredSchedules.map((schedule) => (
+                          <tr key={schedule.id}>
+                            <td className="student-id">{schedule.id}</td>
+                            <td className="course-section">
+                              <div className="student-name">{schedule.course}</div>
+                              <div className="student-email">{schedule.section}</div>
+                            </td>
+                            <td className="instructor">{schedule.instructor}</td>
+                            <td className="room">{schedule.room}</td>
+                            <td className="day-time">
+                              <div className="student-name">{schedule.day}</div>
+                              <div className="student-email">{schedule.timeFrom} - {schedule.timeTo}</div>
+                            </td>
+                            <td className="status">
+                              <span className={`status-badge status-${schedule.status.toLowerCase()}`}>
+                                {schedule.status}
+                              </span>
+                            </td>
+                            <td className="actions">
+                              <div className="action-buttons">
+                                <button
+                                  className="btn-action btn-edit"
+                                  onClick={() => showEditScheduleForm(schedule)}
+                                  title="Edit Schedule"
+                                >
+                                </button>
+                                <button
+                                  className="btn-action btn-delete"
+                                  onClick={() => handleDeleteSchedule(schedule.id)}
+                                  title="Delete Schedule"
+                                >
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="7" className="no-students">
+                            No schedules found matching the current filters.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
