@@ -25,6 +25,9 @@ public class FacultyService {
     @Autowired
     private AdvisorRepository advisorRepository;
 
+    @Autowired
+    private EmailValidationService emailValidationService;
+
     public List<Faculty> getAllFaculty() {
         List<Faculty> faculty = facultyRepository.findAll();
         // Populate username for each faculty member
@@ -67,6 +70,11 @@ public class FacultyService {
     }
 
     public FacultyWithCredentials createFaculty(Faculty faculty) {
+        // Validate email uniqueness across both students and faculty
+        if (!emailValidationService.isEmailUnique(faculty.getEmail())) {
+            throw new RuntimeException("Email already exists in the system");
+        }
+        
         Faculty savedFaculty = facultyRepository.save(faculty);
 
         // Create User account for the faculty with auto-generated credentials
@@ -81,18 +89,24 @@ public class FacultyService {
         return new FacultyWithCredentials(savedFaculty, user.getUsername(), user.getPassword());
     }
 
-    public Faculty updateFaculty(Long id, Faculty updatedFaculty) {
+    public Faculty updateFaculty(Long id, Faculty facultyDetails) {
         return facultyRepository.findById(id)
             .map(faculty -> {
-                faculty.setFirstName(updatedFaculty.getFirstName());
-                faculty.setLastName(updatedFaculty.getLastName());
-                faculty.setEmail(updatedFaculty.getEmail());
-                faculty.setStatus(updatedFaculty.getStatus());
-                faculty.setPosition(updatedFaculty.getPosition()); // Add position field
-                faculty.setProgram(updatedFaculty.getProgram());
+                // Validate email uniqueness if email is being changed
+                if (!faculty.getEmail().equals(facultyDetails.getEmail()) && 
+                    !emailValidationService.isEmailUniqueForFaculty(facultyDetails.getEmail(), id)) {
+                    throw new IllegalArgumentException("Email already exists in the system");
+                }
+                
+                faculty.setFirstName(facultyDetails.getFirstName());
+                faculty.setLastName(facultyDetails.getLastName());
+                faculty.setEmail(facultyDetails.getEmail());
+                faculty.setStatus(facultyDetails.getStatus());
+                faculty.setPosition(facultyDetails.getPosition());
+                faculty.setProgram(facultyDetails.getProgram());
                 return facultyRepository.save(faculty);
             })
-            .orElseThrow(() -> new RuntimeException("Faculty not found with ID " + id));
+            .orElseThrow(() -> new RuntimeException("Faculty not found with id " + id));
     }
 
     @Transactional

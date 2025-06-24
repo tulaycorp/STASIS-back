@@ -3,6 +3,8 @@ package com.stasis.stasis.controller;
 import com.stasis.stasis.model.Faculty;
 import com.stasis.stasis.service.FacultyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,25 +31,48 @@ public class FacultyController {
     }
 
     @PostMapping
-    public ResponseEntity<FacultyService.FacultyWithCredentials> createFaculty(@RequestBody Faculty faculty) {
+    public ResponseEntity<?> createFaculty(@RequestBody Faculty faculty) {
         try {
-            // Check if email already exists
-            if (facultyService.existsByEmail(faculty.getEmail())) {
-                return ResponseEntity.badRequest().build();
+            FacultyService.FacultyWithCredentials facultyWithCredentials = facultyService.createFaculty(faculty);
+            return ResponseEntity.ok(facultyWithCredentials);
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Email already exists in the system");
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("Email already exists")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Email already exists in the system");
             }
-            FacultyService.FacultyWithCredentials created = facultyService.createFaculty(faculty);
-            return ResponseEntity.ok(created);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Data validation error: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error creating faculty: " + e.getMessage());
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Faculty> updateFaculty(@PathVariable Long id, @RequestBody Faculty faculty) {
+    public ResponseEntity<?> updateFaculty(@PathVariable Long id, @RequestBody Faculty faculty) {
         try {
-            return ResponseEntity.ok(facultyService.updateFaculty(id, faculty));
+            Faculty updatedFaculty = facultyService.updateFaculty(id, faculty);
+            return ResponseEntity.ok(updatedFaculty);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("Email already exists")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Email already exists in the system");
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Data validation error: " + e.getMessage());
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            if (e.getMessage().contains("Faculty not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Faculty not found with id " + id);
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Error updating faculty: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error updating faculty: " + e.getMessage());
         }
     }
 

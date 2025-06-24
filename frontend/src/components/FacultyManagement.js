@@ -256,7 +256,13 @@ const FacultyManagement = () => {
     } catch (error) {
       console.error('Error updating faculty:', error);
       if (error.response?.status === 400) {
-        alert('Email already exists or invalid data provided!');
+        // Check if the error message contains specific text
+        const errorMessage = error.response?.data || 'Invalid data provided';
+        if (typeof errorMessage === 'string' && errorMessage.includes('Email already exists')) {
+          alert('This email address is already in use by another student or faculty member.');
+        } else {
+          alert('Invalid data provided. Please check your input.');
+        }
       } else if (error.response?.status === 404) {
         alert('Faculty not found!');
       } else {

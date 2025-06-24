@@ -49,16 +49,15 @@ public class StudentController {
             return ResponseEntity.ok(studentWithCredentials);
         } catch (DataIntegrityViolationException e) {
             System.err.println("Data integrity violation: " + e.getMessage());
-            if (e.getMessage().contains("email")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Email already exists in the system");
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("Email already exists")) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Email already exists");
-            } else if (e.getMessage().contains("grade_level") || e.getMessage().contains("year_level")) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Year level is required");
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Data validation error: " + e.getMessage());
+                    .body("Email already exists in the system");
             }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Data validation error: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error creating student: " + e.getMessage());
             e.printStackTrace();
@@ -68,11 +67,27 @@ public class StudentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student student) {
+    public ResponseEntity<?> updateStudent(@PathVariable Long id, @RequestBody Student student) {
         try {
-            return ResponseEntity.ok(studentService.updateStudent(id, student));
+            Student updatedStudent = studentService.updateStudent(id, student);
+            return ResponseEntity.ok(updatedStudent);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("Email already exists")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Email already exists in the system");
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Data validation error: " + e.getMessage());
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            if (e.getMessage().contains("Student not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Student not found with id " + id);
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body("Error updating student: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error updating student: " + e.getMessage());
         }
     }
     

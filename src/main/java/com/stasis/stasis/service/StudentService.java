@@ -11,6 +11,7 @@ import com.stasis.stasis.repository.SemesterEnrollmentRepository;
 import com.stasis.stasis.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +27,9 @@ public class StudentService {
     private final UserService userService;
     private final AdvisorRepository advisorRepository;
     private final SemesterEnrollmentRepository semesterEnrollmentRepository;
+
+    @Autowired
+    private EmailValidationService emailValidationService;
 
     public List<Student> getAllStudents() {
         List<Student> students = studentRepository.findAll();
@@ -69,6 +73,11 @@ public class StudentService {
     }
 
     public StudentWithCredentials createStudent(Student student) {
+        // Validate email uniqueness across both students and faculty
+        if (!emailValidationService.isEmailUnique(student.getEmail())) {
+            throw new RuntimeException("Email already exists in the system");
+        }
+        
         Student savedStudent = studentRepository.save(student);
 
         // Create AcademicRecord for the student
@@ -95,17 +104,21 @@ public class StudentService {
     public Student updateStudent(Long id, Student studentDetails) {
         return studentRepository.findById(id)
             .map(student -> {
+                // Validate email uniqueness if email is being changed
+                if (!student.getEmail().equals(studentDetails.getEmail()) && 
+                    !emailValidationService.isEmailUniqueForStudent(studentDetails.getEmail(), id)) {
+                    throw new IllegalArgumentException("Email already exists in the system");
+                }
+                
                 student.setFirstName(studentDetails.getFirstName());
                 student.setLastName(studentDetails.getLastName());
                 student.setEmail(studentDetails.getEmail());
                 student.setDateOfBirth(studentDetails.getDateOfBirth());
                 student.setYear_level(studentDetails.getYear_level());
-                if (studentDetails.getProgram() != null) {
-                    student.setProgram(studentDetails.getProgram());
-                }
+                student.setProgram(studentDetails.getProgram());
                 return studentRepository.save(student);
             })
-            .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
+            .orElseThrow(() -> new RuntimeException("Student not found with id " + id));
     }
 
     @Transactional

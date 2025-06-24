@@ -10,6 +10,9 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(uniqueConstraints = {
+    @UniqueConstraint(columnNames = "email")
+})
 public class Faculty {
 
     @Id
@@ -18,7 +21,10 @@ public class Faculty {
 
     private String firstName;
     private String lastName;
+    
+    @Column(unique = true, nullable = false)
     private String email;
+    
     private String status;
     private String position; 
     

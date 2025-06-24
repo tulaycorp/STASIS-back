@@ -9,6 +9,9 @@ import lombok.*;
 @Builder
 @Entity
 @Data
+@Table(uniqueConstraints = {
+    @UniqueConstraint(columnNames = "email")
+})
 public class Student {
 
     @Id
@@ -17,6 +20,7 @@ public class Student {
 
     private String firstName;
     private String lastName;
+    @Column(unique = true, nullable = false)
     private String email;
     private String dateOfBirth;
     private Integer year_level;
