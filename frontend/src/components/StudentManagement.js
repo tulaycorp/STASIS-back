@@ -19,7 +19,7 @@ const StudentManagement = () => {
   const [sectionsList, setSectionsList] = useState([]);
   const [selectedProgramSections, setSelectedProgramSections] = useState([]);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [tempSections, setTempSections] = useState([]);
+  // Removed tempSections state - no longer needed
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionForm, setSectionForm] = useState({
     sectionName: '',
@@ -200,30 +200,46 @@ const StudentManagement = () => {
     }));
   };
 
-  const handleAddSection = () => {
+  // Updated handleAddSection to use API
+  const handleAddSection = async () => {
     // Validate required fields
     if (!sectionForm.sectionName || !sectionForm.programId) {
       alert('Please fill in all required fields');
       return;
     }
 
-    // Find the selected program
-    const selectedProgramObj = programsList.find(p => p.programID.toString() === sectionForm.programId);
+    try {
+      // Find the selected program
+      const selectedProgramObj = programsList.find(p => p.programID.toString() === sectionForm.programId);
 
-    // Create temporary section object
-    const newTempSection = {
-      sectionID: Date.now(), // Temporary ID
-      sectionName: sectionForm.sectionName,
-      programId: parseInt(sectionForm.programId),
-      program: selectedProgramObj,
-      programName: selectedProgramObj?.programName || 'Unknown Program'
-    };
+      // Create section data for API
+      const sectionData = {
+        sectionName: sectionForm.sectionName,
+        program: selectedProgramObj,
+        // Add any other required fields based on your backend model
+        status: 'ACTIVE', // Assuming sections have a status
+        // Add other fields as needed
+      };
 
-    // Add to temporary sections
-    setTempSections(prev => [...prev, newTempSection]);
-
-    alert('Section added temporarily!');
-    closeAddSectionModal();
+      // Call API to create section
+      await courseSectionAPI.createSection(sectionData);
+      
+      alert('Section added successfully!');
+      closeAddSectionModal();
+      
+      // Reload data to get the updated sections list
+      loadInitialData();
+      
+    } catch (error) {
+      console.error('Error adding section:', error);
+      if (error.response?.status === 400) {
+        alert('Invalid section data provided!');
+      } else if (error.response?.status === 409) {
+        alert('Section already exists!');
+      } else {
+        alert('Failed to add section. Please try again.');
+      }
+    }
   };
 
   const handleStudentFormChange = (field, value) => {
@@ -252,68 +268,60 @@ const StudentManagement = () => {
   };
 
   const handleDeleteSectionFormChange = (field, value) => {
-  setDeleteSectionForm(prev => ({
-    ...prev,
-    [field]: value
-  }));
-
-  // When program is selected, filter sections for that program
-  if (field === 'programId') {
-    // Include both permanent and temporary sections
-    const sectionsForProgram = sectionsList.filter(section =>
-      section.program?.programID?.toString() === value ||
-      section.programId?.toString() === value
-    );
-    const tempSectionsForProgram = tempSections.filter(temp =>
-      temp.programId?.toString() === value
-    );
-    
-    setAvailableSectionsForDelete([...sectionsForProgram, ...tempSectionsForProgram]);
-    
-    // Reset section selection when program changes
     setDeleteSectionForm(prev => ({
       ...prev,
-      programId: value,
-      sectionId: ''
+      [field]: value
     }));
-  }
-};
 
+    // When program is selected, filter sections for that program
+    if (field === 'programId') {
+      // Filter sections for the selected program
+      const sectionsForProgram = sectionsList.filter(section =>
+        section.program?.programID?.toString() === value ||
+        section.programId?.toString() === value
+      );
+      
+      setAvailableSectionsForDelete(sectionsForProgram);
+      
+      // Reset section selection when program changes
+      setDeleteSectionForm(prev => ({
+        ...prev,
+        programId: value,
+        sectionId: ''
+      }));
+    }
+  };
+
+  // Updated handleDeleteSection to use API only
   const handleDeleteSection = async () => {
-  if (!deleteSectionForm.sectionId) {
-    alert('Please select a section to delete');
-    return;
-  }
+    if (!deleteSectionForm.sectionId) {
+      alert('Please select a section to delete');
+      return;
+    }
 
-  if (window.confirm('Are you sure you want to delete this section? This action cannot be undone.')) {
-    try {
-      // Check if it's a temporary section first
-      const isTempSection = tempSections.find(temp => temp.sectionID.toString() === deleteSectionForm.sectionId);
-      
-      if (isTempSection) {
-        // Remove from temporary sections
-        setTempSections(prev => prev.filter(temp => temp.sectionID.toString() !== deleteSectionForm.sectionId));
-        alert('Section deleted successfully!');
-      } else {
-        // It's a permanent section from the database - try API call
+    if (window.confirm('Are you sure you want to delete this section? This action cannot be undone.')) {
+      try {
+        // Call API to delete section
         await courseSectionAPI.deleteSection(deleteSectionForm.sectionId);
+        
         alert('Section deleted successfully!');
-        loadInitialData(); // Reload data only for permanent sections
-      }
-      
-      closeDeleteSectionModal();
-    } catch (error) {
-      console.error('Error deleting section:', error);
-      if (error.response?.status === 404) {
-        alert('Section not found!');
-      } else if (error.response?.status === 400) {
-        alert('Cannot delete section. It may have associated students.');
-      } else {
-        alert('Failed to delete section. Please try again.');
+        closeDeleteSectionModal();
+        
+        // Reload data to get the updated sections list
+        loadInitialData();
+        
+      } catch (error) {
+        console.error('Error deleting section:', error);
+        if (error.response?.status === 404) {
+          alert('Section not found!');
+        } else if (error.response?.status === 400) {
+          alert('Cannot delete section. It may have associated students.');
+        } else {
+          alert('Failed to delete section. Please try again.');
+        }
       }
     }
-  }
-};
+  };
 
   const handleAddStudent = async () => {
     // Validate required fields
@@ -477,16 +485,12 @@ const StudentManagement = () => {
       // When "All Programs" is selected, we don't need to filter sections by program
       setSelectedProgramSections([]);
     } else {
-      // Filter sections for the selected program (including temp sections)
+      // Filter sections for the selected program (only from API data now)
       const programSections = sectionsList.filter(section =>
         section.programName === programName ||
         section.program?.programName === programName
       );
-      const tempProgramSections = tempSections.filter(temp =>
-        temp.programName === programName ||
-        temp.program?.programName === programName
-      );
-      setSelectedProgramSections([...programSections, ...tempProgramSections]);
+      setSelectedProgramSections(programSections);
     }
   };
 
@@ -702,7 +706,6 @@ const StudentManagement = () => {
                 </div>
               </div>
 
-              {/* Section Navigation Card - UPDATED: Add proper container for button */}
               <div className="student-nav-section">
                 <div className="student-nav-header">
                   <h2 className="student-nav-title">Sections</h2>
@@ -718,7 +721,7 @@ const StudentManagement = () => {
 
                   {selectedProgram === 'All Programs'
                     ? // If "All Programs" is selected, show all sections from all programs
-                    [...sectionsList, ...tempSections].map((section) => (
+                    sectionsList.map((section) => (
                       <div
                         key={section.sectionID}
                         className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
@@ -733,9 +736,7 @@ const StudentManagement = () => {
                       </div>
                     ))
                     : // If specific program is selected, show only that program's sections
-                    [...selectedProgramSections, ...tempSections.filter(temp =>
-                      temp.programId.toString() === programsList.find(p => p.programName === selectedProgram)?.programID?.toString()
-                    )].map((section) => (
+                    selectedProgramSections.map((section) => (
                       <div
                         key={section.sectionID}
                         className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
@@ -747,7 +748,7 @@ const StudentManagement = () => {
                     ))
                   }
                 </div>
-                {/* Add Section Button - UPDATED: Wrap in proper container */}
+                {/* Add Section Button */}
                 <div className="add-section-container">
                   <button className="btn-add-section" onClick={showAddSectionForm}>
                     Add New Section
