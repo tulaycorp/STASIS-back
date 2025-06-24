@@ -83,6 +83,14 @@ public class CourseSectionController {
         }
     }
 
+    @GetMapping("/program/{programId}")
+public ResponseEntity<List<CourseSection>> getSectionsByProgram(@PathVariable Long programId) {
+    List<CourseSection> sections = courseSectionService.getSectionsByProgram(programId);
+    return ResponseEntity.ok(sections);
+}
+
+
+
     // Validation endpoint
     @PostMapping("/validate")
     public ResponseEntity<String> validateSection(@RequestBody CourseSection section) {
@@ -99,5 +107,7 @@ public class CourseSectionController {
             return ResponseEntity.badRequest().body("Day is required");
         }
         return ResponseEntity.ok("Section data is valid");
+
+    
     }
 }

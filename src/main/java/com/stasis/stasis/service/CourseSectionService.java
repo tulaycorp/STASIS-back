@@ -65,6 +65,10 @@ public class CourseSectionService {
         return courseSectionRepository.findByStatus("ACTIVE");
     }
 
+   public List<CourseSection> getSectionsByProgram(Long programId) {
+    return courseSectionRepository.findByProgramProgramID(programId);
+}
+
     public CourseSection updateSectionStatus(Long id, String status) {
         return courseSectionRepository.findById(id)
             .map(section -> {

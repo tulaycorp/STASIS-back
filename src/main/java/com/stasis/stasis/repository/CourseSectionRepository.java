@@ -32,6 +32,9 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     
     // Find by room
     List<CourseSection> findByRoom(String room);
+
+    // Find by program ID
+    List<CourseSection> findByProgramProgramID(Long programId);
     
     // Find sections with time conflicts
     @Query("SELECT cs FROM CourseSection cs WHERE cs.day = :day AND cs.status = 'ACTIVE' AND " +
