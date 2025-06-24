@@ -7,6 +7,7 @@ import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnecti
 
 const CurriculumManagement = () => {
   const { getUserInfo } = useAdminData();
+  
   // State management
   const [curriculumData, setCurriculumData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
@@ -18,6 +19,10 @@ const CurriculumManagement = () => {
   const [selectedProgramFilter, setSelectedProgramFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [expandedCurricula, setExpandedCurricula] = useState(new Set());
+  const [curriculumCourses, setCurriculumCourses] = useState({});
+  
   const [formData, setFormData] = useState({
     curriculumName: '',
     curriculumCode: '',
@@ -27,11 +32,9 @@ const CurriculumManagement = () => {
     description: '',
     selectedCourses: [],
     courseYearLevels: {}, // Maps courseId to YearLevel
-    courseSemesters: {}   // Maps courseId to Semester
+    courseSemesters: {},   // Maps courseId to Semester
+    activeSemesterTab: '1' // Default to 1st semester tab
   });
-  const [availableCourses, setAvailableCourses] = useState([]);
-  const [expandedCurricula, setExpandedCurricula] = useState(new Set());
-  const [curriculumCourses, setCurriculumCourses] = useState({});
 
   // Load data on component mount
   useEffect(() => {
@@ -248,7 +251,8 @@ const CurriculumManagement = () => {
       description: '',
       selectedCourses: [],
       courseYearLevels: {},
-      courseSemesters: {}
+      courseSemesters: {},
+      activeSemesterTab: '1'
     });
     setAvailableCourses([]); // Clear available courses
   };
@@ -265,7 +269,8 @@ const CurriculumManagement = () => {
       description: '',
       selectedCourses: [],
       courseYearLevels: {},
-      courseSemesters: {}
+      courseSemesters: {},
+      activeSemesterTab: '1'
     });
     setAvailableCourses([]); // Clear available courses
   };
@@ -310,7 +315,8 @@ const CurriculumManagement = () => {
           description: curriculum.description,
           selectedCourses: selectedCourseIds,
           courseYearLevels: courseYearLevels,
-          courseSemesters: courseSemesters
+          courseSemesters: courseSemesters,
+          activeSemesterTab: '1'
         });
         setIsModalOpen(true);
       } catch (error) {
@@ -894,31 +900,29 @@ const CurriculumManagement = () => {
                             </td>
                             <td>{formatDate(curriculum.lastUpdated)}</td>
                             <td>
-                      
-
-                                <div className="action-buttons">
-                                  <button 
-                                    className="btn-action btn-edit" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      editCurriculum(curriculum.id);
-                                    }}
-                                    title="Edit"
-                                  >              
-                                  </button>
-                                  <button 
-                                    className="btn-action btn-delete" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteCurriculum(curriculum.id);
-                                    }}
-                                    title="Delete"
-                                  >                       
-                                  </button>
-                                          <div className="actions-container">
-                                <span className="expand-icon">
-                                  {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
-                                </span>
+                              <div className="action-buttons">
+                                <button 
+                                  className="btn-action btn-edit" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    editCurriculum(curriculum.id);
+                                  }}
+                                  title="Edit"
+                                >              
+                                </button>
+                                <button 
+                                  className="btn-action btn-delete" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteCurriculum(curriculum.id);
+                                  }}
+                                  title="Delete"
+                                >                       
+                                </button>
+                                <div className="actions-container">
+                                  <span className="expand-icon">
+                                    {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
+                                  </span>
                                 </div>
                               </div>
                             </td>
@@ -1091,57 +1095,158 @@ const CurriculumManagement = () => {
               {formData.programId && (
                 <div className="form-group">
                   <label className="form-label">Available Courses</label>
-                  <div className="courses-list">
-                    {availableCourses.map(course => (
-                      <div key={course.id} className="course-item">
-                        <label className="course-label">
-                          <input
-                            type="checkbox"
-                            checked={formData.selectedCourses.includes(course.id)}
-                            onChange={() => handleCourseSelection(course.id)}
-                          />
-                          <span className="course-info">
-                            <strong>{course.courseCode}</strong> - {course.courseDescription}
-                            <small>({course.credits} credits)</small>
-                          </span>
-                        </label>
+                  <div className="semester-tabs">
+                    <div className="tab-headers">
+                      <button 
+                        type="button"
+                        className={`tab-header ${formData.activeSemesterTab === '1' ? 'active' : ''}`}
+                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '1' }))}
+                      >
+                        1st Semester
+                      </button>
+                      <button 
+                        type="button"
+                        className={`tab-header ${formData.activeSemesterTab === '2' ? 'active' : ''}`}
+                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '2' }))}
+                      >
+                        2nd Semester
+                      </button>
+                      <button 
+                        type="button"
+                        className={`tab-header ${formData.activeSemesterTab === 'Summer' ? 'active' : ''}`}
+                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: 'Summer' }))}
+                      >
+                        Summer
+                      </button>
+                    </div>
+                    
+                    <div className="tab-content">
+                      <div className="courses-semester-section">
+                        <div className="courses-grid-semester">
+                          {availableCourses
+                            .filter(course => {
+                              const courseSemester = formData.courseSemesters[course.id] || "1";
+                              return courseSemester === formData.activeSemesterTab;
+                            })
+                            .map(course => (
+                              <div key={course.id} className="course-card-selection">
+                                <div className="course-card-header">
+                                  <label className="course-checkbox-label">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.selectedCourses.includes(course.id)}
+                                      onChange={() => handleCourseSelection(course.id)}
+                                      className="course-checkbox"
+                                    />
+                                    <div className="course-card-info">
+                                      <div className="course-code-selection">{course.courseCode}</div>
+                                      <div className="course-name-selection">{course.courseDescription}</div>
+                                      <div className="course-credits">({course.credits} credits)</div>
+                                    </div>
+                                  </label>
+                                </div>
+                                
+                                {formData.selectedCourses.includes(course.id) && (
+                                  <div className="course-details-inline">
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Year:</label>
+                                      <select
+                                        value={formData.courseYearLevels[course.id] || 1}
+                                        onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value={1}>1</option>
+                                        <option value={2}>2</option>
+                                        <option value={3}>3</option>
+                                        <option value={4}>4</option>
+                                      </select>
+                                    </div>
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Semester:</label>
+                                      <select
+                                        value={formData.courseSemesters[course.id] || "1"}
+                                        onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value="1">1st</option>
+                                        <option value="2">2nd</option>
+                                        <option value="Summer">Summer</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          
+                          {/* Show unassigned courses in current tab */}
+                          {availableCourses
+                            .filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1')
+                            .map(course => (
+                              <div key={course.id} className="course-card-selection unassigned">
+                                <div className="course-card-header">
+                                  <label className="course-checkbox-label">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.selectedCourses.includes(course.id)}
+                                      onChange={() => handleCourseSelection(course.id)}
+                                      className="course-checkbox"
+                                    />
+                                    <div className="course-card-info">
+                                      <div className="course-code-selection">{course.courseCode}</div>
+                                      <div className="course-name-selection">{course.courseDescription}</div>
+                                      <div className="course-credits">({course.credits} credits)</div>
+                                    </div>
+                                  </label>
+                                </div>
+                                
+                                {formData.selectedCourses.includes(course.id) && (
+                                  <div className="course-details-inline">
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Year:</label>
+                                      <select
+                                        value={formData.courseYearLevels[course.id] || 1}
+                                        onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value={1}>1</option>
+                                        <option value={2}>2</option>
+                                        <option value={3}>3</option>
+                                        <option value={4}>4</option>
+                                      </select>
+                                    </div>
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Semester:</label>
+                                      <select
+                                        value={formData.courseSemesters[course.id] || "1"}
+                                        onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value="1">1st</option>
+                                        <option value="2">2nd</option>
+                                        <option value="Summer">Summer</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                        </div>
                         
-                        {/* Show year and semester selectors for selected courses */}
-                        {formData.selectedCourses.includes(course.id) && (
-                          <div className="course-details">
-                            <div className="course-detail-group">
-                              <label className="detail-label">Year Level:</label>
-                              <select
-                                value={formData.courseYearLevels[course.id] || 1}
-                                onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
-                                className="detail-select"
-                              >
-                                <option value={1}>Year 1</option>
-                                <option value={2}>Year 2</option>
-                                <option value={3}>Year 3</option>
-                                <option value={4}>Year 4</option>
-                              </select>
-                            </div>
-                            <div className="course-detail-group">
-                              <label className="detail-label">Semester:</label>
-                              <select
-                                value={formData.courseSemesters[course.id] || "1"}
-                                onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
-                                className="detail-select"
-                              >
-                                <option value="1">1st Semester</option>
-                                <option value="2">2nd Semester</option>
-                                <option value="Summer">Summer</option>
-                              </select>
-                            </div>
+                        {availableCourses.filter(course => {
+                          const courseSemester = formData.courseSemesters[course.id] || "1";
+                          return courseSemester === formData.activeSemesterTab;
+                        }).length === 0 && availableCourses.filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1').length === 0 && (
+                          <div className="no-courses-semester">
+                            <p>No courses assigned to {formData.activeSemesterTab === '1' ? '1st' : formData.activeSemesterTab === '2' ? '2nd' : 'Summer'} semester.</p>
                           </div>
                         )}
                       </div>
-                    ))}
-                    {availableCourses.length === 0 && (
-                      <p className="no-courses">No courses available for this program.</p>
-                    )}
+                    </div>
                   </div>
+                  
+                  {availableCourses.length === 0 && (
+                    <p className="no-courses">No courses available for this program.</p>
+                  )}
                 </div>
               )}
             </div>
