@@ -401,7 +401,7 @@ const ScheduleManagement = () => {
     }
   };
 
-  // Filter schedules with program and section filtering
+  // Filter schedules with section filtering only
   const filteredSchedules = scheduleList.filter(schedule => {
     const matchesSearch = schedule.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -413,11 +413,10 @@ const ScheduleManagement = () => {
                          (filter.type === 'day' && schedule.day === filter.value) ||
                          (filter.type === 'instructor' && schedule.instructor === filter.value);
 
-    // Add program and section filtering
-    const matchesProgram = selectedProgram === 'All Programs' || schedule.program === selectedProgram;
+    // Only filter by section, not by program
     const matchesSection = selectedSection === 'All Sections' || schedule.section === selectedSection;
     
-    return matchesSearch && matchesFilter && matchesProgram && matchesSection;
+    return matchesSearch && matchesFilter && matchesSection;
   });
 
   // Calculate dynamic statistics
@@ -599,28 +598,28 @@ const ScheduleManagement = () => {
               <div className="stat-icon blue">📅</div>
               <div className="stat-content">
                 <h3>Total Schedules</h3>
-                <div className="stat-value">{filteredSchedules.length}</div>
+                <div className="stat-value">{totalSchedules}</div>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon purple">✅</div>
               <div className="stat-content">
                 <h3>Active</h3>
-                <div className="stat-value">{filteredSchedules.filter(s => s.status === 'ACTIVE').length}</div>
+                <div className="stat-value">{activeSchedules}</div>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon green">✔️</div>
               <div className="stat-content">
                 <h3>Completed</h3>
-                <div className="stat-value">{filteredSchedules.filter(s => s.status === 'COMPLETED').length}</div>
+                <div className="stat-value">{completedSchedules}</div>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon red">❌</div>
               <div className="stat-content">
                 <h3>Cancelled</h3>
-                <div className="stat-value">{filteredSchedules.filter(s => s.status === 'CANCELLED').length}</div>
+                <div className="stat-value">{cancelledSchedules}</div>
               </div>
             </div>
           </div>
