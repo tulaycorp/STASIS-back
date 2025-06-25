@@ -7,6 +7,7 @@ import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnecti
 
 const CurriculumManagement = () => {
   const { getUserInfo } = useAdminData();
+  
   // State management
   const [curriculumData, setCurriculumData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
@@ -18,6 +19,10 @@ const CurriculumManagement = () => {
   const [selectedProgramFilter, setSelectedProgramFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [expandedCurricula, setExpandedCurricula] = useState(new Set());
+  const [curriculumCourses, setCurriculumCourses] = useState({});
+  
   const [formData, setFormData] = useState({
     curriculumName: '',
     curriculumCode: '',
@@ -25,11 +30,11 @@ const CurriculumManagement = () => {
     academicYear: '',
     status: 'Draft',
     description: '',
-    selectedCourses: []
+    selectedCourses: [],
+    courseYearLevels: {}, // Maps courseId to YearLevel
+    courseSemesters: {},   // Maps courseId to Semester
+    activeSemesterTab: '1' // Default to 1st semester tab
   });
-  const [availableCourses, setAvailableCourses] = useState([]);
-  const [expandedCurricula, setExpandedCurricula] = useState(new Set());
-  const [curriculumCourses, setCurriculumCourses] = useState({});
 
   // Load data on component mount
   useEffect(() => {
@@ -243,8 +248,13 @@ const CurriculumManagement = () => {
       programId: '',
       academicYear: '',
       status: 'Draft',
-      description: ''
+      description: '',
+      selectedCourses: [],
+      courseYearLevels: {},
+      courseSemesters: {},
+      activeSemesterTab: '1'
     });
+    setAvailableCourses([]); // Clear available courses
   };
 
   const closeModal = () => {
@@ -256,8 +266,13 @@ const CurriculumManagement = () => {
       programId: '',
       academicYear: '',
       status: 'Draft',
-      description: ''
+      description: '',
+      selectedCourses: [],
+      courseYearLevels: {},
+      courseSemesters: {},
+      activeSemesterTab: '1'
     });
+    setAvailableCourses([]); // Clear available courses
   };
 
   // Edit curriculum
@@ -268,19 +283,26 @@ const CurriculumManagement = () => {
         // Load curriculum details to get selected courses
         const detailsResponse = await curriculumDetailAPI.getDetailsByCurriculum(id);
         const selectedCourseIds = detailsResponse.data.map(detail => detail.course.id);
+        
+        // Build year levels and semesters mapping using actual field names
+        const courseYearLevels = {};
+        const courseSemesters = {};
+        detailsResponse.data.forEach(detail => {
+          courseYearLevels[detail.course.id] = detail.yearLevel; // Using yearLevel (lowercase from JSON)
+          courseSemesters[detail.course.id] = detail.semester;   // Using semester (lowercase from JSON)
+        });
 
         // Load available courses for the program
         const program = programsList.find(p => p.programID === curriculum.programId);
         if (program) {
-        const coursesResponse = await courseAPI.getCoursesByProgram(program.programName);
-        // Transform course data to match frontend expectations
-        const transformedCourses = coursesResponse.data.map(course => ({
-          id: course.id,
-          courseCode: course.courseCode,
-          courseDescription: course.courseDescription,
-          credits: course.credits
-        }));
-        setAvailableCourses(transformedCourses);
+          const coursesResponse = await courseAPI.getCoursesByProgram(program.programName);
+          const transformedCourses = coursesResponse.data.map(course => ({
+            id: course.id,
+            courseCode: course.courseCode,
+            courseDescription: course.courseDescription,
+            credits: course.credits
+          }));
+          setAvailableCourses(transformedCourses);
         }
 
         setEditingId(id);
@@ -291,7 +313,10 @@ const CurriculumManagement = () => {
           academicYear: curriculum.academicYear,
           status: curriculum.status,
           description: curriculum.description,
-          selectedCourses: selectedCourseIds
+          selectedCourses: selectedCourseIds,
+          courseYearLevels: courseYearLevels,
+          courseSemesters: courseSemesters,
+          activeSemesterTab: '1'
         });
         setIsModalOpen(true);
       } catch (error) {
@@ -303,75 +328,104 @@ const CurriculumManagement = () => {
 
   // Save curriculum
   const saveCurriculum = async () => {
+    // Enhanced validation
+    if (!formData.curriculumName?.trim()) {
+      alert('Please enter a curriculum name');
+      return;
+    }
+    
+    if (!formData.curriculumCode?.trim()) {
+      alert('Please enter a curriculum code');
+      return;
+    }
+    
+    if (!formData.programId) {
+      alert('Please select a program');
+      return;
+    }
+    
+    if (!formData.academicYear) {
+      alert('Please select an academic year');
+      return;
+    }
+    
+    if (!formData.status) {
+      alert('Please select a status');
+      return;
+    }
+
     try {
-      // Validate required fields
-      if (!formData.curriculumName || !formData.curriculumCode || !formData.programId || 
-          !formData.academicYear || !formData.status) {
-        alert('Please fill in all required fields.');
+      const selectedProgramObj = programsList.find(p => p.programID.toString() === formData.programId);
+      
+      if (!selectedProgramObj) {
+        alert('Selected program not found');
         return;
       }
-
-      // Find the selected program object - send full Program object
-      const selectedProgram = programsList.find(p => p.programID.toString() === formData.programId);
       
-      const curriculumToSave = {
-        curriculumName: formData.curriculumName,
-        curriculumCode: formData.curriculumCode,
+      const curriculumDataPayload = {
+        curriculumName: formData.curriculumName.trim(),
+        curriculumCode: formData.curriculumCode.trim(),
+        program: selectedProgramObj,
         academicYear: formData.academicYear,
         status: formData.status,
-        description: formData.description,
-        program: selectedProgram
+        description: formData.description?.trim() || '',
+        effectiveStartDate: new Date().toISOString().split('T')[0]
       };
 
       let curriculumId;
       if (editingId) {
         // Update existing curriculum
-        await curriculumAPI.updateCurriculum(editingId, curriculumToSave);
+        await curriculumAPI.updateCurriculum(editingId, curriculumDataPayload);
         curriculumId = editingId;
-
-        // Clear existing curriculum details for editing
+        
+        // Delete existing curriculum details
         try {
-          const existingDetails = await curriculumDetailAPI.getDetailsByCurriculum(curriculumId);
-          const deletePromises = existingDetails.data.map(detail => 
-            curriculumDetailAPI.deleteCurriculumDetail(detail.curriculumDetailID)
-          );
-          await Promise.all(deletePromises);
-        } catch (error) {
-          console.log('No existing details to clear or error clearing:', error);
+          const existingDetails = await curriculumDetailAPI.getDetailsByCurriculum(editingId);
+          if (existingDetails.data && existingDetails.data.length > 0) {
+            for (const detail of existingDetails.data) {
+              await curriculumDetailAPI.deleteCurriculumDetail(detail.curriculumDetailID);
+            }
+          }
+        } catch (detailError) {
+          console.warn('No existing details to delete or error deleting:', detailError);
         }
       } else {
         // Create new curriculum
-        const response = await curriculumAPI.createCurriculum(curriculumToSave);
+        const response = await curriculumAPI.createCurriculum(curriculumDataPayload);
         curriculumId = response.data.curriculumID;
       }
 
-      // Save curriculum details (selected courses)
-      if (formData.selectedCourses.length > 0) {
-        const detailPromises = formData.selectedCourses.map(courseId => {
-          const course = availableCourses.find(c => c.id === courseId);
-          if (course) {
-            return curriculumDetailAPI.createCurriculumDetail({
-              curriculum: { curriculumID: curriculumId },
-              course: { id: courseId },
-              suggestedYearLevel: 1, // Default to first year for now
-              suggestedSemester: "1" // Default to first semester, as string
-            });
-          }
-          return null;
-        }).filter(promise => promise !== null);
+      // Save curriculum details (selected courses) with correct field names
+              if (formData.selectedCourses && formData.selectedCourses.length > 0) {
+                const detailPromises = formData.selectedCourses.map(courseId => {
+                  const course = availableCourses.find(c => c.id === courseId);
+                  if (course) {
+                    return curriculumDetailAPI.createCurriculumDetail({
+                      curriculum: { curriculumID: curriculumId },
+                      course: { id: courseId },
+                      yearLevel: formData.courseYearLevels?.[courseId] || 1,    // Corrected field name casing
+                      semester: formData.courseSemesters?.[courseId] || "1"     // Corrected field name casing
+                    });
+                  }
+                  return null;
+                }).filter(promise => promise !== null);
 
-        await Promise.all(detailPromises);
+        if (detailPromises.length > 0) {
+          await Promise.all(detailPromises);
+        }
       }
 
       alert(editingId ? 'Curriculum updated successfully!' : 'Curriculum created successfully!');
       closeModal();
-      loadCurriculums(); // Reload the list
+      loadCurriculums(); // Fixed function name
     } catch (error) {
       console.error('Error saving curriculum:', error);
+      
+      // Better error handling
       if (error.response?.status === 400) {
         alert('Invalid data provided. Please check your input.');
-      } else if (error.response?.status === 404) {
-        alert('Curriculum not found!');
+      } else if (error.response?.status === 409) {
+        alert('A curriculum with this code already exists.');
       } else if (error.response?.status === 500) {
         alert('Server error. Please try again later.');
       } else {
@@ -431,8 +485,12 @@ const CurriculumManagement = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      // Reset selected courses when program changes
-      ...(name === 'programId' && { selectedCourses: [] })
+      // Reset selected courses and their mappings when program changes
+      ...(name === 'programId' && { 
+        selectedCourses: [],
+        courseYearLevels: {},
+        courseSemesters: {}
+      })
     }));
 
     // Load courses when program is selected
@@ -447,16 +505,59 @@ const CurriculumManagement = () => {
         console.error('Error loading courses:', error);
         setAvailableCourses([]);
       }
+    } else if (name === 'programId' && !value) {
+      // Clear courses when no program is selected
+      setAvailableCourses([]);
     }
   };
 
   const handleCourseSelection = (courseId) => {
     setFormData(prev => {
-      const selectedCourses = prev.selectedCourses.includes(courseId)
+      const isSelected = prev.selectedCourses.includes(courseId);
+      const selectedCourses = isSelected
         ? prev.selectedCourses.filter(id => id !== courseId)
         : [...prev.selectedCourses, courseId];
-      return { ...prev, selectedCourses };
+    
+      const courseYearLevels = { ...prev.courseYearLevels };
+      const courseSemesters = { ...prev.courseSemesters };
+    
+      if (isSelected) {
+        // Remove year level and semester when unchecking
+        delete courseYearLevels[courseId];
+        delete courseSemesters[courseId];
+      } else {
+        // Set default values when checking
+        courseYearLevels[courseId] = 1;
+        courseSemesters[courseId] = "1";
+      }
+    
+      return { 
+        ...prev, 
+        selectedCourses,
+        courseYearLevels,
+        courseSemesters
+      };
     });
+  };
+
+  const handleCourseYearChange = (courseId, yearLevel) => {
+    setFormData(prev => ({
+      ...prev,
+      courseYearLevels: {
+        ...prev.courseYearLevels,
+        [courseId]: parseInt(yearLevel)
+      }
+    }));
+  };
+
+  const handleCourseSemesterChange = (courseId, semester) => {
+    setFormData(prev => ({
+      ...prev,
+      courseSemesters: {
+        ...prev.courseSemesters,
+        [courseId]: semester
+      }
+    }));
   };
 
   // Pagination functions
@@ -773,6 +874,7 @@ const CurriculumManagement = () => {
                         <th>Status</th>
                         <th>Last Updated</th>
                         <th>Actions</th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -799,38 +901,36 @@ const CurriculumManagement = () => {
                             </td>
                             <td>{formatDate(curriculum.lastUpdated)}</td>
                             <td>
-                      
-
-                                <div className="action-buttons">
-                                  <button 
-                                    className="btn-action btn-edit" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      editCurriculum(curriculum.id);
-                                    }}
-                                    title="Edit"
-                                  >              
-                                  </button>
-                                  <button 
-                                    className="btn-action btn-delete" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteCurriculum(curriculum.id);
-                                    }}
-                                    title="Delete"
-                                  >                       
-                                  </button>
-                                          <div className="actions-container">
-                                <span className="expand-icon">
-                                  {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
-                                </span>
-                                </div>
+                              <div className="action-buttons">
+                                <button 
+                                  className="btn-action btn-edit" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    editCurriculum(curriculum.id);
+                                  }}
+                                  title="Edit"
+                                >              
+                                </button>
+                                <button 
+                                  className="btn-action btn-delete" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteCurriculum(curriculum.id);
+                                  }}
+                                  title="Delete"
+                                >                       
+                                </button>
                               </div>
+                            </td>
+                            <td>
+                              <span className="expand-icon">
+                                {expandedCurricula.has(curriculum.id) ? '🔽' : '▶️'}
+                              </span>
                             </td>
                           </tr>
                           {expandedCurricula.has(curriculum.id) && (
                             <tr className="curriculum-details-row">
-                              <td colSpan="6">
+                              <td colSpan="7">
                                 <div className="curriculum-courses">
                                   <h4>Courses</h4>
                                   {curriculumCourses[curriculum.id] ? (
@@ -842,7 +942,7 @@ const CurriculumManagement = () => {
                                             <div className="course-name">{detail.course.courseDescription}</div>
                                             <div className="course-meta">
                                               <span>Credits: {detail.course.credits}</span>
-                                              <span>Year {detail.suggestedYearLevel}, Semester {detail.suggestedSemester}</span>
+                                              <span>Year {detail.yearLevel}, Semester {detail.semester}</span>
                                             </div>
                                           </div>
                                         ))}
@@ -867,31 +967,31 @@ const CurriculumManagement = () => {
                       <p>No curricula found matching your criteria.</p>
                     </div>
                   )}
-                </div>
 
-                <div className="pagination">
-                  <div className="pagination-info">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
-                  </div>
-                  <div className="pagination-controls">
-                    <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
-                      Previous
-                    </button>
-                    {[...Array(Math.min(3, totalPages))].map((_, index) => {
-                      const pageNum = index + 1;
-                      return (
-                        <button
-                          key={pageNum}
-                          className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
-                          onClick={() => goToPage(pageNum)}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
-                      Next
-                    </button>
+                  <div className="pagination">
+                    <div className="pagination-info">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
+                    </div>
+                    <div className="pagination-controls">
+                      <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
+                        Previous
+                      </button>
+                      {[...Array(Math.min(3, totalPages))].map((_, index) => {
+                        const pageNum = index + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                            onClick={() => goToPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -996,26 +1096,158 @@ const CurriculumManagement = () => {
               {formData.programId && (
                 <div className="form-group">
                   <label className="form-label">Available Courses</label>
-                  <div className="courses-list">
-                    {availableCourses.map(course => (
-                      <div key={course.id} className="course-item">
-                        <label className="course-label">
-                          <input
-                            type="checkbox"
-                            checked={formData.selectedCourses.includes(course.id)}
-                            onChange={() => handleCourseSelection(course.id)}
-                          />
-                          <span className="course-info">
-                            <strong>{course.courseCode}</strong> - {course.courseDescription}
-                            <small>({course.credits} credits)</small>
-                          </span>
-                        </label>
+                  <div className="semester-tabs">
+                    <div className="tab-headers">
+                      <button 
+                        type="button"
+                        className={`tab-header ${formData.activeSemesterTab === '1' ? 'active' : ''}`}
+                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '1' }))}
+                      >
+                        1st Semester
+                      </button>
+                      <button 
+                        type="button"
+                        className={`tab-header ${formData.activeSemesterTab === '2' ? 'active' : ''}`}
+                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '2' }))}
+                      >
+                        2nd Semester
+                      </button>
+                      <button 
+                        type="button"
+                        className={`tab-header ${formData.activeSemesterTab === 'Summer' ? 'active' : ''}`}
+                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: 'Summer' }))}
+                      >
+                        Summer
+                      </button>
+                    </div>
+                    
+                    <div className="tab-content">
+                      <div className="courses-semester-section">
+                        <div className="courses-grid-semester">
+                          {availableCourses
+                            .filter(course => {
+                              const courseSemester = formData.courseSemesters[course.id] || "1";
+                              return courseSemester === formData.activeSemesterTab;
+                            })
+                            .map(course => (
+                              <div key={course.id} className="course-card-selection">
+                                <div className="course-card-header">
+                                  <label className="course-checkbox-label">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.selectedCourses.includes(course.id)}
+                                      onChange={() => handleCourseSelection(course.id)}
+                                      className="course-checkbox"
+                                    />
+                                    <div className="course-card-info">
+                                      <div className="course-code-selection">{course.courseCode}</div>
+                                      <div className="course-name-selection">{course.courseDescription}</div>
+                                      <div className="course-credits">({course.credits} credits)</div>
+                                    </div>
+                                  </label>
+                                </div>
+                                
+                                {formData.selectedCourses.includes(course.id) && (
+                                  <div className="course-details-inline">
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Year:</label>
+                                      <select
+                                        value={formData.courseYearLevels[course.id] || 1}
+                                        onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value={1}>1</option>
+                                        <option value={2}>2</option>
+                                        <option value={3}>3</option>
+                                        <option value={4}>4</option>
+                                      </select>
+                                    </div>
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Semester:</label>
+                                      <select
+                                        value={formData.courseSemesters[course.id] || "1"}
+                                        onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value="1">1st</option>
+                                        <option value="2">2nd</option>
+                                        <option value="Summer">Summer</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          
+                          {/* Show unassigned courses in current tab */}
+                          {availableCourses
+                            .filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1')
+                            .map(course => (
+                              <div key={course.id} className="course-card-selection unassigned">
+                                <div className="course-card-header">
+                                  <label className="course-checkbox-label">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.selectedCourses.includes(course.id)}
+                                      onChange={() => handleCourseSelection(course.id)}
+                                      className="course-checkbox"
+                                    />
+                                    <div className="course-card-info">
+                                      <div className="course-code-selection">{course.courseCode}</div>
+                                      <div className="course-name-selection">{course.courseDescription}</div>
+                                      <div className="course-credits">({course.credits} credits)</div>
+                                    </div>
+                                  </label>
+                                </div>
+                                
+                                {formData.selectedCourses.includes(course.id) && (
+                                  <div className="course-details-inline">
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Year:</label>
+                                      <select
+                                        value={formData.courseYearLevels[course.id] || 1}
+                                        onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value={1}>1</option>
+                                        <option value={2}>2</option>
+                                        <option value={3}>3</option>
+                                        <option value={4}>4</option>
+                                      </select>
+                                    </div>
+                                    <div className="course-detail-group-inline">
+                                      <label className="detail-label-inline">Semester:</label>
+                                      <select
+                                        value={formData.courseSemesters[course.id] || "1"}
+                                        onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
+                                        className="detail-select-inline"
+                                      >
+                                        <option value="1">1st</option>
+                                        <option value="2">2nd</option>
+                                        <option value="Summer">Summer</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                        
+                        {availableCourses.filter(course => {
+                          const courseSemester = formData.courseSemesters[course.id] || "1";
+                          return courseSemester === formData.activeSemesterTab;
+                        }).length === 0 && availableCourses.filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1').length === 0 && (
+                          <div className="no-courses-semester">
+                            <p>No courses assigned to {formData.activeSemesterTab === '1' ? '1st' : formData.activeSemesterTab === '2' ? '2nd' : 'Summer'} semester.</p>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {availableCourses.length === 0 && (
-                      <p className="no-courses">No courses available for this program.</p>
-                    )}
+                    </div>
                   </div>
+                  
+                  {availableCourses.length === 0 && (
+                    <p className="no-courses">No courses available for this program.</p>
+                  )}
                 </div>
               )}
             </div>

@@ -24,6 +24,6 @@ public class CurriculumDetail {
     @JoinColumn(name = "courseID")
     private Course course;
 
-    private int suggestedYearLevel;
-    private String suggestedSemester;
+    private int YearLevel;
+    private String Semester;
 }

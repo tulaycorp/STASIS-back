@@ -2,7 +2,6 @@ package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.CurriculumDetail;
 import com.stasis.stasis.repository.CurriculumDetailRepository;
-import com.stasis.stasis.repository.CurriculumRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +13,6 @@ public class CurriculumDetailService {
 
     @Autowired
     private CurriculumDetailRepository curriculumDetailRepository;
-
-    @Autowired
-    private CurriculumRepository curriculumRepository;
 
     public List<CurriculumDetail> getAllCurriculumDetails() {
         return curriculumDetailRepository.findAll();
@@ -30,16 +26,16 @@ public class CurriculumDetailService {
         return curriculumDetailRepository.save(curriculumDetail);
     }
 
-    public CurriculumDetail updateCurriculumDetail(Long id, CurriculumDetail updatedDetail) {
+    public CurriculumDetail updateCurriculumDetail(Long id, CurriculumDetail curriculumDetailUpdate) {
         return curriculumDetailRepository.findById(id)
-            .map(detail -> {
-                detail.setCurriculum(updatedDetail.getCurriculum());
-                detail.setCourse(updatedDetail.getCourse());
-                detail.setSuggestedYearLevel(updatedDetail.getSuggestedYearLevel());
-                detail.setSuggestedSemester(updatedDetail.getSuggestedSemester());
-                return curriculumDetailRepository.save(detail);
-            })
-            .orElseThrow(() -> new RuntimeException("Curriculum Detail not found with ID " + id));
+                .map(detail -> {
+                    detail.setCurriculum(curriculumDetailUpdate.getCurriculum());
+                    detail.setCourse(curriculumDetailUpdate.getCourse());
+                    detail.setYearLevel(curriculumDetailUpdate.getYearLevel());
+                    detail.setSemester(curriculumDetailUpdate.getSemester());
+                    return curriculumDetailRepository.save(detail);
+                })
+                .orElseThrow(() -> new RuntimeException("CurriculumDetail not found with id " + id));
     }
 
     public void deleteCurriculumDetail(Long id) {
@@ -51,7 +47,7 @@ public class CurriculumDetailService {
     }
 
     public List<CurriculumDetail> getDetailsByYearLevel(int yearLevel) {
-        return curriculumDetailRepository.findBySuggestedYearLevel(yearLevel);
+        return curriculumDetailRepository.findByYearLevel(yearLevel);
     }
 
     public List<CurriculumDetail> getDetailsByCurriculumAndYear(Long curriculumId, int yearLevel) {

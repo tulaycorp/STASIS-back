@@ -138,6 +138,12 @@ export const courseSectionAPI = {
   
   // Validate section
   validateSection: (sectionData) => api.post('/course-sections/validate', sectionData),
+
+  // Get sections by program ID
+  getSectionsByProgram: (programId) => {
+    console.log('Calling getSectionsByProgram API for program ID:', programId);
+    return api.get(`/course-sections/program/${programId}`);
+  },
 };
 
 // Enrolled Courses API endpoints

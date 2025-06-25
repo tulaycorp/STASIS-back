@@ -43,6 +43,8 @@ public class CourseSection {
     private LocalTime endTime;
     private String day; // e.g., "MWF", "TTH", "MONDAY", etc.
     private String status; // e.g., "ACTIVE", "CANCELLED", "FULL", etc.
+    //End Schedule fields
+
     
     private String room;
 }
