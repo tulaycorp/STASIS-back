@@ -280,6 +280,11 @@ export const studentAPI = {
     return api.get('/students');
   },
   
+  // Get total student count
+  getStudentCount: () => {
+    return axios.get('/api/students/count');
+  },
+  
   // Get student by ID
   getStudentById: (id) => api.get(`/students/${id}`),
   

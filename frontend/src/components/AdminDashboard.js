@@ -3,19 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { facultyAPI, programAPI } from '../services/api'; // Import both APIs
+import { facultyAPI, programAPI, studentAPI } from '../services/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { getAdminName, getUserInfo } = useAdminData();
+  
   // State to hold the fetched lists
   const [facultyList, setFacultyList] = useState([]);
   const [programsList, setProgramsList] = useState([]);
+  const [studentCount, setStudentCount] = useState(0); 
+  const [programsLoaded, setProgramsLoaded] = useState(false);
 
   const [dashboardData, setAdminDashboardData] = useState({
     stats: {
-      totalStudents: '', 
-      activeCourses: '',
+      totalStudents: 0, 
       studentGrowth: '',
       facultyGrowth: '',
       courseGrowth: ''
@@ -27,13 +29,24 @@ const AdminDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Fetch both faculty and programs data in parallel
-        const [facultyResponse, programResponse] = await Promise.all([
+        // Fetch all data in parallel
+        const [facultyResponse, programResponse, studentCountResponse] = await Promise.all([
           facultyAPI.getAllFaculty(),
-          programAPI.getAllPrograms()
+          programAPI.getAllPrograms(),
+          studentAPI.getStudentCount()
         ]);
+        
         setFacultyList(facultyResponse.data);
         setProgramsList(programResponse.data);
+        setStudentCount(studentCountResponse.data.count);
+        setProgramsLoaded(true);
+        setAdminDashboardData(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            totalStudents: studentCountResponse.data.count
+          }
+        }));
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
       }
@@ -41,164 +54,31 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
-  // Calculate stats from the fetched data
-  const totalFaculty = facultyList.length;
-  const activeFaculty = facultyList.filter(f => f.status === 'Active').length;
-  const inactiveFaculty = facultyList.filter(f => f.status === 'Inactive').length;
-  const totalPrograms = programsList.length; // New stat for total programs
-
-
+  // Student Form State and Handlers
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
-  const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
-  
   const [studentForm, setStudentForm] = useState({
-    studentId: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    middleName: '',
-    birthday: ''
-  });
-
-  const [facultyForm, setFacultyForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    department: '',
-    position: '',
-    employmentStatus: ''
+    dateOfBirth: '',
+    year_level: 1,
+    programId: ''
   });
 
-  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
-  const [courseForm, setCourseForm] = useState({
-    courseCode: '',
-    courseName: '',
-    program: '',
-    status: 'Active'
-  });
-
-  const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
-  const [scheduleForm, setScheduleForm] = useState({
-    course: '',
-    section: '',
-    instructor: '',
-    room: '',
-    day: '',
-    timeFrom: '',
-    timeTo: ''
-  });
-
-  const today = new Date();
-  const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
-  const [calendarYear, setCalendarYear] = useState(today.getFullYear());
-  const [selectedDate, setSelectedDate] = useState(today.getDate());
-
-  // Generate calendar days for the selected month/year
-  const generateCalendarDays = () => {
-    const days = [];
-    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
-    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
-    const prevMonthDays = new Date(calendarYear, calendarMonth, 0).getDate();
-
-    // Previous month's ending days
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({
-        day: prevMonthDays - i,
-        isCurrentMonth: false
-      });
-    }
-
-    // Current month days
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push({
-        day,
-        isCurrentMonth: true,
-        isSelected: day === selectedDate && calendarMonth === today.getMonth() && calendarYear === today.getFullYear(),
-        isToday: day === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear()
-      });
-    }
-
-    return days;
-  };
-
-  // Calendar navigation handlers
-  const goToPrevMonth = () => {
-    setCalendarMonth(prev => {
-      if (prev === 0) {
-        setCalendarYear(y => y - 1);
-        return 11;
-      }
-      return prev - 1;
-    });
-    setSelectedDate(1);
-  };
-
-  const goToNextMonth = () => {
-    setCalendarMonth(prev => {
-      if (prev === 11) {
-        setCalendarYear(y => y + 1);
-        return 0;
-      }
-      return prev + 1;
-    });
-    setSelectedDate(1);
-  };
-
-  // Schedule Modal functions
-const closeAddScheduleModal = () => {
-  setShowAddScheduleModal(false);
-  setScheduleForm({
-    course: '',
-    section: '',
-    instructor: '',
-    room: '',
-    day: '',
-    timeFrom: '',
-    timeTo: ''
-  });
-};
-
-const handleScheduleFormChange = (field, value) => {
-  setScheduleForm(prev => ({
-    ...prev,
-    [field]: value
-  }));
-};
-
-const handleAddSchedule = () => {
-  // Validate required fields
-  if (!scheduleForm.course || !scheduleForm.section || !scheduleForm.instructor || 
-      !scheduleForm.room || !scheduleForm.day || !scheduleForm.timeFrom || !scheduleForm.timeTo) {
-    alert('Please fill in all required fields');
-    return;
-  }
-
-  // Validate time
-  if (scheduleForm.timeFrom >= scheduleForm.timeTo) {
-    alert('End time must be after start time');
-    return;
-  }
-  
-  console.log('Adding schedule:', scheduleForm);
-  alert('Schedule added successfully!');
-  closeAddScheduleModal();
-};
-
-  // Student Modal functions
   const showAddStudentForm = () => {
+    setStudentForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      dateOfBirth: '',
+      year_level: 1,
+      programId: ''
+    });
     setShowAddStudentModal(true);
   };
 
   const closeAddStudentModal = () => {
     setShowAddStudentModal(false);
-    setStudentForm({
-      studentId: '',
-      email: '',
-      firstName: '',
-      lastName: '',
-      middleName: '',
-      birthday: ''
-    });
   };
 
   const handleStudentFormChange = (field, value) => {
@@ -208,20 +88,68 @@ const handleAddSchedule = () => {
     }));
   };
 
-  const handleAddStudent = () => {
+  const handleAddStudent = async () => {
     // Validate required fields
-    if (!studentForm.studentId || !studentForm.email || !studentForm.firstName || !studentForm.lastName) {
+    if (!studentForm.firstName || !studentForm.lastName || !studentForm.email) {
       alert('Please fill in all required fields');
       return;
     }
-    
-    // Here you would typically send to API
-    console.log('Adding student:', studentForm);
-    alert('Student added successfully!');
-    closeAddStudentModal();
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(studentForm.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      // Find the selected program object
+      const selectedProgramObj = programsList.find(p => p.programID.toString() === studentForm.programId);
+
+      const studentData = {
+        firstName: studentForm.firstName,
+        lastName: studentForm.lastName,
+        email: studentForm.email,
+        dateOfBirth: studentForm.dateOfBirth,
+        year_level: parseInt(studentForm.year_level),
+        program: selectedProgramObj || null
+      };
+
+      await studentAPI.createStudent(studentData);
+      alert('Student added successfully!');
+      closeAddStudentModal();
+      
+      // Refresh student count
+      const countResponse = await studentAPI.getStudentCount();
+      setStudentCount(countResponse.data.count);
+      setAdminDashboardData(prev => ({
+        ...prev,
+        stats: {
+          ...prev.stats,
+          totalStudents: countResponse.data.count
+        }
+      }));
+    } catch (error) {
+      console.error('Error adding student:', error);
+      if (error.response?.status === 400) {
+        alert('Email already exists or invalid data provided!');
+      } else {
+        alert('Failed to add student. Please try again.');
+      }
+    }
   };
 
-  // Faculty Modal functions
+  // Faculty Modal State and Handlers
+  const [showAddFacultyModal, setShowAddFacultyModal] = useState(false);
+  const [facultyForm, setFacultyForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    department: '',
+    position: '',
+    employmentStatus: ''
+  });
+
   const showAddFacultyForm = () => {
     setShowAddFacultyModal(true);
   };
@@ -252,13 +180,20 @@ const handleAddSchedule = () => {
       return;
     }
     
-    // Here you would typically send to API
     console.log('Adding faculty:', facultyForm);
     alert('Faculty added successfully!');
     closeAddFacultyModal();
   };
 
-  // Course Modal functions
+  // Course Modal State and Handlers
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [courseForm, setCourseForm] = useState({
+    courseCode: '',
+    courseName: '',
+    program: '',
+    status: 'Active'
+  });
+
   const showAddCourseForm = () => {
     setCourseForm({
       courseCode: '',
@@ -297,11 +232,118 @@ const handleAddSchedule = () => {
     alert('Course added successfully!');
     closeAddCourseModal();
   };
+
+  // Schedule Modal State and Handlers
+  const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({
+    course: '',
+    section: '',
+    instructor: '',
+    room: '',
+    day: '',
+    timeFrom: '',
+    timeTo: ''
+  });
+
   const showScheduleManager = () => {
     setShowAddScheduleModal(true);
   };
 
-  // Add these missing data arrays
+  const closeAddScheduleModal = () => {
+    setShowAddScheduleModal(false);
+    setScheduleForm({
+      course: '',
+      section: '',
+      instructor: '',
+      room: '',
+      day: '',
+      timeFrom: '',
+      timeTo: ''
+    });
+  };
+
+  const handleScheduleFormChange = (field, value) => {
+    setScheduleForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddSchedule = () => {
+    // Validate required fields
+    if (!scheduleForm.course || !scheduleForm.section || !scheduleForm.instructor || 
+        !scheduleForm.room || !scheduleForm.day || !scheduleForm.timeFrom || !scheduleForm.timeTo) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Validate time
+    if (scheduleForm.timeFrom >= scheduleForm.timeTo) {
+      alert('End time must be after start time');
+      return;
+    }
+    
+    console.log('Adding schedule:', scheduleForm);
+    alert('Schedule added successfully!');
+    closeAddScheduleModal();
+  };
+
+  // Calendar State and Handlers
+  const today = new Date();
+  const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
+  const [calendarYear, setCalendarYear] = useState(today.getFullYear());
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
+
+  const generateCalendarDays = () => {
+    const days = [];
+    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(calendarYear, calendarMonth, 0).getDate();
+
+    // Previous month's ending days
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({
+        day: prevMonthDays - i,
+        isCurrentMonth: false
+      });
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push({
+        day,
+        isCurrentMonth: true,
+        isSelected: day === selectedDate && calendarMonth === today.getMonth() && calendarYear === today.getFullYear(),
+        isToday: day === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear()
+      });
+    }
+
+    return days;
+  };
+
+  const goToPrevMonth = () => {
+    setCalendarMonth(prev => {
+      if (prev === 0) {
+        setCalendarYear(y => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+    setSelectedDate(1);
+  };
+
+  const goToNextMonth = () => {
+    setCalendarMonth(prev => {
+      if (prev === 11) {
+        setCalendarYear(y => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+    setSelectedDate(1);
+  };
+
+  // Static data options
   const departmentOptions = [
     "Computer Science",
     "Information Technology",
@@ -409,6 +451,7 @@ const handleAddSchedule = () => {
   };
 
   const calendarDays = generateCalendarDays();
+  
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
@@ -445,31 +488,19 @@ const handleAddSchedule = () => {
           <h1 className="dashboard-welcome-title">Welcome back, {getAdminName()}</h1>
         </div>
 
-        {/* Stats Cards - Updated with Faculty and Program Stats */}
+        {/* Stats Cards */}
         <div className="dashboard-stats-grid">
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Total Students</div>
-            <div className="dashboard-stat-value">{dashboardData.stats.totalStudents.toLocaleString()}</div>
+            <div className="dashboard-stat-value">{studentCount.toLocaleString()}</div>
           </div>
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Total Faculty</div>
-            <div className="dashboard-stat-value">{totalFaculty}</div>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-title">Active Faculty</div>
-            <div className="dashboard-stat-value">{activeFaculty}</div>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-title">Inactive Faculty</div>
-            <div className="dashboard-stat-value">{inactiveFaculty}</div>
+            <div className="dashboard-stat-value">{facultyList.length}</div>
           </div>
           <div className="dashboard-stat-card">
             <div className="dashboard-stat-title">Total Programs</div>
-            <div className="dashboard-stat-value">{totalPrograms}</div>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-title">Active Courses</div>
-            <div className="dashboard-stat-value">{dashboardData.stats.activeCourses}</div>
+            <div className="dashboard-stat-value">{programsList.length}</div>
           </div>
         </div>
 
@@ -559,9 +590,6 @@ const handleAddSchedule = () => {
                 </div>
               </div>
             </div>
-
-            {/* Upcoming Schedule Section REMOVED */}
-
           </div>
         </div>
       </div>
@@ -570,88 +598,88 @@ const handleAddSchedule = () => {
       {showAddStudentModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            {/* Modal Header */}
             <div className="modal-header">
               <h2 className="modal-title">Add New Student</h2>
             </div>
-            
-            {/* Modal Content */}
+
             <div className="modal-body">
               <div className="modal-grid">
-                {/* Student ID */}
                 <div className="form-group">
-                  <label className="form-label">Student ID</label>
+                  <label className="form-label">First Name *</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="Enter Student ID"
-                    value={studentForm.studentId}
-                    onChange={(e) => handleStudentFormChange('studentId', e.target.value)}
-                  />
-                </div>
-                
-                {/* Email */}
-                <div className="form-group">
-                  <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="Enter Student Email"
-                    value={studentForm.email}
-                    onChange={(e) => handleStudentFormChange('email', e.target.value)}
-                  />
-                </div>
-                
-                {/* First Name */}
-                <div className="form-group">
-                  <label className="form-label">First Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter First Name"
+                    placeholder="Enter first name"
                     value={studentForm.firstName}
                     onChange={(e) => handleStudentFormChange('firstName', e.target.value)}
                   />
                 </div>
-                
-                {/* Last Name */}
+
                 <div className="form-group">
-                  <label className="form-label">Last Name</label>
+                  <label className="form-label">Last Name *</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="Enter Last Name"
+                    placeholder="Enter last name"
                     value={studentForm.lastName}
                     onChange={(e) => handleStudentFormChange('lastName', e.target.value)}
                   />
                 </div>
-                
-                {/* Middle Name */}
+
                 <div className="form-group">
-                  <label className="form-label">Middle Name</label>
+                  <label className="form-label">Email *</label>
                   <input
-                    type="text"
+                    type="email"
                     className="form-input"
-                    placeholder="Enter Middle Name"
-                    value={studentForm.middleName}
-                    onChange={(e) => handleStudentFormChange('middleName', e.target.value)}
+                    placeholder="Enter email address"
+                    value={studentForm.email}
+                    onChange={(e) => handleStudentFormChange('email', e.target.value)}
                   />
                 </div>
-                
-                {/* Birthday */}
+
                 <div className="form-group">
-                  <label className="form-label">Birthday</label>
+                  <label className="form-label">Date of Birth</label>
                   <input
                     type="date"
                     className="form-input"
-                    value={studentForm.birthday}
-                    onChange={(e) => handleStudentFormChange('birthday', e.target.value)}
+                    value={studentForm.dateOfBirth}
+                    onChange={(e) => handleStudentFormChange('dateOfBirth', e.target.value)}
                   />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Year Level</label>
+                  <select
+                    className="form-input"
+                    value={studentForm.year_level}
+                    onChange={(e) => handleStudentFormChange('year_level', e.target.value)}
+                  >
+                    <option value={1}>Year 1</option>
+                    <option value={2}>Year 2</option>
+                    <option value={3}>Year 3</option>
+                    <option value={4}>Year 4</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Program</label>
+                  <select
+                    className="form-input"
+                    value={studentForm.programId}
+                    onChange={(e) => handleStudentFormChange('programId', e.target.value)}
+                    disabled={!programsLoaded}
+                  >
+                    <option value="">Select Program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programID}>
+                        {program.programName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
-            
-            {/* Modal Footer */}
+
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={closeAddStudentModal}>
                 Cancel
@@ -668,15 +696,12 @@ const handleAddSchedule = () => {
       {showAddFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            {/* Modal Header */}
             <div className="modal-header">
               <h2 className="modal-title">Add New Faculty</h2>
             </div>
             
-            {/* Modal Content */}
             <div className="modal-body">
               <div className="modal-grid">
-                {/* First Name */}
                 <div className="form-group">
                   <label className="form-label">First Name *</label>
                   <input
@@ -688,7 +713,6 @@ const handleAddSchedule = () => {
                   />
                 </div>
                 
-                {/* Last Name */}
                 <div className="form-group">
                   <label className="form-label">Last Name *</label>
                   <input
@@ -700,7 +724,6 @@ const handleAddSchedule = () => {
                   />
                 </div>
                 
-                {/* Email */}
                 <div className="form-group">
                   <label className="form-label">Email *</label>
                   <input
@@ -712,11 +735,11 @@ const handleAddSchedule = () => {
                   />
                 </div>
                 
-                {/* Department */}
                 <div className="form-group">
                   <label className="form-label">Department *</label>
                   <select
-                    className="form-input" value={facultyForm.department}
+                    className="form-input" 
+                    value={facultyForm.department}
                     onChange={(e) => handleFacultyFormChange('department', e.target.value)}
                   >
                     <option value="">Select department</option>
@@ -726,11 +749,11 @@ const handleAddSchedule = () => {
                   </select>
                 </div>
                 
-                {/* Position */}
                 <div className="form-group">
                   <label className="form-label">Position</label>
                   <select
-                    className="form-input" value={facultyForm.position}
+                    className="form-input" 
+                    value={facultyForm.position}
                     onChange={(e) => handleFacultyFormChange('position', e.target.value)}
                   >
                     <option value="">Select position</option>
@@ -740,11 +763,11 @@ const handleAddSchedule = () => {
                   </select>
                 </div>
                 
-                {/* Employment Status */}
                 <div className="form-group">
                   <label className="form-label">Employment Status</label>
                   <select
-                    className="form-input" value={facultyForm.employmentStatus}
+                    className="form-input" 
+                    value={facultyForm.employmentStatus}
                     onChange={(e) => handleFacultyFormChange('employmentStatus', e.target.value)}
                   >
                     <option value="">Select status</option>
@@ -756,7 +779,6 @@ const handleAddSchedule = () => {
               </div>
             </div>
             
-            {/* Modal Footer */}
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={closeAddFacultyModal}>
                 Cancel
@@ -840,13 +862,14 @@ const handleAddSchedule = () => {
           </div>
         </div>
       )}
+
       {/* Add Schedule Modal */}
       {showAddScheduleModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
               <h2 className="modal-title">Add New Schedule</h2>
-              </div>
+            </div>
       
             <div className="modal-body">
               <div className="modal-grid">

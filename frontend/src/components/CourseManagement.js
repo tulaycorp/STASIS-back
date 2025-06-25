@@ -556,17 +556,23 @@ const CourseManagement = () => {
               <h2 className="course-nav-title">Programs</h2>
             </div>
             <div className="course-nav-list">
-              {programs.map((program) => (
                 <div
-                  key={program.programID}
-                  className={`course-nav-item ${selectedProgram === program.programName ? 'course-nav-item-active' : ''}`}
-                  onClick={() => handleProgramSelect(program.programName)}
-                >
-                  <span className="course-nav-icon">📚</span>
-                  {program.programName}
-                </div>
-              ))}
-            </div>
+                className={`course-nav-item ${selectedProgram === '' ? 'course-nav-item-active' : ''}`}
+                onClick={() => handleProgramSelect('')}>
+                <span className="course-nav-icon">📚</span>
+                All Programs
+                <span className="course-nav-count">{coursesData.length}</span>
+              </div>
+
+            {programs.map((program) => (
+             <div key={program.programID}
+               className={`course-nav-item ${selectedProgram === program.programName ? 'course-nav-item-active' : ''}`}
+               onClick={() => handleProgramSelect(program.programName)}>
+              <span className="course-nav-icon">📚</span>
+              {program.programName}
+             </div>
+            ))}
+          </div>
             <div className="course-nav-actions">
               <button className="course-btn-add-program" onClick={showAddProgramForm}>
                 Add Program
