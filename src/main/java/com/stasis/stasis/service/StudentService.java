@@ -56,6 +56,11 @@ public class StudentService {
         return studentOpt;
     }
 
+    // Add this method to get student count
+    public long getStudentCount() {
+        return studentRepository.count();
+    }
+
     public class StudentWithCredentials {
         private final Student student;
         private final String username;
@@ -149,6 +154,7 @@ public class StudentService {
         // 5. Finally delete the student
         studentRepository.deleteById(id);
     }
+    
 
     public Student promoteStudent(Long id) {
         return studentRepository.findById(id)

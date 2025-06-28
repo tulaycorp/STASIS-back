@@ -1,6 +1,8 @@
 package com.stasis.stasis.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +40,15 @@ public class StudentController {
         return studentService.getStudentById(id)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Add this new endpoint for student count
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Long>> getStudentCount() {
+        long count = studentService.getStudentCount();
+        Map<String, Long> response = new HashMap<>();
+        response.put("count", count);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
