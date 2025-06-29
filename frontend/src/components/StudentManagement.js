@@ -1003,7 +1003,7 @@ const StudentManagement = () => {
                     <option value="">Select Curriculum</option>
                     {availableCurriculums.map((curriculum) => (
                       <option key={curriculum.curriculumID} value={curriculum.curriculumID}>
-                        {curriculum.name} ({curriculum.year})
+                        {curriculum.curriculumName} ({curriculum.academicYear})
                       </option>
                     ))}
                   </select>
@@ -1144,7 +1144,7 @@ const StudentManagement = () => {
                     <option value="">Select Curriculum</option>
                     {availableCurriculums.map((curriculum) => (
                       <option key={curriculum.curriculumID} value={curriculum.curriculumID}>
-                        {curriculum.name} ({curriculum.year})
+                        {curriculum.curriculumName} ({curriculum.academicYear})
                       </option>
                     ))}
                   </select>
