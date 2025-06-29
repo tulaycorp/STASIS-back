@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import './StudentManagement.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { studentAPI, programAPI, courseSectionAPI, testConnection } from '../services/api';
+import { studentAPI, programAPI, courseSectionAPI, curriculumAPI, testConnection } from '../services/api';
 
 const StudentManagement = () => {
   const { getUserInfo } = useAdminData();
   const [studentsData, setStudentsData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
+  const [sectionsList, setSectionsList] = useState([]);
+  const [curriculumsList, setCurriculumsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
@@ -16,10 +18,10 @@ const StudentManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSection, setSelectedSection] = useState('All Sections');
   const [selectedProgram, setSelectedProgram] = useState('All Programs');
-  const [sectionsList, setSectionsList] = useState([]);
   const [selectedProgramSections, setSelectedProgramSections] = useState([]);
   const [editingStudent, setEditingStudent] = useState(null);
   const [availableSectionsForStudent, setAvailableSectionsForStudent] = useState([]);
+  const [availableCurriculums, setAvailableCurriculums] = useState([]);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionForm, setSectionForm] = useState({
     sectionName: '',
@@ -39,9 +41,35 @@ const StudentManagement = () => {
     dateOfBirth: '',
     year_level: 1,
     programId: '',
-    sectionId: ''
+    sectionId: '',
+    curriculumId: ''
   });
 
+  const studentFormInitialState = { 
+    firstName: '',
+    lastName: '',
+    email: '',
+    dateOfBirth: '',
+    year_level: 1,
+    programId: '',
+    sectionId: '',
+    curriculumId: ''
+  };
+
+  const fetchCurriculums = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await curriculumAPI.getAllCurriculums();
+      setCurriculumsList(response.data);
+    } catch (err) {
+      setError('Failed to fetch curriculums: ' + (err.response?.data?.message || err.message));
+      console.error('Error fetching curriculums:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Load data on component mount
   useEffect(() => {
     loadInitialData();
@@ -59,15 +87,17 @@ const StudentManagement = () => {
       }
 
       // Load students and programs in parallel
-      const [studentsResponse, programsResponse, sectionsResponse] = await Promise.all([
+      const [studentsResponse, programsResponse, sectionsResponse, curriculumResponse] = await Promise.all([
         studentAPI.getAllStudents(),
         programAPI.getAllPrograms(),
-        courseSectionAPI.getAllSections()
+        courseSectionAPI.getAllSections(),
+        curriculumAPI.getAllCurriculums()
       ]);
 
       setStudentsData(studentsResponse.data);
       setProgramsList(programsResponse.data);
       setSectionsList(sectionsResponse.data);
+      setCurriculumsList(curriculumResponse.data);
 
       // Set default selected program if programs exist
       if (programsResponse.data.length > 0) {
@@ -128,42 +158,38 @@ const StudentManagement = () => {
   });
 
   // Student Modal functions
-  const showAddStudentForm = () => {
-    setStudentForm({
-      firstName: '',
-      lastName: '',
-      email: '',
-      dateOfBirth: '',
-      year_level: 1,
-      programId: '',
-      sectionId: ''
-    });
+   const showAddStudentForm = () => {
+    setStudentForm(studentFormInitialState); 
     setShowAddStudentModal(true);
   };
 
+
   const closeAddStudentModal = () => {
     setShowAddStudentModal(false);
-    setStudentForm({
-      firstName: '',
-      lastName: '',
-      email: '',
-      dateOfBirth: '',
-      year_level: 1,
-      programId: '',
-      sectionId: ''
-    });
+    setStudentForm(studentFormInitialState);
   };
 
   const showEditStudentForm = (student) => {
     setEditingStudent(student);
+
+    // Filter available curriculums for the student's program when modal opens
+    const programId = student.program?.programID?.toString() || '';
+    if (programId) {
+        const programCurriculums = curriculumsList.filter(c => c.program?.programID?.toString() === programId);
+        setAvailableCurriculums(programCurriculums);
+    } else {
+        setAvailableCurriculums([]);
+    }
+
     setStudentForm({
       firstName: student.firstName || '',
       lastName: student.lastName || '',
       email: student.email || '',
       dateOfBirth: student.dateOfBirth || '',
       year_level: student.year_level || 1,
-      programId: student.program?.programID?.toString() || '',
-      sectionId: student.section?.sectionID?.toString() || ''
+      programId: programId,
+      sectionId: student.section?.sectionID?.toString() || '',
+      curriculumId: student.curriculum?.curriculumID?.toString() || '' 
     });
     setShowEditStudentModal(true);
   };
@@ -171,15 +197,7 @@ const StudentManagement = () => {
   const closeEditStudentModal = () => {
     setShowEditStudentModal(false);
     setEditingStudent(null);
-    setStudentForm({
-      firstName: '',
-      lastName: '',
-      email: '',
-      dateOfBirth: '',
-      year_level: 1,
-      programId: '',
-      sectionId: ''
-    });
+    setStudentForm(studentFormInitialState); 
   };
 
   const showAddSectionForm = () => {
@@ -214,8 +232,6 @@ const StudentManagement = () => {
     }
 
     try {
-      // 2. Find the full program object from the programId stored in the form state.
-      // The backend needs the whole object, not just the ID.
       const selectedProgramObj = programsList.find(
         (p) => p.programID.toString() === sectionForm.programId
       );
@@ -335,7 +351,7 @@ const StudentManagement = () => {
 
   const handleAddStudent = async () => {
     // Validate required fields
-    if (!studentForm.firstName || !studentForm.lastName || !studentForm.email) {
+    if (!studentForm.firstName || !studentForm.lastName || !studentForm.email || !studentForm.programId || !studentForm.curriculumId) {
       alert('Please fill in all required fields');
       return;
     }
@@ -351,6 +367,7 @@ const StudentManagement = () => {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === studentForm.programId);
       const selectedSectionObj = sectionsList.find(s => s.sectionID.toString() === studentForm.sectionId);
+      const selectedCurriculumObj = curriculumsList.find(c => c.curriculumID.toString() === studentForm.curriculumId);
 
       const studentData = {
         firstName: studentForm.firstName,
@@ -359,7 +376,8 @@ const StudentManagement = () => {
         dateOfBirth: studentForm.dateOfBirth,
         year_level: parseInt(studentForm.year_level),
         program: selectedProgramObj || null,
-        section: selectedSectionObj || null
+        section: selectedSectionObj || null,
+        curriculum: selectedCurriculumObj || null
       };
 
       await studentAPI.createStudent(studentData);
@@ -378,7 +396,8 @@ const StudentManagement = () => {
 
   const handleStudentProgramChange = (programId) => {
     handleStudentFormChange('programId', programId);
-    handleStudentFormChange('sectionId', ''); // Reset section when program changes
+    handleStudentFormChange('sectionId', ''); // Reset section
+    handleStudentFormChange('curriculumId', ''); // Reset curriculum
 
     // Filter sections for the selected program
     const programSections = sectionsList.filter(section =>
@@ -386,11 +405,17 @@ const StudentManagement = () => {
       section.programId?.toString() === programId
     );
     setAvailableSectionsForStudent(programSections);
+
+    const programCurriculums = curriculumsList.filter(curriculum => 
+      curriculum.program?.programID?.toString() === programId
+    );
+    setAvailableCurriculums(programCurriculums);
   };
 
-  const Student = async () => {
+
+  const handleUpdateStudent = async () => {
     // Validate required fields
-    if (!studentForm.firstName || !studentForm.lastName || !studentForm.email) {
+    if (!studentForm.firstName || !studentForm.lastName || !studentForm.email || !studentForm.programId || !studentForm.curriculumId) {
       alert('Please fill in all required fields');
       return;
     }
@@ -406,6 +431,7 @@ const StudentManagement = () => {
       // Find the selected program object
       const selectedProgramObj = programsList.find(p => p.programID.toString() === studentForm.programId);
       const selectedSectionObj = sectionsList.find(s => s.sectionID.toString() === studentForm.sectionId);
+      const selectedCurriculumObj = curriculumsList.find(c => c.curriculumID.toString() === studentForm.curriculumId);
 
       const studentData = {
         firstName: studentForm.firstName,
@@ -414,7 +440,8 @@ const StudentManagement = () => {
         dateOfBirth: studentForm.dateOfBirth,
         year_level: parseInt(studentForm.year_level),
         program: selectedProgramObj || null,
-        section: selectedSectionObj || null
+        section: selectedSectionObj || null,
+        curriculum: selectedCurriculumObj || null
       };
 
       await studentAPI.updateStudent(editingStudent.id, studentData);
@@ -950,7 +977,7 @@ const StudentManagement = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Program</label>
+                  <label className="form-label">Program *</label>
                   <select
                     className="form-input"
                     value={studentForm.programId}
@@ -966,6 +993,28 @@ const StudentManagement = () => {
                 </div>
 
                 <div className="form-group">
+                  <label className="form-label">Curriculum *</label>
+                  <select
+                    className="form-input"
+                    value={studentForm.curriculumId}
+                    onChange={(e) => handleStudentFormChange('curriculumId', e.target.value)}
+                    disabled={!studentForm.programId}
+                  >
+                    <option value="">Select Curriculum</option>
+                    {availableCurriculums.map((curriculum) => (
+                      <option key={curriculum.curriculumID} value={curriculum.curriculumID}>
+                        {curriculum.name} ({curriculum.year})
+                      </option>
+                    ))}
+                  </select>
+                  {studentForm.programId && availableCurriculums.length === 0 && (
+                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                        No curriculums available for this program.
+                      </p>
+                  )}
+                </div>
+
+                <div className="form-group">
                   <label className="form-label">Section</label>
                   <select
                     className="form-input"
@@ -974,21 +1023,13 @@ const StudentManagement = () => {
                     disabled={!studentForm.programId}
                   >
                     <option value="">Select Section</option>
-                    {sectionsList
-                      .filter(section =>
-                        section.program?.programID?.toString() === studentForm.programId ||
-                        section.programId?.toString() === studentForm.programId
-                      )
-                      .map((section) => (
+                    {availableSectionsForStudent.map((section) => (
                         <option key={section.sectionID} value={section.sectionID}>
                           {section.sectionName}
                         </option>
-                      ))}
+                    ))}
                   </select>
-                  {studentForm.programId && sectionsList.filter(section =>
-                    section.program?.programID?.toString() === studentForm.programId ||
-                    section.programId?.toString() === studentForm.programId
-                  ).length === 0 && (
+                  {studentForm.programId && availableSectionsForStudent.length === 0 && (
                       <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
                         No sections available for this program.
                       </p>
@@ -1077,11 +1118,11 @@ const StudentManagement = () => {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Program</label>
+                  <label className="form-label">Program *</label>
                   <select
                     className="form-input"
                     value={studentForm.programId}
-                    onChange={(e) => handleStudentFormChange('programId', e.target.value)}
+                    onChange={(e) => handleStudentProgramChange(e.target.value)}
                   >
                     <option value="">Select Program</option>
                     {programsList.map((program) => (
@@ -1091,6 +1132,29 @@ const StudentManagement = () => {
                     ))}
                   </select>
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">Curriculum *</label>
+                  <select
+                    className="form-input"
+                    value={studentForm.curriculumId}
+                    onChange={(e) => handleStudentFormChange('curriculumId', e.target.value)}
+                    disabled={!studentForm.programId}
+                  >
+                    <option value="">Select Curriculum</option>
+                    {availableCurriculums.map((curriculum) => (
+                      <option key={curriculum.curriculumID} value={curriculum.curriculumID}>
+                        {curriculum.name} ({curriculum.year})
+                      </option>
+                    ))}
+                  </select>
+                  {studentForm.programId && availableCurriculums.length === 0 && (
+                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                        No curriculums available for this program.
+                      </p>
+                  )}
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Section</label>
                   <select
@@ -1100,21 +1164,13 @@ const StudentManagement = () => {
                     disabled={!studentForm.programId}
                   >
                     <option value="">Select Section</option>
-                    {sectionsList
-                      .filter(section =>
-                        section.program?.programID?.toString() === studentForm.programId ||
-                        section.programId?.toString() === studentForm.programId
-                      )
-                      .map((section) => (
+                    {availableSectionsForStudent.map((section) => (
                         <option key={section.sectionID} value={section.sectionID}>
                           {section.sectionName}
                         </option>
                       ))}
                   </select>
-                  {studentForm.programId && sectionsList.filter(section =>
-                    section.program?.programID?.toString() === studentForm.programId ||
-                    section.programId?.toString() === studentForm.programId
-                  ).length === 0 && (
+                  {studentForm.programId && availableSectionsForStudent.length === 0 && (
                       <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
                         No sections available for this program.
                       </p>
@@ -1127,7 +1183,7 @@ const StudentManagement = () => {
               <button className="btn btn-secondary" onClick={closeEditStudentModal}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={Student}>
+              <button className="btn btn-primary" onClick={handleUpdateStudent}>
                 Update Student
               </button>
             </div>

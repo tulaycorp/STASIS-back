@@ -32,6 +32,10 @@ public class Student {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "section_id")
     private CourseSection section;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "curriculum_id")
+    private Curriculum curriculum;
     
     @Transient
     private String username;

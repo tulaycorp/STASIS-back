@@ -137,7 +137,7 @@ const StudentSchedule = () => {
         navigate('/student-schedule');
         break;
       case 'Enrollment':
-        alert("Enrollment page here");
+        navigate('/enrollment');
         break;
       case 'StudentCurriculum':
         navigate('/student-curriculum');

@@ -4,35 +4,9 @@ import './StudentCurriculum.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 
-const CurriculumManagement = () => {
+const StudentCurriculum = () => {
   const { getUserInfo } = useStudentData();
-  // Sample curriculum data
-  const [curriculumData, setCurriculumData] = useState([
-    /*
-        data here separated by {} example:
-        {
-            id: 1,
-            name: "Computer Science Curriculum",
-            code: "CUR001",
-            program: "BS Computer Science",
-            academicYear: "2025-2026",
-            status: "Active",
-            lastUpdated: "2025-03-06",
-            description: ""
-        },
-        {
-            id: 2,
-            name: "Information Technology Curriculum",
-            code: "CUR002",
-            program: "BS Information Technology",
-            academicYear: "2025-2026",
-            status: "Draft",
-            lastUpdated: "2025-02-11",
-            description: ""
-        }
-    */
-   ]);
-
+  const [curriculumData, setCurriculumData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState('');
@@ -180,7 +154,7 @@ const CurriculumManagement = () => {
         navigate('/student-schedule');
         break;
       case 'Enrollment':
-        alert("Enrollment page here");
+        navigate('/enrollment');
         break;
       case 'StudentCurriculum':
         navigate('/student-curriculum');
@@ -234,13 +208,13 @@ const CurriculumManagement = () => {
             Dashboard
           </span>
           <span className="breadcrumb-separator"> / </span>
-          <span className="breadcrumb-current">Curriculum Management</span>
+          <span className="breadcrumb-current">Curriculum</span>
         </div>
 
         {/* Header */}
         <div className="header">
           <div>
-            <h1 className="page-title">Curriculum Management</h1>
+            <h1 className="page-title">Curriculum</h1>
           </div>
         </div>
 
@@ -459,4 +433,4 @@ const CurriculumManagement = () => {
   );
 };
 
-export default CurriculumManagement;
+export default StudentCurriculum;
