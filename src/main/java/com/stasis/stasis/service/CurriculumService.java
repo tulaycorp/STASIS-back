@@ -2,7 +2,6 @@ package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.Curriculum;
 import com.stasis.stasis.repository.CurriculumRepository;
-import com.stasis.stasis.repository.ProgramRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +15,6 @@ public class CurriculumService {
     @Autowired
     private CurriculumRepository curriculumRepository;
 
-    @Autowired
-    private ProgramRepository programRepository;
 
     public List<Curriculum> getAllCurriculums() {
         return curriculumRepository.findAll();

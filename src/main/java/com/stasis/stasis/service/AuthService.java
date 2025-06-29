@@ -5,7 +5,6 @@ import com.stasis.stasis.dto.LoginResponse;
 import com.stasis.stasis.model.Users;
 import com.stasis.stasis.model.Student;
 import com.stasis.stasis.model.Faculty;
-import com.stasis.stasis.model.UserRole;
 import com.stasis.stasis.repository.UserRepository;
 import com.stasis.stasis.repository.StudentRepository;
 import com.stasis.stasis.repository.FacultyRepository;

@@ -1,10 +1,8 @@
 package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.SemesterEnrollment;
-import com.stasis.stasis.model.Student;
 import com.stasis.stasis.model.EnrolledCourse;
 import com.stasis.stasis.repository.SemesterEnrollmentRepository;
-import com.stasis.stasis.repository.StudentRepository;
 import com.stasis.stasis.repository.EnrolledCourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,9 +16,6 @@ public class SemesterEnrollmentService {
 
     @Autowired
     private SemesterEnrollmentRepository semesterEnrollmentRepository;
-
-    @Autowired
-    private StudentRepository studentRepository;
 
     @Autowired
     private EnrolledCourseRepository enrolledCourseRepository;
