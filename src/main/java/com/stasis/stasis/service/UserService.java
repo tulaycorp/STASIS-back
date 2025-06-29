@@ -23,7 +23,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public Users createUserWithGeneratedCredentials(String firstName, String lastName, UserRole role) {
+    public Users createUserWithGeneratedCredentials(String firstName, String lastName, String email, UserRole role) {
         String username = generateUsername(role);
         String password = generatePassword();
         
@@ -32,6 +32,7 @@ public class UserService {
                 .password(password) // In production, this should be hashed
                 .firstName(firstName)
                 .lastName(lastName)
+                .email(email)
                 .role(role)
                 .build();
         
