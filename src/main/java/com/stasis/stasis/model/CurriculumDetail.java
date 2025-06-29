@@ -5,10 +5,13 @@ import lombok.*;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = "curriculum")
+@EqualsAndHashCode(exclude = "curriculum")
 public class CurriculumDetail {
 
     @Id

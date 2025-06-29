@@ -8,10 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = "curriculumDetails")
+@EqualsAndHashCode(exclude = "curriculumDetails")
 public class Curriculum {
 
     @Id
