@@ -1,67 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './StudentGrades.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
+import { enrolledCourseAPI } from '../services/api'; // Make sure this exists and is correct
 
 const StudentGrades = () => {
   const { getUserInfo } = useStudentData();
-  
-  const semesters = [
-    '2025-2nd Semester',
-    '2024-1st Semester',
-    '2023-2nd Semester',
-    '2023-1st Semester',
-    '2022-2nd Semester',
-  ];
+  const userInfo = getUserInfo();
+  const studentId = userInfo?.studentId;
 
-  // STATE VARIABLES - Default to the most recent semester
+  const semesters = [];
+
+  // STATE VARIABLES
   const [selectedSemester, setSelectedSemester] = useState(semesters[0]);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Sample grades data (unchanged)
-  const [gradesList, setGradesList] = useState([
-    {
-      id: 'GRD001', course: 'Computer Programming I', section: 'CS-101-A', instructor: 'Emily Thompson', creditUnits: 3,
-      midtermGrade: 85, finalGrade: 88, overallGrade: 86.5, letterGrade: 'B+', remarks: 'Passed',
-      semester: '2024-1st Semester', status: 'Completed'
-    },
-    {
-      id: 'GRD002', course: 'Database Management', section: 'IT-201-B', instructor: 'James Chen', creditUnits: 3,
-      midtermGrade: 92, finalGrade: 90, overallGrade: 91, letterGrade: 'A-', remarks: 'Passed',
-      semester: '2024-1st Semester', status: 'Completed'
-    },
-    {
-      id: 'GRD003', course: 'Business Ethics', section: 'BA-105-A', instructor: 'Sarah Martinez', creditUnits: 2,
-      midtermGrade: 78, finalGrade: 82, overallGrade: 80, letterGrade: 'B-', remarks: 'Passed',
-      semester: '2024-1st Semester', status: 'Completed'
-    },
-    {
-      id: 'GRD004', course: 'Engineering Mathematics', section: 'ENG-102-C', instructor: 'Michael Roberts', creditUnits: 4,
-      midtermGrade: 95, finalGrade: 93, overallGrade: 94, letterGrade: 'A', remarks: 'Passed',
-      semester: '2024-1st Semester', status: 'Completed'
-    },
-    {
-      id: 'GRD005', course: 'General Psychology', section: 'PSY-101-A', instructor: 'Rachel Williams', creditUnits: 3,
-      midtermGrade: 72, finalGrade: 75, overallGrade: 73.5, letterGrade: 'C+', remarks: 'Passed',
-      semester: '2024-1st Semester', status: 'Completed'
-    },
-    {
-      id: 'GRD006', course: 'Data Structures', section: 'CS-201-B', instructor: 'Emily Thompson', creditUnits: 3,
-      midtermGrade: 88, finalGrade: null, overallGrade: null, letterGrade: 'INC', remarks: 'In Progress',
-      semester: '2025-2nd Semester', status: 'Ongoing'
-    },
-    {
-      id: 'GRD007', course: 'Network Administration', section: 'IT-301-A', instructor: 'James Chen', creditUnits: 3,
-      midtermGrade: 85, finalGrade: null, overallGrade: null, letterGrade: 'INC', remarks: 'In Progress',
-      semester: '2025-2nd Semester', status: 'Ongoing'
-    },
-    {
-      id: 'GRD008', course: 'Financial Accounting', section: 'BA-201-C', instructor: 'Sarah Martinez', creditUnits: 3,
-      midtermGrade: 90, finalGrade: null, overallGrade: null, letterGrade: 'INC', remarks: 'In Progress',
-      semester: '2025-2nd Semester', status: 'Ongoing'
-    }
-  ]);
+  const [gradesList, setGradesList] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch grades from backend
+  useEffect(() => {
+    if (!studentId) return;
+    setLoading(true);
+    enrolledCourseAPI.getEnrolledCoursesByStudent
+      ? enrolledCourseAPI.getEnrolledCoursesByStudent(studentId)
+          .then(res => {
+            // Transform backend data to match the expected structure
+            const backendGrades = (res.data || []).map(ec => ({
+              id: ec.section?.course?.courseCode || ec.enrolledCourseID || '',
+              course: ec.section?.course?.courseDescription || '',
+              section: ec.section?.sectionName || '',
+              instructor: ec.section?.faculty
+                ? `${ec.section.faculty.firstName} ${ec.section.faculty.lastName}`
+                : '',
+              creditUnits: ec.section?.course?.credits || 0,
+              midtermGrade: ec.grade?.midtermGrade ?? null,
+              finalGrade: ec.grade?.finalGrade ?? null,
+              overallGrade: ec.grade?.gradeValue ?? null,
+              letterGrade: ec.grade?.letterGrade ?? '',
+              remarks: ec.grade?.remarks ??
+                (ec.grade?.gradeValue != null
+                  ? (ec.grade.gradeValue >= 60 ? 'Passed' : 'Failed')
+                  : 'In Progress'),
+              semester: ec.semesterEnrollment?.semester || '',
+              status: ec.status || '',
+            }));
+            setGradesList(backendGrades);
+          })
+          .catch(() => setGradesList([]))
+          .finally(() => setLoading(false))
+      : setGradesList([]); // fallback if API not defined
+  }, [studentId]);
 
   const getAcademicYear = (semester) => {
     if (!semester) return 'N/A';
@@ -84,28 +73,28 @@ const StudentGrades = () => {
   };
 
   const filteredGrades = gradesList.filter(grade => {
-    const matchesSearch = grade.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (grade.course || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (grade.section || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (grade.instructor || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (grade.id || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSemester = grade.semester === selectedSemester;
     return matchesSearch && matchesSemester;
   });
 
   const completedCourses = gradesList.filter(g => g.status === 'Completed');
   const totalGradePoints = completedCourses.reduce((sum, grade) => {
-    return sum + (grade.overallGrade * grade.creditUnits);
+    return sum + ((grade.overallGrade || 0) * (grade.creditUnits || 0));
   }, 0);
-  const totalCreditUnits = completedCourses.reduce((sum, grade) => sum + grade.creditUnits, 0);
+  const totalCreditUnits = completedCourses.reduce((sum, grade) => sum + (grade.creditUnits || 0), 0);
   const currentGPA = totalCreditUnits > 0 ? (totalGradePoints / totalCreditUnits / 100 * 4).toFixed(2) : '0.00';
-  const totalUnitsEarned = completedCourses.reduce((sum, grade) => sum + grade.creditUnits, 0);
-  const totalUnitsEnrolled = gradesList.reduce((sum, grade) => sum + grade.creditUnits, 0);
+  const totalUnitsEarned = completedCourses.reduce((sum, grade) => sum + (grade.creditUnits || 0), 0);
+  const totalUnitsEnrolled = gradesList.reduce((sum, grade) => sum + (grade.creditUnits || 0), 0);
   const enrollmentStatus = totalUnitsEnrolled >= 18 ? 'Regular' : 'Irregular';
-  
+
   const handleSemesterSelect = (semester) => {
     setSelectedSemester(semester);
   };
-  
+
   const showArchiveSemester = () => {
     alert("Archive functionality would be implemented here.");
   };
@@ -249,43 +238,47 @@ const StudentGrades = () => {
               </div>
 
               <div className={styles.tableContainer}>
-                <table className={styles.gradesTable}>
-                  <thead>
-                    <tr>
-                      <th>Course Code</th>
-                      <th>Course & Section</th>
-                      <th>Instructor</th>
-                      <th>Units</th>
-                      <th>Midterm</th>
-                      <th>Final</th>
-                      <th>Overall</th>
-                      <th>Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredGrades.map((grade) => (
-                      <tr key={grade.id}>
-                        <td className={styles.courseCode}>{grade.id}</td>
-                        <td>
-                          <div className={styles.courseInfo}>
-                            <div className={styles.courseName}>{grade.course}</div>
-                            <div className={styles.courseSection}>{grade.section}</div>
-                          </div>
-                        </td>
-                        <td className={styles.instructorName}>{grade.instructor}</td>
-                        <td className={styles.creditUnits}>{grade.creditUnits}</td>
-                        <td className={styles.gradeScore}>{grade.midtermGrade ?? '-'}</td>
-                        <td className={styles.gradeScore}>{grade.finalGrade ?? '-'}</td>
-                        <td className={styles.gradeScore}>{grade.overallGrade?.toFixed(1) ?? '-'}</td>
-                        <td>
-                          <span className={`${styles.remarksBadge} ${grade.remarks === 'Passed' ? styles.remarksPassed : grade.remarks === 'Failed' ? styles.remarksFailed : styles.remarksProgress}`}>
-                            {grade.remarks}
-                          </span>
-                        </td>
+                {loading ? (
+                  <div className={styles.loading}>Loading grades...</div>
+                ) : (
+                  <table className={styles.gradesTable}>
+                    <thead>
+                      <tr>
+                        <th>Course Code</th>
+                        <th>Course & Section</th>
+                        <th>Instructor</th>
+                        <th>Units</th>
+                        <th>Midterm</th>
+                        <th>Final</th>
+                        <th>Overall</th>
+                        <th>Remarks</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredGrades.map((grade) => (
+                        <tr key={grade.id}>
+                          <td className={styles.courseCode}>{grade.id}</td>
+                          <td>
+                            <div className={styles.courseInfo}>
+                              <div className={styles.courseName}>{grade.course}</div>
+                              <div className={styles.courseSection}>{grade.section}</div>
+                            </div>
+                          </td>
+                          <td className={styles.instructorName}>{grade.instructor}</td>
+                          <td className={styles.creditUnits}>{grade.creditUnits}</td>
+                          <td className={styles.gradeScore}>{grade.midtermGrade ?? '-'}</td>
+                          <td className={styles.gradeScore}>{grade.finalGrade ?? '-'}</td>
+                          <td className={styles.gradeScore}>{grade.overallGrade != null ? Number(grade.overallGrade).toFixed(1) : '-'}</td>
+                          <td>
+                            <span className={`${styles.remarksBadge} ${grade.remarks === 'Passed' ? styles.remarksPassed : grade.remarks === 'Failed' ? styles.remarksFailed : styles.remarksProgress}`}>
+                              {grade.remarks}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
 
               <div className={styles.tableFooter}>
