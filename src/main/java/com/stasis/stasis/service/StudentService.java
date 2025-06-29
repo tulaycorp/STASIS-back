@@ -100,6 +100,7 @@ public class StudentService {
         Users user = userService.createUserWithGeneratedCredentials(
                 savedStudent.getFirstName(), 
                 savedStudent.getLastName(), 
+                savedStudent.getEmail(),
                 UserRole.STUDENT
         );
 

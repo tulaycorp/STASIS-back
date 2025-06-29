@@ -83,6 +83,7 @@ public class FacultyService {
         Users user = userService.createUserWithGeneratedCredentials(
                 savedFaculty.getFirstName(),
                 savedFaculty.getLastName(),
+                savedFaculty.getEmail(),
                 UserRole.FACULTY
         );
 

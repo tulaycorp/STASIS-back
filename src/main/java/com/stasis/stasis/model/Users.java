@@ -30,6 +30,7 @@ public class Users {
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
+    private String email;
 
     @OneToOne(optional = true)
     private SemesterEnrollment semesterEnrollment; // Updated reference
