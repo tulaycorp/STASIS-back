@@ -16,12 +16,13 @@ const FacultyGrades = () => {
   
   // State management
   const [programs, setPrograms] = useState([]);
-  const [sections, setSections] = useState(['All Sections']);
+  const [courses, setCourses] = useState([]);
+  const [programSections, setProgramSections] = useState(['All Sections']);
   const [selectedProgram, setSelectedProgram] = useState('');
-  const [selectedSection, setSelectedSection] = useState('All Sections');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showStudents, setShowStudents] = useState(false);
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState('All Sections');
+  const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [gradesList, setGradesList] = useState([]);
   const [studentsGrades, setStudentsGrades] = useState({});
   const [loading, setLoading] = useState(true);
@@ -33,33 +34,65 @@ const FacultyGrades = () => {
     fetchInitialData();
   }, []);
 
+  // Effect to update the course/section sidebars when a program or section filter changes
+  useEffect(() => {
+    if (selectedProgram) {
+      const programCoursesRaw = gradesList.filter(grade => grade.program === selectedProgram);
+
+      // Derive unique sections for the selected program
+      const uniqueSections = ['All Sections', ...new Set(programCoursesRaw.map(course => course.section))];
+      setProgramSections(uniqueSections);
+
+      // Filter courses based on the section filter
+      const filteredProgramCourses = selectedSectionFilter === 'All Sections'
+        ? programCoursesRaw
+        : programCoursesRaw.filter(course => course.section === selectedSectionFilter);
+
+      const newCourseList = filteredProgramCourses.map(grade => ({
+        id: grade.id, 
+        name: grade.course, 
+        section: grade.section
+      }));
+      setCourses(newCourseList);
+
+      // If the currently selected course is not in the new filtered list, deselect it
+      if (selectedCourseId && !newCourseList.some(c => c.id === selectedCourseId)) {
+        setSelectedCourseId(null);
+        setSelectedCourse(null);
+      }
+    }
+  }, [selectedProgram, selectedSectionFilter, gradesList, selectedCourseId]);
+
+  // Effect to update the main table when a course is selected
+  useEffect(() => {
+    if (selectedCourseId) {
+      const courseData = gradesList.find(grade => grade.id === selectedCourseId);
+      setSelectedCourse(courseData);
+      setStudentSearchTerm(''); // Clear search when changing course
+    } else {
+      setSelectedCourse(null);
+    }
+  }, [selectedCourseId, gradesList]);
+
   // Fetch programs and course sections
   const fetchInitialData = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // Fetch programs
       const programsResponse = await programAPI.getAllPrograms();
       const programsData = programsResponse.data.data || programsResponse.data;
       setPrograms(programsData);
       
       if (programsData.length > 0) {
-        setSelectedProgram(programsData[0].name || programsData[0].programName);
+        const firstProgramName = programsData[0].name || programsData[0].programName;
+        setSelectedProgram(firstProgramName);
       }
 
-      // Fetch all course sections
       const sectionsResponse = await courseSectionAPI.getAllSections();
       const sectionsData = sectionsResponse.data.data || sectionsResponse.data;
       
-      // Extract unique section names
-      const uniqueSections = ['All Sections', ...new Set(sectionsData.map(section => section.sectionName))];
-      setSections(uniqueSections);
-
-      // Process course sections into grades format
       const processedGrades = await processCourseSections(sectionsData);
       setGradesList(processedGrades);
-
     } catch (err) {
       console.error('Error fetching initial data:', err);
       setError('Failed to load course data. Please try again.');
@@ -71,12 +104,9 @@ const FacultyGrades = () => {
   // Process course sections and add student enrollment data
   const processCourseSections = async (sectionsData) => {
     const processedGrades = [];
-
     for (const section of sectionsData) {
       try {
-        // Fetch enrolled students for this section
         const enrolledStudents = await fetchEnrolledStudents(section.id);
-        
         const gradeItem = {
           id: section.courseCode || `SEC${section.id}`,
           course: section.courseName || section.course?.courseName || 'Unknown Course',
@@ -84,49 +114,26 @@ const FacultyGrades = () => {
           creditUnits: section.course?.creditUnits || section.creditUnits || 3,
           program: section.course?.program?.name || section.course?.program?.programName || 'Unknown Program',
           status: section.status || 'Active',
-          instructor: section.faculty ? 
-            `${section.faculty.firstName} ${section.faculty.lastName}` : 
-            'Dr. Alan Turing', // Fallback instructor
+          instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'Dr. Alan Turing',
           students: enrolledStudents,
           sectionId: section.id
         };
-
         processedGrades.push(gradeItem);
-      } catch (err) {
-        console.error(`Error processing section ${section.id}:`, err);
-        // Add section even if student fetch fails
-        processedGrades.push({
-          id: section.courseCode || `SEC${section.id}`,
-          course: section.courseName || 'Unknown Course',
-          section: section.sectionName,
-          creditUnits: section.creditUnits || 3,
-          program: 'Unknown Program',
-          status: section.status || 'Active',
-          instructor: 'Dr. Alan Turing',
-          students: [],
-          sectionId: section.id
-        });
+      } catch (err) { 
+        console.error(`Error processing section ${section.id}:`, err); 
       }
     }
-
     return processedGrades;
   };
 
   // Fetch enrolled students for a specific section
   const fetchEnrolledStudents = async (sectionId) => {
     try {
-      // This would depend on your API structure
-      // You might need to modify this based on how your enrolled courses API works
       const enrolledResponse = await enrolledCourseAPI.getAllEnrolledCourses();
       const allEnrolled = enrolledResponse.data.data || enrolledResponse.data;
-      
-      // Filter enrolled courses for this section
-      const sectionEnrolled = allEnrolled.filter(enrollment => 
-        enrollment.courseSectionId === sectionId || 
-        enrollment.courseSection?.id === sectionId
+      const sectionEnrolled = allEnrolled.filter(e => 
+        e.courseSectionId === sectionId || e.courseSection?.id === sectionId
       );
-
-      // Fetch student details and format for grades
       const students = [];
       for (const enrollment of sectionEnrolled) {
         try {
@@ -134,63 +141,35 @@ const FacultyGrades = () => {
           if (studentId) {
             const studentResponse = await studentAPI.getStudentById(studentId);
             const student = studentResponse.data.data || studentResponse.data;
-            
             students.push({
               id: student.studentId || student.id,
-              name: `${student.firstName} ${student.lastName}`,
+              name: `${student.lastName}, ${student.firstName}`,
               midterm: enrollment.midtermGrade || null,
               final: enrollment.finalGrade || null,
-              overall: enrollment.overallGrade || null,
+              weightedAverage: enrollment.overallGrade || null,
               enrollmentId: enrollment.id
             });
           }
-        } catch (studentErr) {
-          console.error('Error fetching student details:', studentErr);
+        } catch (studentErr) { 
+          console.error('Error fetching student details:', studentErr); 
         }
       }
-
       return students;
-    } catch (err) {
-      console.error('Error fetching enrolled students:', err);
-      return [];
+    } catch (err) { 
+      console.error('Error fetching enrolled students:', err); 
+      return []; 
     }
   };
 
-  // Filter grades based on selected criteria
-  const filteredGrades = gradesList.filter(grade => {
-    const matchesSearch = grade.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         grade.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesProgram = !selectedProgram || grade.program === selectedProgram;
-    const matchesSection = selectedSection === 'All Sections' || grade.section === selectedSection;
-    return matchesSearch && matchesProgram && matchesSection;
-  });
-
-  // Handle program selection
-  const handleProgramSelect = (program) => {
-    setSelectedProgram(program);
-    setShowStudents(false);
-    setSelectedCourse(null);
+  const handleProgramSelect = (programName) => {
+    setSelectedProgram(programName);
+    setSelectedSectionFilter('All Sections'); // Reset section filter when program changes
   };
 
-  // Handle section change
-  const handleSectionChange = (e) => {
-    setSelectedSection(e.target.value);
+  const handleCourseSelect = (courseId) => {
+    setSelectedCourseId(courseId);
   };
 
-  // Handle row click to show students
-  const handleRowClick = (course) => {
-    setSelectedCourse(course);
-    setShowStudents(true);
-  };
-
-  // Handle back to courses
-  const handleBackToCourses = () => {
-    setShowStudents(false);
-    setSelectedCourse(null);
-  };
-
-  // Handle grade change
   const handleGradeChange = (studentId, field, value) => {
     setStudentsGrades(prev => ({
       ...prev,
@@ -201,77 +180,55 @@ const FacultyGrades = () => {
     }));
   };
 
-  // Save grades to API
   const handleSaveGrades = async (studentId, studentName) => {
     try {
       setSaveLoading(prev => ({ ...prev, [studentId]: true }));
-      
       const grades = studentsGrades[studentId] || {};
       const student = selectedCourse.students.find(s => s.id === studentId);
-      
       if (!student || !student.enrollmentId) {
         throw new Error('Student enrollment not found');
       }
 
-      // Calculate overall grade if both midterm and final are provided
-      let overallGrade = null;
-      if (grades.midterm !== null && grades.final !== null) {
-        overallGrade = (grades.midterm + grades.final) / 2;
+      let newWeightedAverage = student.weightedAverage;
+      const midtermGrade = grades.midterm ?? student.midterm;
+      const finalGrade = grades.final ?? student.final;
+      if (midtermGrade !== null && finalGrade !== null) {
+        newWeightedAverage = (midtermGrade * 0.5) + (finalGrade * 0.5);
       }
-
-      // Update the enrolled course record with new grades
-      const updateData = {
-        midtermGrade: grades.midterm ?? student.midterm,
-        finalGrade: grades.final ?? student.final,
-        overallGrade: overallGrade ?? student.overall
+      
+      const updateData = { 
+        midtermGrade, 
+        finalGrade, 
+        overallGrade: newWeightedAverage 
       };
-
-      // Use the imported enrolledCourseAPI to update grades
       await enrolledCourseAPI.updateGrades(student.enrollmentId, updateData);
 
-      // Update local state
       setGradesList(prevGrades => 
         prevGrades.map(grade => 
           grade.id === selectedCourse.id 
-            ? {
-                ...grade,
+            ? { 
+                ...grade, 
                 students: grade.students.map(s => 
                   s.id === studentId 
                     ? { 
                         ...s, 
-                        midterm: updateData.midtermGrade,
-                        final: updateData.finalGrade,
-                        overall: updateData.overallGrade
-                      }
+                        midterm: updateData.midtermGrade, 
+                        final: updateData.finalGrade, 
+                        weightedAverage: newWeightedAverage 
+                      } 
                     : s
-                )
+                ) 
               }
             : grade
         )
       );
-
-      // Update selected course
-      setSelectedCourse(prev => ({
-        ...prev,
-        students: prev.students.map(s => 
-          s.id === studentId 
-            ? { 
-                ...s, 
-                midterm: updateData.midtermGrade,
-                final: updateData.finalGrade,
-                overall: updateData.overallGrade
-              }
-            : s
-        )
-      }));
-
-      // Clear temporary grades
-      setStudentsGrades(prev => {
-        const updated = { ...prev };
-        delete updated[studentId];
-        return updated;
+      
+      setStudentsGrades(prev => { 
+        const updated = { ...prev }; 
+        delete updated[studentId]; 
+        return updated; 
       });
-
+      
       alert(`Grades saved successfully for ${studentName}!`);
     } catch (err) {
       console.error('Error saving grades:', err);
@@ -280,284 +237,108 @@ const FacultyGrades = () => {
       setSaveLoading(prev => ({ ...prev, [studentId]: false }));
     }
   };
+  
+  const getRemark = (grade, midterm, final) => {
+    if (grade === null || midterm === null || final === null) {
+      return { text: 'In Progress', className: styles.remarksProgress };
+    }
+    if (grade >= 75) {
+      return { text: 'Passed', className: styles.remarksPassed };
+    }
+    return { text: 'Failed', className: styles.remarksFailed };
+  };
 
-  // Navigation handler
   const showSection = (section) => {
     switch(section){
-      case 'FacultyDashboard':
-        navigate('/faculty-dashboard');
+      case 'FacultyDashboard': 
+        navigate('/faculty-dashboard'); 
         break;
-      case 'FacultySchedule':
-        navigate('/faculty-schedule');
+      case 'FacultySchedule': 
+        navigate('/faculty-schedule'); 
         break;
-      case 'FacultyGrades':
-        navigate('/faculty-grades');
+      case 'FacultyGrades': 
+        navigate('/faculty-grades'); 
         break;
-      case 'FacultySettings':
-        navigate('/faculty-settings');
+      case 'FacultySettings': 
+        navigate('/faculty-settings'); 
         break;
-      default:
-        // No action for unknown sections
+      default: 
+        break;
     }
   };
 
-  // Loading state
+  const filteredStudents = selectedCourse
+    ? selectedCourse.students.filter(student => {
+        const searchTermLower = studentSearchTerm.toLowerCase();
+        return student.name.toLowerCase().includes(searchTermLower) || 
+               String(student.id).toLowerCase().includes(searchTermLower);
+      })
+    : [];
+  
+  const sidebarProps = { 
+    onNavigate: showSection, 
+    userInfo: getUserInfo(), 
+    sections: [ 
+      { 
+        items: [
+          { id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }
+        ] 
+      }, 
+      { 
+        label: 'Management', 
+        items: [
+          { id: 'FacultySchedule', label: 'Schedule', icon: '📅' }, 
+          { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
+        ] 
+      }, 
+      { 
+        label: 'System', 
+        items: [
+          { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
+        ] 
+      }
+    ] 
+  };
+
   if (loading) {
     return (
       <div className={styles.dashboardContainer}>
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-                { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar {...sidebarProps} />
         <div className={styles.mainContent}>
           <div className={styles.contentWrapper}>
-            <div className={styles.pageHeader}>
-              <h1 className={styles.pageTitle}>Loading...</h1>
-            </div>
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <p>Loading course data...</p>
-            </div>
+            <h1 className={styles.pageTitle}>Loading...</h1>
           </div>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className={styles.dashboardContainer}>
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-                { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar {...sidebarProps} />
         <div className={styles.mainContent}>
           <div className={styles.contentWrapper}>
-            <div className={styles.pageHeader}>
-              <h1 className={styles.pageTitle}>Error</h1>
-            </div>
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'red' }}>
-              <p>{error}</p>
-              <button 
-                onClick={fetchInitialData}
-                style={{
-                  marginTop: '1rem',
-                  padding: '8px 16px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Retry
-              </button>
-            </div>
+            <h1 className={styles.pageTitle}>Error</h1>
+            <p style={{color: 'red'}}>{error}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Student grades view
-  if (showStudents && selectedCourse) {
-    return (
-      <div className={styles.dashboardContainer}>
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-                { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-              ]
-            }
-          ]}
-        />
-
-        <div className={styles.mainContent}>
-          <div className={styles.contentWrapper}>
-            <div className={styles.breadcrumb}>
-              <span className={styles.breadcrumbLink} onClick={() => navigate('/faculty-dashboard')}>Dashboard</span>
-              <span className={styles.breadcrumbSeparator}> / </span>
-              <span className={styles.breadcrumbLink} onClick={handleBackToCourses}>Grades</span>
-              <span className={styles.breadcrumbSeparator}> / </span>
-              <span className={styles.breadcrumbCurrent}>{selectedCourse.course}</span>
-            </div>
-            
-            <div className={styles.pageHeader}>
-              <h1 className={styles.pageTitle}>
-                <button 
-                  onClick={handleBackToCourses}
-                  style={{background: '#ef4444', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', marginRight: '16px'}}
-                >
-                  ← Back
-                </button>
-                {selectedCourse.course} - {selectedCourse.section}
-              </h1>
-            </div>
-
-            <div className={styles.gradesListContainer}>
-              <div className={styles.listHeader}>
-                <div className={styles.listControls}>
-                  <h2 className={styles.listTitle}>Student Grades</h2>
-                </div>
-              </div>
-
-              <div className={styles.tableContainer}>
-                <table className={styles.gradesTable}>
-                  <thead>
-                    <tr>
-                      <th>Student ID</th>
-                      <th>Student Name</th>
-                      <th>Midterm Grade</th>
-                      <th>Final Grade</th>
-                      <th>Overall Grade</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedCourse.students.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No students enrolled in this course
-                        </td>
-                      </tr>
-                    ) : (
-                      selectedCourse.students.map((student) => (
-                        <tr key={student.id}>
-                          <td><div className={`${styles.cellContent} ${styles.cellCentered}`}><span className={styles.courseCode}>{student.id}</span></div></td>
-                          <td><div className={styles.cellContent}>{student.name}</div></td>
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered}`}>
-                              <input
-                                type="number" min="0" max="100" step="0.1"
-                                defaultValue={student.midterm ?? ''}
-                                onChange={(e) => handleGradeChange(student.id, 'midterm', e.target.value)}
-                                style={{width: '80px', textAlign: 'center', padding: '8px', borderRadius: '4px', border: '1px solid #ced4da'}}
-                              />
-                            </div>
-                          </td>
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered}`}>
-                              <input
-                                type="number" min="0" max="100" step="0.1"
-                                defaultValue={student.final ?? ''}
-                                onChange={(e) => handleGradeChange(student.id, 'final', e.target.value)}
-                                disabled={selectedCourse.status === 'Ongoing'}
-                                style={{width: '80px', textAlign: 'center', padding: '8px', borderRadius: '4px', border: '1px solid #ced4da'}}
-                              />
-                            </div>
-                          </td>
-                          <td><div className={`${styles.cellContent} ${styles.cellCentered} ${styles.gradeScore}`}>{student.overall?.toFixed(1) ?? '-'}</div></td>
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered}`}>
-                              <button 
-                                onClick={() => handleSaveGrades(student.id, student.name)}
-                                disabled={saveLoading[student.id]}
-                                style={{
-                                  backgroundColor: saveLoading[student.id] ? '#6c757d' : '#28a745', 
-                                  color: 'white', 
-                                  border: 'none', 
-                                  padding: '6px 12px', 
-                                  borderRadius: '4px', 
-                                  cursor: saveLoading[student.id] ? 'not-allowed' : 'pointer'
-                                }}
-                              >
-                                {saveLoading[student.id] ? 'Saving...' : 'Save'}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Main courses view
   return (
     <div className={styles.dashboardContainer}>
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-            ]
-          }
-        ]}
-      />
-
+      <Sidebar {...sidebarProps} />
       <div className={styles.mainContent}>
         <div className={styles.contentWrapper}>
           <div className={styles.breadcrumb}>
-            <span className={styles.breadcrumbLink} onClick={() => navigate('/faculty-dashboard')}>Dashboard</span>
+            <span 
+              className={styles.breadcrumbLink} 
+              onClick={() => navigate('/faculty-dashboard')}
+            >
+              Dashboard
+            </span>
             <span className={styles.breadcrumbSeparator}> / </span>
             <span className={styles.breadcrumbCurrent}>Grades</span>
           </div>
@@ -565,138 +346,203 @@ const FacultyGrades = () => {
           <div className={styles.pageHeader}>
             <h1 className={styles.pageTitle}>Academic Records</h1>
           </div>
-
+          
           <div className={styles.studentContentWrapper}>
-            <div className={styles.studentNavSection}>
-              <div className={styles.studentNavHeader}>
-                <h2 className={styles.studentNavTitle}>Programs</h2>
-                <div className={styles.semesterCurrentInfo}>
-                  Academic Programs Available
+            <div>
+              <div className={styles.studentNavSection}>
+                <div className={styles.studentNavHeader}>
+                  <h2 className={styles.studentNavTitle}>Programs</h2>
+                </div>
+                <div className={styles.studentNavList}>
+                  {programs.map((program) => {
+                    const programName = program.name || program.programName;
+                    return (
+                      <div 
+                        key={program.id} 
+                        className={`${styles.studentNavItem} ${
+                          selectedProgram === programName ? styles.studentNavItemActive : ''
+                        }`} 
+                        onClick={() => handleProgramSelect(programName)}
+                      >
+                        <div className={styles.semesterInfo}>
+                          <div className={styles.semesterMain}>{programName}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              <div className={styles.studentNavList}>
-                {programs.map((program) => (
-                  <div
-                    key={program.id}
-                    className={`${styles.studentNavItem} ${selectedProgram === (program.name || program.programName) ? styles.studentNavItemActive : ''}`}
-                    onClick={() => handleProgramSelect(program.name || program.programName)}
-                  >
-                    <div className={styles.semesterInfo}>
-                      <div className={styles.semesterMain}>{program.name || program.programName}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.studentNavInfo}>
-                <div className={styles.studentNavInfoItem}>
-                  <div className={styles.studentNavInfoLabel}>Selected Program</div>
-                  <div className={styles.studentNavInfoValue}>{selectedProgram}</div>
+              
+              <div className={`${styles.studentNavSection} ${styles.courseSidebar}`}>
+                <div className={styles.studentNavHeader}>
+                  <h2 className={styles.studentNavTitle}>Courses</h2>
                 </div>
-                <div className={styles.studentNavInfoItem}>
-                  <div className={styles.studentNavInfoLabel}>Courses Found</div>
-                  <div className={styles.studentNavInfoValue}>{filteredGrades.length}</div>
+                <div className={styles.studentNavList}>
+                  {courses.length > 0 ? (
+                    courses.map((course) => (
+                      <div 
+                        key={course.id} 
+                        className={`${styles.studentNavItem} ${
+                          selectedCourseId === course.id ? styles.studentNavItemActive : ''
+                        }`} 
+                        onClick={() => handleCourseSelect(course.id)}
+                      >
+                        <div className={styles.semesterInfo}>
+                          <div className={styles.semesterMain}>{course.name}</div>
+                          <div className={styles.courseSectionLabel}>{course.section}</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={styles.noCoursesMessage}>No courses found.</div>
+                  )}
                 </div>
               </div>
             </div>
-
+            
             <div className={styles.gradesListContainer}>
               <div className={styles.listHeader}>
-                <div className={styles.listControls}>
-                  <h2 className={styles.listTitle}>Academic Records</h2>
-                  <div className={styles.controls}>
-                    <select
-                      value={selectedSection}
-                      onChange={handleSectionChange}
-                      className={styles.selectInput}
-                    >
-                      {sections.map((section) => (
-                        <option key={section} value={section}>
-                          {section}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Search courses..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className={styles.searchInput}
-                    />
-                  </div>
+                <div className={styles.headerCourseInfo}>
+                  <h2 className={styles.headerCourseName}>
+                    {selectedCourse ? selectedCourse.course : 'Select a Course'}
+                  </h2>
+                  {selectedCourse && (
+                    <span className={styles.headerCourseUnits}>
+                      {selectedCourse.creditUnits} Units
+                    </span>
+                  )}
+                </div>
+                <div className={styles.headerControls}>
+                  <select 
+                    value={selectedSectionFilter} 
+                    onChange={(e) => setSelectedSectionFilter(e.target.value)} 
+                    className={styles.filterSelect} 
+                    disabled={!selectedProgram}
+                  >
+                    {programSections.map((section) => (
+                      <option key={section} value={section}>{section}</option>
+                    ))}
+                  </select>
+                  <input 
+                    type="text" 
+                    placeholder="Search Students..." 
+                    value={studentSearchTerm} 
+                    onChange={(e) => setStudentSearchTerm(e.target.value)} 
+                    className={styles.searchInput} 
+                    disabled={!selectedCourse} 
+                  />
                 </div>
               </div>
-
+              
               <div className={styles.tableContainer}>
                 <table className={styles.gradesTable}>
                   <thead>
                     <tr>
-                      <th>Course Code</th>
-                      <th>Course & Section</th>
-                      <th>Units</th>
-                      <th>Instructor</th>
-                      <th>Remarks</th>
+                      <th rowSpan="2">Student ID</th>
+                      <th rowSpan="2">Student Name (Last Name, First Name)</th>
+                      <th rowSpan="2">Section</th>
+                      <th colSpan="3">Student Grades</th>
+                      <th rowSpan="2">Remarks</th>
+                      <th rowSpan="2">Actions</th>
+                    </tr>
+                    <tr>
+                      <th>Midterm</th>
+                      <th>Finals</th>
+                      <th>Weighted Avg.</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredGrades.length === 0 ? (
+                    {!selectedCourse ? (
                       <tr>
-                        <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-                          No courses found for the selected criteria
+                        <td colSpan="8" className={styles.placeholderCell}>
+                          Please select a course to view student grades.
+                        </td>
+                      </tr>
+                    ) : selectedCourse.students.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" className={styles.placeholderCell}>
+                          No students enrolled in this course.
+                        </td>
+                      </tr>
+                    ) : filteredStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" className={styles.placeholderCell}>
+                          No students match your search criteria.
                         </td>
                       </tr>
                     ) : (
-                      filteredGrades.map((grade) => (
-                        <tr 
-                          key={grade.id} 
-                          onClick={() => handleRowClick(grade)}
-                          className={styles.clickableRow}
-                        >
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered}`}>
-                              <div className={styles.courseCode}>{grade.id}</div>
-                            </div>
-                          </td>
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered}`}>
-                              <div className={styles.courseInfo}>
-                                <div className={styles.courseName}>{grade.course}</div>
-                                <div className={styles.courseSection}>{grade.section}</div>
+                      filteredStudents.map((student) => {
+                        const remark = getRemark(student.weightedAverage, student.midterm, student.final);
+                        return (
+                          <tr key={student.id}>
+                            <td>
+                              <div className={styles.cellContent}>
+                                <span className={styles.studentIdLabel}>{student.id}</span>
                               </div>
-                            </div>
-                          </td>
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered} ${styles.creditUnits}`}>
-                              {grade.creditUnits}
-                            </div>
-                          </td>
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered} ${styles.instructorName}`}>
-                              {grade.instructor}
-                            </div>
-                          </td>
-                          <td>
-                            <div className={`${styles.cellContent} ${styles.cellCentered}`}>
-                              <span className={`${styles.remarksBadge} ${grade.status === 'Completed' ? styles.remarksPassed : styles.remarksProgress}`}>
-                                {grade.status}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td>
+                              <div className={`${styles.cellContent} ${styles.studentName}`}>
+                                {student.name}
+                              </div>
+                            </td>
+                            <td>
+                              <div className={styles.cellContent}>{selectedCourse.section}</div>
+                            </td>
+                            <td>
+                              <div className={styles.cellContent}>
+                                <input 
+                                  type="number" 
+                                  min="0" 
+                                  max="100" 
+                                  step="0.1" 
+                                  defaultValue={student.midterm ?? ''} 
+                                  onChange={(e) => handleGradeChange(student.id, 'midterm', e.target.value)} 
+                                  className={styles.gradeInput} 
+                                />
+                              </div>
+                            </td>
+                            <td>
+                              <div className={styles.cellContent}>
+                                <input 
+                                  type="number" 
+                                  min="0" 
+                                  max="100" 
+                                  step="0.1" 
+                                  defaultValue={student.final ?? ''} 
+                                  onChange={(e) => handleGradeChange(student.id, 'final', e.target.value)} 
+                                  className={styles.gradeInput} 
+                                />
+                              </div>
+                            </td>
+                            <td>
+                              <div className={`${styles.cellContent} ${styles.gradeScore}`}>
+                                {student.weightedAverage?.toFixed(1) ?? 'N/A'}
+                              </div>
+                            </td>
+                            <td>
+                              <div className={styles.cellContent}>
+                                <span className={`${styles.remarksBadge} ${remark.className}`}>
+                                  {remark.text}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className={styles.cellContent}>
+                                <button 
+                                  onClick={() => handleSaveGrades(student.id, student.name)} 
+                                  disabled={saveLoading[student.id]} 
+                                  className={styles.saveButton}
+                                >
+                                  {saveLoading[student.id] ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
-              </div>
-
-              <div className={styles.tableFooter}>
-                <div className={styles.tableInfo}>
-                  Showing {filteredGrades.length} courses
-                </div>
-                <div className={styles.pagination}>
-                  <button className={`${styles.pageBtn} ${styles.disabled}`}>Previous</button>
-                  <button className={`${styles.pageBtn} ${styles.active}`}>1</button>
-                  <button className={styles.pageBtn}>Next</button>
-                </div>
               </div>
             </div>
           </div>
