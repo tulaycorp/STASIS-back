@@ -99,11 +99,32 @@ const Enrollment = () => {
 
         // Fetch student's current enrollments
         try {
+          console.log('Fetching enrollments for student ID:', studentData.id);
           const enrollmentsResponse = await enrolledCourseAPI.getEnrolledCoursesByStudent(studentData.id);
-          setMyEnrollments(enrollmentsResponse.data);
-          console.log('Enrollments fetched:', enrollmentsResponse.data);
+          console.log('Raw enrollments response:', enrollmentsResponse);
+          console.log('Enrollments data:', enrollmentsResponse.data);
+          console.log('Number of enrollments:', enrollmentsResponse.data?.length || 0);
+          
+          // Log each enrollment for debugging
+          if (enrollmentsResponse.data && enrollmentsResponse.data.length > 0) {
+            enrollmentsResponse.data.forEach((enrollment, index) => {
+              console.log(`Enrollment ${index + 1}:`, {
+                id: enrollment.enrolledCourseID,
+                status: enrollment.status,
+                section: enrollment.section,
+                semesterEnrollment: enrollment.semesterEnrollment
+              });
+            });
+          }
+          
+          setMyEnrollments(enrollmentsResponse.data || []);
         } catch (enrollmentError) {
-          console.warn('Failed to fetch enrollments, using empty array:', enrollmentError);
+          console.error('Failed to fetch enrollments:', enrollmentError);
+          console.error('Error details:', {
+            message: enrollmentError.message,
+            response: enrollmentError.response?.data,
+            status: enrollmentError.response?.status
+          });
           setMyEnrollments([]);
         }
 
@@ -145,7 +166,7 @@ const Enrollment = () => {
         
         // Check if student is not already enrolled in this course
         const notCurrentlyEnrolled = !myEnrollments.some(e => 
-          e.courseSection?.course?.id === curriculumDetail.courseId && e.status === 'Enrolled'
+          e.section?.course?.id === curriculumDetail.courseId && e.status === 'Enrolled'
         );
 
         console.log('Course filter check:', {
@@ -216,7 +237,7 @@ const Enrollment = () => {
 
       const enrollmentData = {
         studentId: studentData.id,
-        courseSectionId: selectedSection.id,
+        courseSectionId: selectedSection.sectionID,
         status: 'Enrolled'
       };
 
@@ -283,7 +304,7 @@ const Enrollment = () => {
       await enrolledCourseAPI.deleteEnrollment(enrollmentId);
       
       // Remove from enrollments
-      setMyEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
+      setMyEnrollments(prev => prev.filter(e => e.enrolledCourseID !== enrollmentId));
       
       alert('Course dropped successfully!');
     } catch (error) {
@@ -321,7 +342,7 @@ const Enrollment = () => {
   // Statistics calculations
   const totalAvailableCourses = filteredCourses.length;
   const myTotalCredits = myEnrollments.reduce((sum, enrollment) => {
-    const credits = enrollment.courseSection?.course?.credits || 0;
+    const credits = enrollment.section?.course?.credits || 0;
     return sum + credits;
   }, 0);
 
@@ -569,30 +590,40 @@ const Enrollment = () => {
                                 value={selectedCourses[course.courseId] || ''}
                                 onChange={(e) => {
                                   const sectionId = e.target.value;
-                                  const section = course.availableSections.find(s => s.sectionID.toString() === sectionId);
-                                  setSelectedCourses(prev => ({
-                                    ...prev,
-                                    [course.courseId]: sectionId
-                                  }));
-                                  setSelectedSections(prev => ({
-                                    ...prev,
-                                    [course.courseId]: section
-                                  }));
+                                  if (!sectionId) {
+                                    // If no section is selected, remove from both states
+                                    const { [course.courseId]: _, ...restCourses } = selectedCourses;
+                                    const { [course.courseId]: __, ...restSections } = selectedSections;
+                                    setSelectedCourses(restCourses);
+                                    setSelectedSections(restSections);
+                                    return;
+                                  }
+                                  
+                                  const section = availableSections.find(s => s.sectionID.toString() === sectionId);
+                                  if (section) {
+                                    setSelectedCourses(prev => ({
+                                      ...prev,
+                                      [course.courseId]: sectionId
+                                    }));
+                                    setSelectedSections(prev => ({
+                                      ...prev,
+                                      [course.courseId]: section
+                                    }));
+                                  }
                                 }}
                               >
                                 <option value="">Select Schedule</option>
-                                {/* Temporary fixed schedule for testing */}
-                                <option value="9999">TEMP-A - MWF 08:00-09:00 (0/30)</option>
                                 {course.availableSections && course.availableSections.length > 0 ? (
-                                  course.availableSections.map(section => (
-                                    <option 
-                                      key={section.sectionID} 
-                                      value={section.sectionID}
-                                      disabled={section.enrolledCount >= section.capacity}
-                                    >
-                                      {section.sectionName} - {section.day} {formatTime(section.startTime)}-{formatTime(section.endTime)} ({section.enrolledCount}/{section.capacity})
-                                    </option>
-                                  ))
+                                  course.availableSections
+                                    .filter(section => section.status === 'Active' || section.status === 'ACTIVE')
+                                    .map(section => (
+                                      <option 
+                                        key={section.sectionID} 
+                                        value={section.sectionID}
+                                      >
+                                        {section.sectionName} - {section.day} {formatTime(section.startTime)}-{formatTime(section.endTime)} {section.room ? `• ${section.room}` : ''}
+                                      </option>
+                                    ))
                                 ) : null}
                               </select>
                           </td>
@@ -638,23 +669,23 @@ const Enrollment = () => {
                       </tr>
                     ) : (
                       myEnrollments.map((enrollment) => (
-                        <tr key={enrollment.id}>
-                          <td>{enrollment.courseSection?.course?.courseCode || 'N/A'}</td>
+                        <tr key={enrollment.enrolledCourseID}>
+                          <td>{enrollment.section?.course?.courseCode || 'N/A'}</td>
                           <td>
                             <div className="schedule-info">
-                              <div className="schedule-course">{enrollment.courseSection?.course?.courseName || 'N/A'}</div>
+                              <div className="schedule-course">{enrollment.section?.course?.courseName || enrollment.section?.course?.courseDescription || 'N/A'}</div>
                             </div>
                           </td>
-                          <td>{enrollment.courseSection?.sectionName || 'N/A'}</td>
+                          <td>{enrollment.section?.sectionName || 'N/A'}</td>
                           <td>
                             <div className="time-info">
                               <div className="time-period">
-                                {formatTime(enrollment.courseSection?.startTime)} - {formatTime(enrollment.courseSection?.endTime)}
+                                {formatTime(enrollment.section?.startTime)} - {formatTime(enrollment.section?.endTime)}
                               </div>
-                              <div className="day-info">{enrollment.courseSection?.day} • {enrollment.courseSection?.room}</div>
+                              <div className="day-info">{enrollment.section?.day} • {enrollment.section?.room}</div>
                             </div>
                           </td>
-                          <td className="font-semibold">{enrollment.courseSection?.course?.credits || 0}</td>
+                          <td className="font-semibold">{enrollment.section?.course?.credits || 0}</td>
                           <td>
                             <span className="status-badge status-active">
                               {enrollment.status}
@@ -664,7 +695,7 @@ const Enrollment = () => {
                             {enrollment.status === 'Enrolled' && (
                               <button 
                                 className="btn-primary"
-                                onClick={() => handleDrop(enrollment.id)}
+                                onClick={() => handleDrop(enrollment.enrolledCourseID)}
                               >
                                 Drop
                               </button>

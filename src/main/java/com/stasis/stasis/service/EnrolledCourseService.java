@@ -3,10 +3,15 @@ package com.stasis.stasis.service;
 import com.stasis.stasis.model.EnrolledCourse;
 import com.stasis.stasis.model.SemesterEnrollment;
 import com.stasis.stasis.model.CourseSection;
+import com.stasis.stasis.model.Student;
 import com.stasis.stasis.repository.EnrolledCourseRepository;
+import com.stasis.stasis.repository.CourseSectionRepository;
+import com.stasis.stasis.repository.StudentRepository;
+import com.stasis.stasis.repository.SemesterEnrollmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +20,15 @@ public class EnrolledCourseService {
 
     @Autowired
     private EnrolledCourseRepository enrolledCourseRepository;
+    
+    @Autowired
+    private CourseSectionRepository courseSectionRepository;
+    
+    @Autowired
+    private StudentRepository studentRepository;
+    
+    @Autowired
+    private SemesterEnrollmentRepository semesterEnrollmentRepository;
 
     public List<EnrolledCourse> getAllEnrolledCourses() {
         return enrolledCourseRepository.findAll();
@@ -82,10 +96,48 @@ public class EnrolledCourseService {
     }
 
     public List<EnrolledCourse> getEnrolledCoursesByStudent(Long studentId) {
-        return enrolledCourseRepository.findByStudentId(studentId);
+        return enrolledCourseRepository.findByStudentIdWithDetails(studentId);
     }
 
     public List<EnrolledCourse> getEnrolledCoursesBySection(Long sectionId) {
         return enrolledCourseRepository.findBySectionId(sectionId);
+    }
+    
+    public EnrolledCourse createEnrollmentForStudent(Long studentId, Long courseSectionId, String status) {
+        // Get the student
+        Student student = studentRepository.findById(studentId)
+            .orElseThrow(() -> new RuntimeException("Student not found with ID: " + studentId));
+        
+        // Get the course section
+        CourseSection courseSection = courseSectionRepository.findById(courseSectionId)
+            .orElseThrow(() -> new RuntimeException("Course section not found with ID: " + courseSectionId));
+        
+        // Find or create a semester enrollment for this student
+        // For now, we'll create a simple semester enrollment or find an existing one
+        SemesterEnrollment semesterEnrollment = findOrCreateCurrentSemesterEnrollment(student);
+        
+        // Create the enrolled course
+        EnrolledCourse enrolledCourse = EnrolledCourse.builder()
+            .semesterEnrollment(semesterEnrollment)
+            .section(courseSection)
+            .status(status)
+            .build();
+        
+        return enrolledCourseRepository.save(enrolledCourse);
+    }
+    
+    private SemesterEnrollment findOrCreateCurrentSemesterEnrollment(Student student) {
+        // For now, create a simple semester enrollment
+        // In a real application, you would have proper semester enrollment management
+        SemesterEnrollment newSemesterEnrollment = SemesterEnrollment.builder()
+            .student(student)
+            .semester("1") // Default to first semester
+            .academicYear("2024-2025") // Default academic year
+            .status("ACTIVE")
+            .dateEnrolled(LocalDate.now())
+            .totalCredits(0)
+            .build();
+        
+        return semesterEnrollmentRepository.save(newSemesterEnrollment);
     }
 }

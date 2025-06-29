@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from './Sidebar';
@@ -83,7 +83,8 @@ const ScheduleManagement = () => {
       // Transform and set schedule data
       const transformedSchedules = schedulesResponse.data.map(section => ({
         id: section.sectionID,
-        course: section.course?.courseDescription || 'Unknown Course',
+        courseName: section.course?.courseDescription || 'Unknown Course',
+        courseId: section.course?.courseCode || 'N/A',
         section: section.sectionName,
         instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
         room: section.room || 'TBA',
@@ -148,7 +149,8 @@ const ScheduleManagement = () => {
       const response = await courseSectionAPI.getAllSections();
       const transformedData = response.data.map(section => ({
         id: section.sectionID,
-        course: section.course?.courseDescription || 'Unknown Course',
+        courseName: section.course?.courseDescription || 'Unknown Course',
+        courseId: section.course?.courseCode || 'N/A',
         section: section.sectionName,
         instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
         room: section.room || 'TBA',
@@ -231,7 +233,7 @@ const ScheduleManagement = () => {
     setEditingSchedule(schedule);
     
     // Find the course value for the dropdown
-    const courseOption = courseOptions.find(c => c.label.includes(schedule.course));
+    const courseOption = courseOptions.find(c => c.label.includes(schedule.courseName || schedule.course || ''));
     const instructorOption = instructorOptions.find(i => i.label === schedule.instructor);
     
     setScheduleForm({
@@ -403,7 +405,10 @@ const ScheduleManagement = () => {
 
   // Filter schedules with section filtering only
   const filteredSchedules = scheduleList.filter(schedule => {
-    const matchesSearch = schedule.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const courseName = schedule.courseName || schedule.course || '';
+    const courseId = schedule.courseId || '';
+    const matchesSearch = courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         courseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.room.toLowerCase().includes(searchTerm.toLowerCase());
@@ -736,8 +741,9 @@ const ScheduleManagement = () => {
                   <table className="student-table">
                     <thead>
                       <tr>
-                        <th>Schedule ID</th>
-                        <th>Course & Section</th>
+                        <th>Course ID</th>
+                        <th>Course Name</th>
+                        <th>Section</th>
                         <th>Instructor</th>
                         <th>Room</th>
                         <th>Day & Time</th>
@@ -749,11 +755,9 @@ const ScheduleManagement = () => {
                       {filteredSchedules.length > 0 ? (
                         filteredSchedules.map((schedule) => (
                           <tr key={schedule.id}>
-                            <td className="student-id">{schedule.id}</td>
-                            <td className="course-section">
-                              <div className="student-name">{schedule.course}</div>
-                              <div className="student-email">{schedule.section}</div>
-                            </td>
+                            <td className="course-id">{schedule.courseId || 'N/A'}</td>
+                            <td className="course-name">{schedule.courseName || schedule.course || 'N/A'}</td>
+                            <td className="section">{schedule.section}</td>
                             <td className="instructor">{schedule.instructor}</td>
                             <td className="room">{schedule.room}</td>
                             <td className="day-time">
@@ -785,7 +789,7 @@ const ScheduleManagement = () => {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="7" className="no-students">
+                          <td colSpan="8" className="no-students">
                             No schedules found matching the current filters.
                           </td>
                         </tr>

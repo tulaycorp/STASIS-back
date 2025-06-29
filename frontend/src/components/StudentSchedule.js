@@ -6,9 +6,8 @@ import { useStudentData } from '../hooks/useStudentData';
 import { enrolledCourseAPI } from '../services/api';
 
 const StudentSchedule = () => {
-  const { getUserInfo } = useStudentData();
-  const userInfo = getUserInfo();
-  const studentId = userInfo?.studentId;
+  const { studentData, loading: studentLoading, error: studentError } = useStudentData();
+  const studentId = studentData?.id;
 
   const [scheduleList, setScheduleList] = useState([]);
   const [selectedDay, setSelectedDay] = useState('All Days');
@@ -22,29 +21,57 @@ const StudentSchedule = () => {
 
   // Fetch schedule from backend
   useEffect(() => {
-    if (!studentId) return;
+    if (!studentId || studentLoading) return;
+    
+    console.log('Fetching schedule for student ID:', studentId);
     setLoading(true);
-    enrolledCourseAPI.getEnrolledCoursesByStudent
-      ? enrolledCourseAPI.getEnrolledCoursesByStudent(studentId)
-          .then(res => {
-            const mapped = (res.data || []).map((ec) => ({
-              id: ec.enrolledCourseID || ec.section?.course?.courseCode || '',
-              course: ec.section?.course?.courseDescription || ec.section?.course?.courseCode || '',
+    
+    enrolledCourseAPI.getEnrolledCoursesByStudent(studentId)
+      .then(res => {
+        console.log('Raw enrolled courses response:', res);
+        console.log('Enrolled courses data:', res.data);
+        console.log('Number of enrolled courses:', res.data?.length || 0);
+        
+        // Filter only active enrollments and map to schedule format
+        const mapped = (res.data || [])
+          .filter(ec => {
+            console.log('Checking enrollment status:', ec.status);
+            return ec.status === 'Enrolled' || ec.status === 'ENROLLED';
+          })
+          .map((ec) => {
+            console.log('Processing enrollment for schedule:', ec);
+            console.log('Section data:', ec.section);
+            console.log('Course data:', ec.section?.course);
+            console.log('Faculty data:', ec.section?.faculty);
+            
+            return {
+              courseCode: ec.section?.course?.courseCode || 'N/A',
+              course: ec.section?.course?.courseDescription || ec.section?.course?.courseName || ec.section?.course?.courseCode || '',
               section: ec.section?.sectionName || '',
               instructor: ec.section?.faculty
                 ? `${ec.section.faculty.firstName} ${ec.section.faculty.lastName}`
-                : '',
-              room: ec.section?.room || '',
+                : 'TBA',
+              room: ec.section?.room || 'TBA',
               day: ec.section?.day || '',
               timeFrom: ec.section?.startTime ? ec.section.startTime.substring(0, 5) : '',
-              timeTo: ec.section?.endTime ? ec.section.endTime.substring(0, 5) : ''
-            }));
-            setScheduleList(mapped);
-          })
-          .catch(() => setScheduleList([]))
-          .finally(() => setLoading(false))
-      : setScheduleList([]);
-  }, [studentId]);
+              timeTo: ec.section?.endTime ? ec.section.endTime.substring(0, 5) : '',
+              status: ec.status
+            };
+          });
+        console.log('Final mapped schedule data:', mapped);
+        setScheduleList(mapped);
+      })
+      .catch((error) => {
+        console.error('Error fetching enrolled courses:', error);
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        setScheduleList([]);
+      })
+      .finally(() => setLoading(false));
+  }, [studentId, studentLoading]);
 
   // Statistics calculations
   const totalSchedules = scheduleList.length;
@@ -61,7 +88,7 @@ const StudentSchedule = () => {
                          (schedule.section || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (schedule.instructor || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (schedule.room || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (schedule.id || '').toLowerCase().includes(searchTerm.toLowerCase());
+                         (schedule.courseCode || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDay = selectedDay === 'All Days' || schedule.day === selectedDay;
     return matchesSearch && matchesDay;
   });
@@ -107,7 +134,10 @@ const StudentSchedule = () => {
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}
-        userInfo={getUserInfo()}
+        userInfo={{ 
+          name: studentData ? `${studentData.firstName} ${studentData.lastName}` : "Loading...", 
+          role: "Student" 
+        }}
         sections={[
           {
             items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]
@@ -200,8 +230,9 @@ const StudentSchedule = () => {
               <table className="schedule-table">
                 <thead>
                   <tr>
-                    <th>Schedule ID</th>
-                    <th>Course & Section</th>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Section</th>
                     <th>Instructor</th>
                     <th>Room</th>
                     <th>Day & Time</th>
@@ -210,22 +241,18 @@ const StudentSchedule = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={5}>Loading schedule...</td>
+                      <td colSpan={6}>Loading schedule...</td>
                     </tr>
                   ) : filteredSchedules.length === 0 ? (
                     <tr>
-                      <td colSpan={5}>No classes found.</td>
+                      <td colSpan={6}>No classes found.</td>
                     </tr>
                   ) : (
-                    filteredSchedules.map((schedule) => (
-                      <tr key={schedule.id}>
-                        <td>{schedule.id}</td>
-                        <td>
-                          <div className="schedule-info">
-                            <div className="schedule-course">{schedule.course}</div>
-                            <div className="schedule-section">{schedule.section}</div>
-                          </div>
-                        </td>
+                    filteredSchedules.map((schedule, index) => (
+                      <tr key={`${schedule.courseCode}-${index}`}>
+                        <td>{schedule.courseCode}</td>
+                        <td>{schedule.course || 'N/A'}</td>
+                        <td>{schedule.section}</td>
                         <td>{schedule.instructor}</td>
                         <td>{schedule.room}</td>
                         <td>

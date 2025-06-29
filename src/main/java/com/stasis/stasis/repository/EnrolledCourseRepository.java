@@ -16,6 +16,14 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
     @Query("SELECT ec FROM EnrolledCourse ec WHERE ec.semesterEnrollment.student.id = :studentId")
     List<EnrolledCourse> findByStudentId(@Param("studentId") Long studentId);
     
+    // Alternative query that joins with section and course for better data loading
+    @Query("SELECT ec FROM EnrolledCourse ec " +
+           "LEFT JOIN FETCH ec.section s " +
+           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH s.faculty f " +
+           "WHERE ec.semesterEnrollment.student.id = :studentId")
+    List<EnrolledCourse> findByStudentIdWithDetails(@Param("studentId") Long studentId);
+    
     List<EnrolledCourse> findBySection(CourseSection section);
     
     @Query("SELECT ec FROM EnrolledCourse ec WHERE ec.section.sectionID = :sectionId")

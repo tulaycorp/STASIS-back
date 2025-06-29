@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/enrolled-courses")
@@ -49,8 +50,12 @@ public class EnrolledCourseController {
     }
 
     @PostMapping
-    public EnrolledCourse createEnrolledCourse(@RequestBody EnrolledCourse enrolledCourse) {
-        return enrolledCourseService.createEnrolledCourse(enrolledCourse);
+    public EnrolledCourse createEnrolledCourse(@RequestBody Map<String, Object> enrollmentRequest) {
+        Long studentId = Long.valueOf(enrollmentRequest.get("studentId").toString());
+        Long courseSectionId = Long.valueOf(enrollmentRequest.get("courseSectionId").toString());
+        String status = enrollmentRequest.get("status").toString();
+        
+        return enrolledCourseService.createEnrollmentForStudent(studentId, courseSectionId, status);
     }
 
     @PutMapping("/{id}")
