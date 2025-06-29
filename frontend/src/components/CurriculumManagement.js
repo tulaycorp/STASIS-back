@@ -102,7 +102,6 @@ const CurriculumManagement = () => {
         return {
           id: curriculum.curriculumID,
           name: curriculum.curriculumName,
-          code: curriculum.curriculumCode || 'N/A',
           program: curriculum.program?.programName || 'No Program',
           programId: curriculum.program?.programID || null,
           academicYear: curriculum.academicYear || 'N/A',
@@ -244,7 +243,6 @@ const CurriculumManagement = () => {
     setEditingId(null);
     setFormData({
       curriculumName: '',
-      curriculumCode: '',
       programId: '',
       academicYear: '',
       status: 'Draft',
@@ -262,7 +260,6 @@ const CurriculumManagement = () => {
     setEditingId(null);
     setFormData({
       curriculumName: '',
-      curriculumCode: '',
       programId: '',
       academicYear: '',
       status: 'Draft',
@@ -308,7 +305,6 @@ const CurriculumManagement = () => {
         setEditingId(id);
         setFormData({
           curriculumName: curriculum.name,
-          curriculumCode: curriculum.code,
           programId: curriculum.programId?.toString() || '',
           academicYear: curriculum.academicYear,
           status: curriculum.status,
@@ -331,11 +327,6 @@ const CurriculumManagement = () => {
     // Enhanced validation
     if (!formData.curriculumName?.trim()) {
       alert('Please enter a curriculum name');
-      return;
-    }
-    
-    if (!formData.curriculumCode?.trim()) {
-      alert('Please enter a curriculum code');
       return;
     }
     
@@ -364,7 +355,6 @@ const CurriculumManagement = () => {
       
       const curriculumDataPayload = {
         curriculumName: formData.curriculumName.trim(),
-        curriculumCode: formData.curriculumCode.trim(),
         program: selectedProgramObj,
         academicYear: formData.academicYear,
         status: formData.status,
@@ -1018,17 +1008,6 @@ const CurriculumManagement = () => {
                   className="form-input" 
                   name="curriculumName"
                   value={formData.curriculumName}
-                  onChange={handleInputChange}
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Curriculum Code *</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  name="curriculumCode"
-                  value={formData.curriculumCode}
                   onChange={handleInputChange}
                   required 
                 />

@@ -144,12 +144,21 @@ export const courseSectionAPI = {
     console.log('Calling getSectionsByProgram API for program ID:', programId);
     return api.get(`/course-sections/program/${programId}`);
   },
+
+  // Get sections by faculty ID
+  getSectionsByFaculty: (facultyId) => {
+    console.log('Calling getSectionsByFaculty API for faculty ID:', facultyId);
+    return api.get(`/course-sections/faculty/${facultyId}`);
+  },
 };
 
 // Enrolled Courses API endpoints
 export const enrolledCourseAPI = {
   // Get all enrolled courses
-  getAllEnrolledCourses: () => api.get('/enrolled-courses'),
+  getAllEnrolledCourses: () => {
+    console.log('Calling getAllEnrolledCourses API...');
+    return api.get('/enrolled-courses');
+  },
   
   // Get enrolled course by ID
   getEnrolledCourseById: (id) => api.get(`/enrolled-courses/${id}`),
@@ -158,8 +167,65 @@ export const enrolledCourseAPI = {
   getEnrolledCoursesBySemester: (semesterEnrollmentId) => 
     api.get(`/enrolled-courses/semester-enrollment/${semesterEnrollmentId}`),
   
+  // Get enrolled courses by section
+  getEnrolledCoursesBySection: (sectionId) => {
+    console.log('Calling getEnrolledCoursesBySection API for section ID:', sectionId);
+    return api.get(`/enrolled-courses/section/${sectionId}`);
+  },
+
+  // Get enrolled courses by student
+  getEnrolledCoursesByStudent: (studentId) => {
+    console.log('Calling getEnrolledCoursesByStudent API for student ID:', studentId);
+    return api.get(`/enrolled-courses/student/${studentId}`);
+  },
+  
   // Create enrollment
-  createEnrollment: (enrollmentData) => api.post('/enrolled-courses', enrollmentData),
+  createEnrollment: (enrollmentData) => {
+    console.log('Calling createEnrollment API with data:', enrollmentData);
+    return api.post('/enrolled-courses', enrollmentData);
+  },
+
+  // Update enrollment
+  updateEnrollment: (id, enrollmentData) => {
+    console.log('Calling updateEnrollment API for ID:', id, 'with data:', enrollmentData);
+    return api.put(`/enrolled-courses/${id}`, enrollmentData);
+  },
+
+  // Update grades for enrollment
+  updateGrades: (id, gradeData) => {
+    console.log('Calling updateGrades API for enrollment ID:', id, 'with grades:', gradeData);
+    return api.put(`/enrolled-courses/${id}/grades`, gradeData);
+  },
+
+  // Update midterm grade
+  updateMidtermGrade: (id, grade) => {
+    console.log('Calling updateMidtermGrade API for enrollment ID:', id, 'with grade:', grade);
+    return api.put(`/enrolled-courses/${id}/midterm-grade`, { midtermGrade: grade });
+  },
+
+  // Update final grade
+  updateFinalGrade: (id, grade) => {
+    console.log('Calling updateFinalGrade API for enrollment ID:', id, 'with grade:', grade);
+    return api.put(`/enrolled-courses/${id}/final-grade`, { finalGrade: grade });
+  },
+
+  // Update overall grade
+  updateOverallGrade: (id, grade) => {
+    console.log('Calling updateOverallGrade API for enrollment ID:', id, 'with grade:', grade);
+    return api.put(`/enrolled-courses/${id}/overall-grade`, { overallGrade: grade });
+  },
+
+  // Bulk update grades
+  bulkUpdateGrades: (gradeUpdates) => {
+    console.log('Calling bulkUpdateGrades API with updates:', gradeUpdates);
+    return api.put('/enrolled-courses/bulk-update-grades', gradeUpdates);
+  },
+
+  // Delete enrollment
+  deleteEnrollment: (id) => {
+    console.log('Calling deleteEnrollment API for ID:', id);
+    return api.delete(`/enrolled-courses/${id}`);
+  },
 };
 
 // Course Prerequisites API endpoints
@@ -292,7 +358,10 @@ export const studentAPI = {
   },
   
   // Get student by ID
-  getStudentById: (id) => api.get(`/students/${id}`),
+  getStudentById: (id) => {
+    console.log('Calling getStudentById API for ID:', id);
+    return api.get(`/students/${id}`);
+  },
   
   // Create new student
   createStudent: (studentData) => {
@@ -320,12 +389,59 @@ export const studentAPI = {
   
   // Get students by program
   getStudentsByProgram: (programId) => api.get(`/students/program/${programId}`),
+
+  // Get students by section
+  getStudentsBySection: (sectionId) => {
+    console.log('Calling getStudentsBySection API for section ID:', sectionId);
+    return api.get(`/students/section/${sectionId}`);
+  },
   
   // Search students
   searchStudents: (searchTerm) => api.get(`/students/search?searchTerm=${encodeURIComponent(searchTerm)}`),
   
   // Validate student data
   validateStudent: (studentData) => api.post('/students/validate', studentData),
+};
+
+// Grades API endpoints (dedicated grade management)
+export const gradeAPI = {
+  // Get grades by section
+  getGradesBySection: (sectionId) => {
+    console.log('Calling getGradesBySection API for section ID:', sectionId);
+    return api.get(`/grades/section/${sectionId}`);
+  },
+
+  // Get grades by student
+  getGradesByStudent: (studentId) => {
+    console.log('Calling getGradesByStudent API for student ID:', studentId);
+    return api.get(`/grades/student/${studentId}`);
+  },
+
+  // Get grades by faculty
+  getGradesByFaculty: (facultyId) => {
+    console.log('Calling getGradesByFaculty API for faculty ID:', facultyId);
+    return api.get(`/grades/faculty/${facultyId}`);
+  },
+
+  // Submit grades for a section
+  submitSectionGrades: (sectionId, gradesData) => {
+    console.log('Calling submitSectionGrades API for section ID:', sectionId, 'with grades:', gradesData);
+    return api.post(`/grades/section/${sectionId}/submit`, gradesData);
+  },
+
+  // Finalize grades for a section
+  finalizeSectionGrades: (sectionId) => {
+    console.log('Calling finalizeSectionGrades API for section ID:', sectionId);
+    return api.put(`/grades/section/${sectionId}/finalize`);
+  },
+
+  // Export grades
+  exportGrades: (sectionId, format = 'csv') => {
+    console.log('Calling exportGrades API for section ID:', sectionId, 'format:', format);
+    return api.get(`/grades/section/${sectionId}/export?format=${format}`, {
+      responseType: 'blob'
+    });
+  },
 };
 
 // Curriculum API endpoints
@@ -557,6 +673,48 @@ export const curriculumDetailAPI = {
   // Get details by curriculum and year
   getDetailsByCurriculumAndYear: (curriculumId, yearLevel) => 
     api.get(`/curriculum-details/curriculum/${curriculumId}/year/${yearLevel}`)
+};
+
+// Semester Enrollment API endpoints
+export const semesterEnrollmentAPI = {
+  // Get all semester enrollments
+  getAllSemesterEnrollments: () => {
+    console.log('Calling getAllSemesterEnrollments API...');
+    return api.get('/semester-enrollments');
+  },
+  
+  // Get semester enrollment by ID
+  getSemesterEnrollmentById: (id) => api.get(`/semester-enrollments/${id}`),
+  
+  // Get semester enrollments by student
+  getSemesterEnrollmentsByStudent: (studentId) => {
+    console.log('Calling getSemesterEnrollmentsByStudent API for student ID:', studentId);
+    return api.get(`/semester-enrollments/student/${studentId}`);
+  },
+  
+  // Create semester enrollment
+  createSemesterEnrollment: (enrollmentData) => {
+    console.log('Calling createSemesterEnrollment API with data:', enrollmentData);
+    return api.post('/semester-enrollments', enrollmentData);
+  },
+  
+  // Update semester enrollment
+  updateSemesterEnrollment: (id, enrollmentData) => {
+    console.log('Calling updateSemesterEnrollment API for ID:', id, 'with data:', enrollmentData);
+    return api.put(`/semester-enrollments/${id}`, enrollmentData);
+  },
+  
+  // Delete semester enrollment
+  deleteSemesterEnrollment: (id) => {
+    console.log('Calling deleteSemesterEnrollment API for ID:', id);
+    return api.delete(`/semester-enrollments/${id}`);
+  },
+  
+  // Get current semester enrollment for student
+  getCurrentSemesterEnrollment: (studentId) => {
+    console.log('Calling getCurrentSemesterEnrollment API for student ID:', studentId);
+    return api.get(`/semester-enrollments/student/${studentId}/current`);
+  },
 };
 
 export default api;

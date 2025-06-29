@@ -56,19 +56,7 @@ const StudentManagement = () => {
     curriculumId: ''
   };
 
-  const fetchCurriculums = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await curriculumAPI.getAllCurriculums();
-      setCurriculumsList(response.data);
-    } catch (err) {
-      setError('Failed to fetch curriculums: ' + (err.response?.data?.message || err.message));
-      console.error('Error fetching curriculums:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
   
   // Load data on component mount
   useEffect(() => {

@@ -60,7 +60,7 @@ const CourseManagement = () => {
                          course.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.program.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesProgram = selectedProgram === 'BS Computer Science' || course.program === selectedProgram;
+    const matchesProgram = selectedProgram === '' || course.program === selectedProgram;
     
     return matchesSearch && matchesProgram;
   });

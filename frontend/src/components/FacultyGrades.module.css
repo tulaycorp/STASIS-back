@@ -42,13 +42,13 @@
   color: #64748b;
 }
 .breadcrumbLink {
-  color: #3b82f6;
-  text-decoration: none;
+  color: #ef4444;
   cursor: pointer;
   transition: color 0.2s ease;
+  text-decoration: none;
 }
 .breadcrumbLink:hover {
-  color: #1d4ed8;
+  color: #dc2626;
   text-decoration: underline;
 }
 .breadcrumbSeparator {
