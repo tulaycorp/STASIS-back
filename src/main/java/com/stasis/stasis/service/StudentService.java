@@ -121,6 +121,8 @@ public class StudentService {
                 student.setDateOfBirth(studentDetails.getDateOfBirth());
                 student.setYear_level(studentDetails.getYear_level());
                 student.setProgram(studentDetails.getProgram());
+                student.setSection(studentDetails.getSection());
+                student.setCurriculum(studentDetails.getCurriculum());
                 return studentRepository.save(student);
             })
             .orElseThrow(() -> new RuntimeException("Student not found with id " + id));

@@ -158,29 +158,39 @@ const StudentManagement = () => {
   };
 
   const showEditStudentForm = (student) => {
-    setEditingStudent(student);
+  setEditingStudent(student);
 
-    // Filter available curriculums for the student's program when modal opens
-    const programId = student.program?.programID?.toString() || '';
-    if (programId) {
-        const programCurriculums = curriculumsList.filter(c => c.program?.programID?.toString() === programId);
-        setAvailableCurriculums(programCurriculums);
-    } else {
-        setAvailableCurriculums([]);
-    }
+  // Filter available curriculums and sections for the student's program when modal opens
+  const programId = student.program?.programID?.toString() || '';
+  
+  if (programId) {
+      // Set available curriculums
+      const programCurriculums = curriculumsList.filter(c => c.program?.programID?.toString() === programId);
+      setAvailableCurriculums(programCurriculums);
+      
+      // ✅ ADD THIS: Set available sections for the student's program
+      const programSections = sectionsList.filter(section =>
+        section.program?.programID?.toString() === programId ||
+        section.programId?.toString() === programId
+      );
+      setAvailableSectionsForStudent(programSections);
+  } else {
+      setAvailableCurriculums([]);
+      setAvailableSectionsForStudent([]); // ✅ ADD THIS: Reset sections when no program
+  }
 
-    setStudentForm({
-      firstName: student.firstName || '',
-      lastName: student.lastName || '',
-      email: student.email || '',
-      dateOfBirth: student.dateOfBirth || '',
-      year_level: student.year_level || 1,
-      programId: programId,
-      sectionId: student.section?.sectionID?.toString() || '',
-      curriculumId: student.curriculum?.curriculumID?.toString() || '' 
-    });
-    setShowEditStudentModal(true);
-  };
+  setStudentForm({
+    firstName: student.firstName || '',
+    lastName: student.lastName || '',
+    email: student.email || '',
+    dateOfBirth: student.dateOfBirth || '',
+    year_level: student.year_level || 1,
+    programId: programId,
+    sectionId: student.section?.sectionID?.toString() || '',
+    curriculumId: student.curriculum?.curriculumID?.toString() || '' 
+  });
+  setShowEditStudentModal(true);
+};
 
   const closeEditStudentModal = () => {
     setShowEditStudentModal(false);
