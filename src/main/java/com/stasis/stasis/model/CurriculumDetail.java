@@ -23,7 +23,7 @@ public class CurriculumDetail {
     @JoinColumn(name = "curriculumID")
     private Curriculum curriculum;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "courseID")
     private Course course;
 

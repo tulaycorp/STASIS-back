@@ -80,4 +80,12 @@ public class EnrolledCourseService {
                          ec.getSemesterEnrollment().getSemesterEnrollmentID().equals(semesterEnrollmentId))
             .toList();
     }
+
+    public List<EnrolledCourse> getEnrolledCoursesByStudent(Long studentId) {
+        return enrolledCourseRepository.findByStudentId(studentId);
+    }
+
+    public List<EnrolledCourse> getEnrolledCoursesBySection(Long sectionId) {
+        return enrolledCourseRepository.findBySectionId(sectionId);
+    }
 }

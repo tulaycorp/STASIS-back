@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Enrollment.module.css';
 import Sidebar from './StudentSidebar';
+import { useStudentData } from '../hooks/useStudentData';
+import { 
+  curriculumAPI, 
+  curriculumDetailAPI, 
+  courseSectionAPI, 
+  enrolledCourseAPI,
+  studentAPI 
+} from '../services/api';
 
 const Enrollment = () => {
   // State management
@@ -9,7 +17,7 @@ const Enrollment = () => {
   const [error, setError] = useState('');
   
   // Student and curriculum data
-  const [studentData, setStudentData] = useState(null);
+  const { studentData, loading: studentLoading, error: studentError } = useStudentData();
   const [currentCurriculum, setCurrentCurriculum] = useState(null);
   const [curriculumCourses, setCurriculumCourses] = useState([]);
   const [availableSections, setAvailableSections] = useState([]);
@@ -23,176 +31,164 @@ const Enrollment = () => {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
   const [enrollmentLoading, setEnrollmentLoading] = useState(false);
+  
+  // New state for bulk enrollment
+  const [selectedCourses, setSelectedCourses] = useState({}); // courseId -> sectionId mapping
+  const [selectedSections, setSelectedSections] = useState({}); // courseId -> section object mapping
 
   const navigate = useNavigate();
 
-  // Hardcoded data
-  const hardcodedStudentData = {
-    id: 1,
-    firstName: 'John',
-    lastName: 'Doe',
-    yearLevel: 2,
-    studentType: 'Regular',
-    programId: 1
-  };
-
-  const hardcodedCurriculum = {
-    curriculumId: 1,
-    programName: 'Bachelor of Science in Computer Science',
-    status: 'Active'
-  };
-
-  const hardcodedCurriculumCourses = [
-    {
-      curriculumDetailId: 1,
-      courseId: 1,
-      courseCode: 'CS101',
-      courseName: 'Introduction to Programming',
-      description: 'Basic programming concepts and problem solving',
-      yearLevel: 2,
-      semester: 1,
-      credits: 3
-    },
-    {
-      curriculumDetailId: 2,
-      courseId: 2,
-      courseCode: 'MATH201',
-      courseName: 'Discrete Mathematics',
-      description: 'Mathematical foundations for computer science',
-      yearLevel: 2,
-      semester: 1,
-      credits: 3
-    }
-  ];
-
-  const hardcodedAvailableSections = [
-    {
-      courseSectionId: 1,
-      courseId: 1,
-      courseCode: 'CS101',
-      courseName: 'Introduction to Programming',
-      sectionName: 'CS101-A',
-      day: 'MWF',
-      timeFrom: '08:00',
-      timeTo: '09:00',
-      room: 'Room 101',
-      instructorName: 'Dr. Smith',
-      capacity: 30,
-      enrolledCount: 15,
-      status: 'Active',
-      credits: 3
-    },
-    {
-      courseSectionId: 2,
-      courseId: 1,
-      courseCode: 'CS101',
-      courseName: 'Introduction to Programming',
-      sectionName: 'CS101-B',
-      day: 'TTH',
-      timeFrom: '10:00',
-      timeTo: '11:30',
-      room: 'Room 102',
-      instructorName: 'Prof. Johnson',
-      capacity: 25,
-      enrolledCount: 20,
-      status: 'Active',
-      credits: 3
-    },
-    {
-      courseSectionId: 3,
-      courseId: 2,
-      courseCode: 'MATH201',
-      courseName: 'Discrete Mathematics',
-      sectionName: 'MATH201-A',
-      day: 'MWF',
-      timeFrom: '13:00',
-      timeTo: '14:00',
-      room: 'Room 201',
-      instructorName: 'Dr. Brown',
-      capacity: 35,
-      enrolledCount: 10,
-      status: 'Active',
-      credits: 3
-    }
-  ];
-
-  const hardcodedMyEnrollments = [
-    {
-      enrolledCourseId: 1,
-      studentId: 1,
-      courseId: 1,
-      courseSectionId: 1,
-      sectionName: 'CS101-A',
-      day: 'MWF',
-      timeFrom: '08:00',
-      timeTo: '09:00',
-      room: 'Room 101',
-      status: 'Enrolled',
-      enrollmentDate: '2024-01-15'
-    }
-  ];
-
+  // Fetch curriculum and enrollment data
   useEffect(() => {
-    // Simulate loading delay
-    setTimeout(() => {
-      setStudentData(hardcodedStudentData);
-      setCurrentCurriculum(hardcodedCurriculum);
-      setCurriculumCourses(hardcodedCurriculumCourses);
-      setAvailableSections(hardcodedAvailableSections);
-      setMyEnrollments(hardcodedMyEnrollments);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const fetchData = async () => {
+      try {
+        if (!studentData?.id) {
+          throw new Error('No student data available');
+        }
 
-  // Get courses available for enrollment based on student type
-  const getAvailableCoursesForEnrollment = () => {
-    if (!studentData || !curriculumCourses.length || !availableSections.length) {
-      return [];
-    }
+        console.log('Fetching data for student:', studentData);
 
-    const isRegular = studentData.studentType === 'Regular';
-    const currentYear = studentData.yearLevel;
+        // First get the student's curriculum
+        const studentResponse = await studentAPI.getStudentById(studentData.id);
+        const student = studentResponse.data;
+        console.log('Student data fetched:', student);
 
-    let eligibleCourses = [];
+        if (!student.curriculum?.curriculumID) {
+          throw new Error('No curriculum assigned to student');
+        }
 
-    if (isRegular) {
-      // Regular students: only courses for their current year and semester
-      eligibleCourses = curriculumCourses.filter(course => 
-        course.yearLevel === currentYear && 
-        (selectedSemester === 'all' || course.semester === Number(selectedSemester))
-      );
-    } else {
-      // Irregular students: courses from current year and below, minus completed courses
-      const completedCourseIds = myEnrollments
-        .filter(e => e.status === 'Completed' || (e.finalGrade && e.finalGrade >= 75))
-        .map(e => e.courseId);
+        // Fetch curriculum details
+        const curriculumResponse = await curriculumAPI.getCurriculumById(student.curriculum.curriculumID);
+        setCurrentCurriculum(curriculumResponse.data);
+        console.log('Curriculum fetched:', curriculumResponse.data);
 
-      eligibleCourses = curriculumCourses.filter(course => {
-        const yearCondition = selectedYearLevel === 'current' 
-          ? course.yearLevel <= currentYear 
-          : course.yearLevel === parseInt(selectedYearLevel);
+        // Fetch curriculum courses with details
+        const curriculumDetailsResponse = await curriculumDetailAPI.getDetailsByCurriculum(student.curriculum.curriculumID);
+        const curriculumDetails = curriculumDetailsResponse.data;
+        console.log('Curriculum details fetched:', curriculumDetails);
+
+        // Transform curriculum details to include full course information
+        const coursesWithDetails = curriculumDetails.map(detail => {
+          console.log('Processing curriculum detail:', detail);
+          console.log('Course in detail:', detail.course);
+          
+          if (!detail.course) {
+            console.error('No course found in curriculum detail:', detail);
+            return null;
+          }
+          
+          return {
+            curriculumDetailId: detail.curriculumDetailID,
+            courseId: detail.course.id,
+            courseCode: detail.course.courseCode,
+            courseName: detail.course.courseDescription,
+            description: detail.course.courseDescription,
+            yearLevel: detail.YearLevel || detail.yearLevel,
+            semester: detail.Semester || detail.semester,
+            credits: detail.course.credits
+          };
+        }).filter(course => course !== null);
         
-        const semesterCondition = selectedSemester === 'all' || course.semester === Number(selectedSemester);
-        const notCompleted = !completedCourseIds.includes(course.courseId);
+        setCurriculumCourses(coursesWithDetails);
+        console.log('Transformed curriculum courses:', coursesWithDetails);
+
+        // Fetch available sections
+        const sectionsResponse = await courseSectionAPI.getAllSections();
+        setAvailableSections(sectionsResponse.data);
+        console.log('Sections fetched:', sectionsResponse.data);
+
+        // Fetch student's current enrollments
+        try {
+          const enrollmentsResponse = await enrolledCourseAPI.getEnrolledCoursesByStudent(studentData.id);
+          setMyEnrollments(enrollmentsResponse.data);
+          console.log('Enrollments fetched:', enrollmentsResponse.data);
+        } catch (enrollmentError) {
+          console.warn('Failed to fetch enrollments, using empty array:', enrollmentError);
+          setMyEnrollments([]);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching enrollment data:', err);
+        if (err.code === 'NETWORK_ERROR' || err.message.includes('Network Error')) {
+          setError('Unable to connect to server. Please check if the backend is running on http://localhost:8080');
+        } else {
+          setError(err.message || 'Failed to load enrollment data');
+        }
+        setLoading(false);
+      }
+    };
+
+    if (studentData && !studentLoading) {
+      fetchData();
+    }
+  }, [studentData, studentLoading]);
+
+    // Get courses available for enrollment based on student type
+    const getAvailableCoursesForEnrollment = () => {
+      if (!studentData || !curriculumCourses.length) {
+        console.log('Missing required data for enrollment:', {
+          hasStudentData: !!studentData,
+          curriculumCoursesLength: curriculumCourses.length
+        });
+        return [];
+      }
+
+      console.log('Getting available courses for enrollment...');
+      console.log('Curriculum courses:', curriculumCourses);
+
+      // Filter curriculum courses based on semester selection
+      let eligibleCourses = curriculumCourses.filter(curriculumDetail => {
+        const semesterCondition = selectedSemester === 'all' || 
+          curriculumDetail.semester === selectedSemester || 
+          curriculumDetail.semester === Number(selectedSemester);
+        
+        // Check if student is not already enrolled in this course
         const notCurrentlyEnrolled = !myEnrollments.some(e => 
-          e.courseId === course.courseId && e.status === 'Enrolled'
+          e.courseSection?.course?.id === curriculumDetail.courseId && e.status === 'Enrolled'
         );
 
-        return yearCondition && semesterCondition && notCompleted && notCurrentlyEnrolled;
-      });
-    }
+        console.log('Course filter check:', {
+          courseId: curriculumDetail.courseId,
+          courseName: curriculumDetail.courseName,
+          semester: curriculumDetail.semester,
+          semesterCondition,
+          notCurrentlyEnrolled
+        });
 
-    // Match with available sections
-    return eligibleCourses.map(course => {
-      const courseSections = availableSections.filter(section => 
-        section.courseId === course.courseId
-      );
-      return {
-        ...course,
-        availableSections: courseSections
-      };
-    }).filter(course => course.availableSections.length > 0);
-  };
+        return semesterCondition && notCurrentlyEnrolled;
+      });
+
+      console.log('Eligible courses after filtering:', eligibleCourses);
+
+      // Add available sections to each course (sections are optional)
+      return eligibleCourses.map(curriculumDetail => {
+        // Find matching sections for this course
+        const courseSections = availableSections.filter(section => {
+          // Check if section has course object with matching ID
+          if (section.course?.id === curriculumDetail.courseId) {
+            return section.status === 'Active' || section.status === 'ACTIVE';
+          }
+          // Check if section has courseId field directly
+          if (section.courseId === curriculumDetail.courseId) {
+            return section.status === 'Active' || section.status === 'ACTIVE';
+          }
+          // Check if section has course_id field
+          if (section.course_id === curriculumDetail.courseId) {
+            return section.status === 'Active' || section.status === 'ACTIVE';
+          }
+          return false;
+        });
+        
+        console.log('Sections found for course', curriculumDetail.courseId, ':', courseSections.length);
+        
+        return {
+          ...curriculumDetail,
+          availableSections: courseSections
+        };
+      });
+      // Don't filter out courses without sections - show all curriculum courses
+    };
 
   // Filter courses based on search
   const filteredCourses = getAvailableCoursesForEnrollment().filter(course => {
@@ -218,33 +214,16 @@ const Enrollment = () => {
     try {
       setEnrollmentLoading(true);
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newEnrollment = {
-        enrolledCourseId: myEnrollments.length + 1,
+      const enrollmentData = {
         studentId: studentData.id,
-        courseId: selectedSection.courseId,
-        courseSectionId: selectedSection.courseSectionId,
-        sectionName: selectedSection.sectionName,
-        day: selectedSection.day,
-        timeFrom: selectedSection.timeFrom,
-        timeTo: selectedSection.timeTo,
-        room: selectedSection.room,
-        status: 'Enrolled',
-        enrollmentDate: new Date().toISOString()
+        courseSectionId: selectedSection.id,
+        status: 'Enrolled'
       };
 
-      setMyEnrollments([...myEnrollments, newEnrollment]);
-      
-      // Update section enrolled count
-      setAvailableSections(prevSections => 
-        prevSections.map(section => 
-          section.courseSectionId === selectedSection.courseSectionId
-            ? { ...section, enrolledCount: section.enrolledCount + 1 }
-            : section
-        )
-      );
+      const response = await enrolledCourseAPI.createEnrollment(enrollmentData);
+      const newEnrollment = response.data;
+
+      setMyEnrollments(prev => [...prev, newEnrollment]);
       
       setShowEnrollModal(false);
       setSelectedSection(null);
@@ -257,29 +236,54 @@ const Enrollment = () => {
     }
   };
 
+  // Handle bulk enrollment
+  const handleBulkEnroll = async () => {
+    const selectedCount = Object.keys(selectedCourses).length;
+    if (selectedCount === 0) return;
+
+    if (!window.confirm(`Are you sure you want to enroll in ${selectedCount} course(s)?`)) return;
+
+    try {
+      setEnrollmentLoading(true);
+      const enrollmentPromises = [];
+
+      // Create enrollment for each selected course
+      for (const [courseId, sectionId] of Object.entries(selectedCourses)) {
+        const enrollmentData = {
+          studentId: studentData.id,
+          courseSectionId: parseInt(sectionId),
+          status: 'Enrolled'
+        };
+        enrollmentPromises.push(enrolledCourseAPI.createEnrollment(enrollmentData));
+      }
+
+      // Wait for all enrollments to complete
+      const responses = await Promise.all(enrollmentPromises);
+      const newEnrollments = responses.map(response => response.data);
+
+      // Update state
+      setMyEnrollments(prev => [...prev, ...newEnrollments]);
+      setSelectedCourses({});
+      setSelectedSections({});
+
+      alert(`Successfully enrolled in ${selectedCount} course(s)!`);
+    } catch (error) {
+      console.error('Bulk enrollment error:', error);
+      alert('Failed to enroll in some courses. Please try again.');
+    } finally {
+      setEnrollmentLoading(false);
+    }
+  };
+
   // Handle drop
   const handleDrop = async (enrollmentId) => {
     if (!window.confirm('Are you sure you want to drop this course?')) return;
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const droppedEnrollment = myEnrollments.find(e => e.enrolledCourseId === enrollmentId);
+      await enrolledCourseAPI.deleteEnrollment(enrollmentId);
       
       // Remove from enrollments
-      setMyEnrollments(myEnrollments.filter(e => e.enrolledCourseId !== enrollmentId));
-      
-      // Update section enrolled count
-      if (droppedEnrollment) {
-        setAvailableSections(prevSections => 
-          prevSections.map(section => 
-            section.courseSectionId === droppedEnrollment.courseSectionId
-              ? { ...section, enrolledCount: Math.max(0, section.enrolledCount - 1) }
-              : section
-          )
-        );
-      }
+      setMyEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
       
       alert('Course dropped successfully!');
     } catch (error) {
@@ -307,8 +311,8 @@ const Enrollment = () => {
   const getYearLevelOptions = () => {
     if (!studentData) return [];
     
-    const options = [{ value: 'current', label: `Up to Year ${studentData.yearLevel}` }];
-    for (let i = 1; i <= studentData.yearLevel; i++) {
+    const options = [{ value: 'current', label: `Up to Year ${studentData.year_level}` }];
+    for (let i = 1; i <= studentData.year_level; i++) {
       options.push({ value: i.toString(), label: `Year ${i}` });
     }
     return options;
@@ -317,8 +321,8 @@ const Enrollment = () => {
   // Statistics calculations
   const totalAvailableCourses = filteredCourses.length;
   const myTotalCredits = myEnrollments.reduce((sum, enrollment) => {
-    const course = curriculumCourses.find(c => c.courseId === enrollment.courseId);
-    return sum + (course?.credits || 0);
+    const credits = enrollment.courseSection?.course?.credits || 0;
+    return sum + credits;
   }, 0);
 
   // Navigation
@@ -368,7 +372,7 @@ const Enrollment = () => {
     }
   ];
 
-  if (loading) {
+  if (loading || studentLoading) {
     return (
       <div className="dashboard-container">
         <Sidebar 
@@ -389,7 +393,7 @@ const Enrollment = () => {
     );
   }
 
-  if (error) {
+  if (error || studentError) {
     return (
       <div className="dashboard-container">
         <Sidebar 
@@ -400,7 +404,7 @@ const Enrollment = () => {
         <div className="main-content">
           <div className="error-container">
             <h2>Error Loading Enrollment Data</h2>
-            <p>{error}</p>
+            <p>{error || studentError}</p>
             <button onClick={() => window.location.reload()} className="btn-primary">
               Retry
             </button>
@@ -417,7 +421,7 @@ const Enrollment = () => {
         onNavigate={showSection}
         userInfo={{ 
           name: `${studentData?.firstName} ${studentData?.lastName}`, 
-          role: `${studentData?.studentType} Student` 
+          role: "Student"
         }}
         sections={sidebarSections}
       />
@@ -440,9 +444,9 @@ const Enrollment = () => {
           <div className="page-header">
             <h1 className="page-title">Course Enrollment</h1>
             <div className="student-info">
-              <p><strong>Program:</strong> {currentCurriculum?.programName || 'N/A'}</p>
-              <p><strong>Year Level:</strong> {studentData?.yearLevel}</p>
-              <p><strong>Student Type:</strong> {studentData?.studentType}</p>
+              <p><strong>Program:</strong> {studentData?.program?.programName || 'N/A'}</p>
+              <p><strong>Year Level:</strong> {studentData?.year_level}</p>
+              <p><strong>Curriculum:</strong> {studentData?.curriculum?.curriculumName || 'N/A'}</p>
             </div>
           </div>
 
@@ -461,10 +465,11 @@ const Enrollment = () => {
               <div className="stat-value">{myTotalCredits}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Student Type</div>
-              <div className="stat-value">{studentData?.studentType}</div>
+              <div className="stat-label">Curriculum</div>
+              <div className="stat-value">{studentData?.curriculum?.curriculumName || 'N/A'}</div>
             </div>
           </div>
+
           {/* Tab Navigation */}
           <div className="tab-navigation">
             <button 
@@ -490,19 +495,6 @@ const Enrollment = () => {
                 </h2>
                 {selectedTab === 'available' && (
                   <div className="controls">
-                    {studentData?.studentType === 'Irregular' && (
-                      <select 
-                        value={selectedYearLevel}
-                        onChange={(e) => setSelectedYearLevel(e.target.value)}
-                        className="select-input"
-                      >
-                        {getYearLevelOptions().map(option => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    )}
                     <select 
                       value={selectedSemester}
                       onChange={(e) => setSelectedSemester(e.target.value)}
@@ -525,6 +517,18 @@ const Enrollment = () => {
               </div>
             </div>
 
+            {selectedTab === 'available' && (
+              <div className="enrollment-actions" style={{ marginBottom: '20px' }}>
+                <button 
+                  className="btn-primary"
+                  onClick={handleBulkEnroll}
+                  disabled={Object.keys(selectedCourses).length === 0 || enrollmentLoading}
+                >
+                  {enrollmentLoading ? 'Enrolling...' : `Enroll Now (${Object.keys(selectedCourses).length} courses)`}
+                </button>
+              </div>
+            )}
+
             <div className="table-container">
               {selectedTab === 'available' ? (
                 <table className="schedule-table">
@@ -534,8 +538,8 @@ const Enrollment = () => {
                       <th>Course Name</th>
                       <th>Year/Semester</th>
                       <th>Credits</th>
-                      <th>Available Sections</th>
-                      <th>Action</th>
+                      <th>Schedule</th>
+                      <th>Select</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -547,54 +551,67 @@ const Enrollment = () => {
                       </tr>
                     ) : (
                       filteredCourses.map((course) => (
-                        <React.Fragment key={course.curriculumDetailId || course.id}>
-                          {course.availableSections.map((section, index) => (
-                            <tr key={`${course.curriculumDetailId}-${section.courseSectionId}`}>
-                              {index === 0 && (
-                                <>
-                                  <td rowSpan={course.availableSections.length}>
-                                    {course.courseCode}
-                                  </td>
-                                  <td rowSpan={course.availableSections.length}>
-                                    <div className="schedule-info">
-                                      <div className="schedule-course">{course.courseName}</div>
-                                      {course.description && (
-                                        <div className="schedule-section">{course.description}</div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td rowSpan={course.availableSections.length}>
-                                    Year {course.yearLevel} - Sem {course.semester}
-                                  </td>
-                                  <td rowSpan={course.availableSections.length} className="font-semibold">
-                                    {course.credits}
-                                  </td>
-                                </>
+                        <tr key={course.curriculumDetailId}>
+                          <td>{course.courseCode}</td>
+                          <td>
+                            <div className="schedule-info">
+                              <div className="schedule-course">{course.courseName}</div>
+                              {course.description && (
+                                <div className="schedule-section">{course.description}</div>
                               )}
-                              <td>
-                                <div className="section-info">
-                                  <div className="section-name">{section.sectionName}</div>
-                                  <div className="schedule-time">
-                                    {section.day} • {formatTime(section.timeFrom)} - {formatTime(section.timeTo)}
-                                  </div>
-                                  <div className="room-info">{section.room} • {section.instructorName}</div>
-                                  <div className="capacity-info">
-                                    {section.enrolledCount || 0}/{section.capacity} enrolled
-                                  </div>
-                                </div>
-                              </td>
-                              <td>
-                                <button 
-                                  className={`btn-primary ${(section.enrolledCount >= section.capacity) ? 'disabled' : ''}`}
-                                  onClick={() => handleEnroll(section)}
-                                  disabled={section.enrolledCount >= section.capacity}
-                                >
-                                  {section.enrolledCount >= section.capacity ? 'Full' : 'Enroll'}
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </React.Fragment>
+                            </div>
+                          </td>
+                          <td>Year {course.yearLevel} - Sem {course.semester}</td>
+                          <td className="font-semibold">{course.credits}</td>
+                          <td>
+                              <select
+                                className="form-select"
+                                value={selectedCourses[course.courseId] || ''}
+                                onChange={(e) => {
+                                  const sectionId = e.target.value;
+                                  const section = course.availableSections.find(s => s.sectionID.toString() === sectionId);
+                                  setSelectedCourses(prev => ({
+                                    ...prev,
+                                    [course.courseId]: sectionId
+                                  }));
+                                  setSelectedSections(prev => ({
+                                    ...prev,
+                                    [course.courseId]: section
+                                  }));
+                                }}
+                              >
+                                <option value="">Select Schedule</option>
+                                {/* Temporary fixed schedule for testing */}
+                                <option value="9999">TEMP-A - MWF 08:00-09:00 (0/30)</option>
+                                {course.availableSections && course.availableSections.length > 0 ? (
+                                  course.availableSections.map(section => (
+                                    <option 
+                                      key={section.sectionID} 
+                                      value={section.sectionID}
+                                      disabled={section.enrolledCount >= section.capacity}
+                                    >
+                                      {section.sectionName} - {section.day} {formatTime(section.startTime)}-{formatTime(section.endTime)} ({section.enrolledCount}/{section.capacity})
+                                    </option>
+                                  ))
+                                ) : null}
+                              </select>
+                          </td>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={!!selectedCourses[course.courseId]}
+                              onChange={(e) => {
+                                if (!e.target.checked) {
+                                  const { [course.courseId]: _, ...rest } = selectedCourses;
+                                  const { [course.courseId]: __, ...sectionsRest } = selectedSections;
+                                  setSelectedCourses(rest);
+                                  setSelectedSections(sectionsRest);
+                                }
+                              }}
+                              disabled={!course.availableSections?.length || !selectedCourses[course.courseId]}
+                            />
+                          </td>
+                        </tr>
                       ))
                     )}
                   </tbody>
@@ -620,44 +637,41 @@ const Enrollment = () => {
                         </td>
                       </tr>
                     ) : (
-                      myEnrollments.map((enrollment) => {
-                        const course = curriculumCourses.find(c => c.courseId === enrollment.courseId);
-                        return (
-                          <tr key={enrollment.enrolledCourseId}>
-                            <td>{course?.courseCode || 'N/A'}</td>
-                            <td>
-                              <div className="schedule-info">
-                                <div className="schedule-course">{course?.courseName || 'N/A'}</div>
+                      myEnrollments.map((enrollment) => (
+                        <tr key={enrollment.id}>
+                          <td>{enrollment.courseSection?.course?.courseCode || 'N/A'}</td>
+                          <td>
+                            <div className="schedule-info">
+                              <div className="schedule-course">{enrollment.courseSection?.course?.courseName || 'N/A'}</div>
+                            </div>
+                          </td>
+                          <td>{enrollment.courseSection?.sectionName || 'N/A'}</td>
+                          <td>
+                            <div className="time-info">
+                              <div className="time-period">
+                                {formatTime(enrollment.courseSection?.startTime)} - {formatTime(enrollment.courseSection?.endTime)}
                               </div>
-                            </td>
-                            <td>{enrollment.sectionName || 'N/A'}</td>
-                            <td>
-                              <div className="time-info">
-                                <div className="time-period">
-                                  {formatTime(enrollment.timeFrom)} - {formatTime(enrollment.timeTo)}
-                                </div>
-                                <div className="day-info">{enrollment.day} • {enrollment.room}</div>
-                              </div>
-                            </td>
-                            <td className="font-semibold">{course?.credits || 0}</td>
-                            <td>
-                              <span className="status-badge status-active">
-                                {enrollment.status}
-                              </span>
-                            </td>
-                            <td>
-                              {enrollment.status === 'Enrolled' && (
-                                <button 
-                                  className="btn-primary"
-                                  onClick={() => handleDrop(enrollment.enrolledCourseId)}
-                                >
-                                  Drop
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
+                              <div className="day-info">{enrollment.courseSection?.day} • {enrollment.courseSection?.room}</div>
+                            </div>
+                          </td>
+                          <td className="font-semibold">{enrollment.courseSection?.course?.credits || 0}</td>
+                          <td>
+                            <span className="status-badge status-active">
+                              {enrollment.status}
+                            </span>
+                          </td>
+                          <td>
+                            {enrollment.status === 'Enrolled' && (
+                              <button 
+                                className="btn-primary"
+                                onClick={() => handleDrop(enrollment.id)}
+                              >
+                                Drop
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>
@@ -685,12 +699,12 @@ const Enrollment = () => {
             </div>
             <div className="modal-content">
               <div className="enrollment-details">
-                <p><strong>Course:</strong> {selectedSection.courseCode} - {selectedSection.courseName}</p>
+                <p><strong>Course:</strong> {selectedSection.course?.courseCode} - {selectedSection.course?.courseName}</p>
                 <p><strong>Section:</strong> {selectedSection.sectionName}</p>
-                <p><strong>Instructor:</strong> {selectedSection.instructorName}</p>
-                <p><strong>Schedule:</strong> {selectedSection.day}, {formatTime(selectedSection.timeFrom)} - {formatTime(selectedSection.timeTo)}</p>
+                <p><strong>Instructor:</strong> {selectedSection.faculty?.firstName} {selectedSection.faculty?.lastName}</p>
+                <p><strong>Schedule:</strong> {selectedSection.day}, {formatTime(selectedSection.startTime)} - {formatTime(selectedSection.endTime)}</p>
                 <p><strong>Room:</strong> {selectedSection.room}</p>
-                <p><strong>Credits:</strong> {selectedSection.credits}</p>
+                <p><strong>Credits:</strong> {selectedSection.course?.credits}</p>
                 <p><strong>Capacity:</strong> {selectedSection.enrolledCount || 0}/{selectedSection.capacity}</p>
                 <br />
                 <p>Are you sure you want to enroll in this section?</p>

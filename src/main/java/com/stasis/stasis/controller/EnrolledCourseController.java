@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/enrolled-courses")
+@CrossOrigin(origins = "http://localhost:3000")
 public class EnrolledCourseController {
 
     @Autowired
@@ -33,6 +34,18 @@ public class EnrolledCourseController {
         // Note: You might want to inject SemesterEnrollmentService to get the SemesterEnrollment object
         // For now, this endpoint signature is prepared but would need the actual SemesterEnrollment object
         return ResponseEntity.ok().build(); // Placeholder - needs SemesterEnrollment object
+    }
+
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<List<EnrolledCourse>> getEnrolledCoursesByStudent(@PathVariable Long studentId) {
+        List<EnrolledCourse> enrolledCourses = enrolledCourseService.getEnrolledCoursesByStudent(studentId);
+        return ResponseEntity.ok(enrolledCourses);
+    }
+
+    @GetMapping("/section/{sectionId}")
+    public ResponseEntity<List<EnrolledCourse>> getEnrolledCoursesBySection(@PathVariable Long sectionId) {
+        List<EnrolledCourse> enrolledCourses = enrolledCourseService.getEnrolledCoursesBySection(sectionId);
+        return ResponseEntity.ok(enrolledCourses);
     }
 
     @PostMapping

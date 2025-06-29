@@ -2,11 +2,22 @@ package com.stasis.stasis.repository;
 
 import com.stasis.stasis.model.EnrolledCourse;
 import com.stasis.stasis.model.SemesterEnrollment;
+import com.stasis.stasis.model.CourseSection;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
 public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, Long> {
     List<EnrolledCourse> findBySemesterEnrollment(SemesterEnrollment semesterEnrollment);
+    
+    @Query("SELECT ec FROM EnrolledCourse ec WHERE ec.semesterEnrollment.student.id = :studentId")
+    List<EnrolledCourse> findByStudentId(@Param("studentId") Long studentId);
+    
+    List<EnrolledCourse> findBySection(CourseSection section);
+    
+    @Query("SELECT ec FROM EnrolledCourse ec WHERE ec.section.sectionID = :sectionId")
+    List<EnrolledCourse> findBySectionId(@Param("sectionId") Long sectionId);
 }

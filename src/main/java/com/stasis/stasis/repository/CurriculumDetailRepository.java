@@ -11,19 +11,19 @@ import java.util.List;
 @Repository
 public interface CurriculumDetailRepository extends JpaRepository<CurriculumDetail, Long> {
     
-    @Query("SELECT cd FROM CurriculumDetail cd WHERE cd.curriculum.curriculumID = :curriculumId")
+    @Query("SELECT cd FROM CurriculumDetail cd JOIN FETCH cd.course WHERE cd.curriculum.curriculumID = :curriculumId")
     List<CurriculumDetail> findByCurriculumId(@Param("curriculumId") Long curriculumId);
     
     // Use @Query instead of method name for capitalized field names
-    @Query("SELECT cd FROM CurriculumDetail cd WHERE cd.YearLevel = :yearLevel")
+    @Query("SELECT cd FROM CurriculumDetail cd JOIN FETCH cd.course WHERE cd.YearLevel = :yearLevel")
     List<CurriculumDetail> findByYearLevel(@Param("yearLevel") int yearLevel);
     
-    @Query("SELECT cd FROM CurriculumDetail cd WHERE cd.curriculum.curriculumID = :curriculumId AND cd.YearLevel = :yearLevel")
+    @Query("SELECT cd FROM CurriculumDetail cd JOIN FETCH cd.course WHERE cd.curriculum.curriculumID = :curriculumId AND cd.YearLevel = :yearLevel")
     List<CurriculumDetail> findByCurriculumIdAndYearLevel(@Param("curriculumId") Long curriculumId, @Param("yearLevel") int yearLevel);
     
-    @Query("SELECT cd FROM CurriculumDetail cd WHERE cd.curriculum.curriculumID = :curriculumId AND cd.Semester = :semester")
+    @Query("SELECT cd FROM CurriculumDetail cd JOIN FETCH cd.course WHERE cd.curriculum.curriculumID = :curriculumId AND cd.Semester = :semester")
     List<CurriculumDetail> findByCurriculumIdAndSemester(@Param("curriculumId") Long curriculumId, @Param("semester") String semester);
     
-    @Query("SELECT cd FROM CurriculumDetail cd WHERE cd.curriculum.curriculumID = :curriculumId ORDER BY cd.YearLevel, cd.Semester")
+    @Query("SELECT cd FROM CurriculumDetail cd JOIN FETCH cd.course WHERE cd.curriculum.curriculumID = :curriculumId ORDER BY cd.YearLevel, cd.Semester")
     List<CurriculumDetail> findByCurriculumIdOrderByYearAndSemester(@Param("curriculumId") Long curriculumId);
 }

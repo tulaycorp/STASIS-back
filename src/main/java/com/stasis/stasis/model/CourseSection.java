@@ -24,7 +24,8 @@ public class CourseSection {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long sectionID;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "course_id")
     private Course course;
 
     @ManyToOne(fetch = FetchType.EAGER)
