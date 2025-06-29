@@ -77,4 +77,8 @@ public class CourseSectionService {
             })
             .orElseThrow(() -> new RuntimeException("Section not found with ID " + id));
     }
+
+    public List<CourseSection> getSectionsByFaculty(Long facultyId) {
+        return courseSectionRepository.findByFaculty_FacultyID(facultyId);
+    }
 }

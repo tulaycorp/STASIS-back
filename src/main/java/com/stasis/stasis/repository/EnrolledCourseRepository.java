@@ -26,6 +26,13 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
     
     List<EnrolledCourse> findBySection(CourseSection section);
     
-    @Query("SELECT ec FROM EnrolledCourse ec WHERE ec.section.sectionID = :sectionId")
+    @Query("SELECT ec FROM EnrolledCourse ec " +
+           "LEFT JOIN FETCH ec.semesterEnrollment se " +
+           "LEFT JOIN FETCH se.student st " +
+           "LEFT JOIN FETCH st.program p " +
+           "LEFT JOIN FETCH ec.section s " +
+           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH ec.grade g " +
+           "WHERE ec.section.sectionID = :sectionId")
     List<EnrolledCourse> findBySectionId(@Param("sectionId") Long sectionId);
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -84,10 +85,20 @@ public class CourseSectionController {
     }
 
     @GetMapping("/program/{programId}")
-public ResponseEntity<List<CourseSection>> getSectionsByProgram(@PathVariable Long programId) {
-    List<CourseSection> sections = courseSectionService.getSectionsByProgram(programId);
-    return ResponseEntity.ok(sections);
-}
+    public ResponseEntity<List<CourseSection>> getSectionsByProgram(@PathVariable Long programId) {
+        List<CourseSection> sections = courseSectionService.getSectionsByProgram(programId);
+        return ResponseEntity.ok(sections);
+    }
+
+    @GetMapping("/faculty/{facultyId}")
+    public ResponseEntity<List<CourseSection>> getSectionsByFaculty(@PathVariable Long facultyId) {
+        try {
+            List<CourseSection> sections = courseSectionService.getSectionsByFaculty(facultyId);
+            return ResponseEntity.ok(sections);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+    }
 
 
 

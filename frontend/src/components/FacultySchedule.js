@@ -1,70 +1,134 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultySchedule.module.css';
 import Sidebar from './FacultySidebar';
 import { useFacultyData } from '../hooks/useFacultyData';
-import { courseSectionAPI } from '../services/api';
+import { courseSectionAPI, testConnection } from '../services/api';
 
 const FacultySchedule = () => {
-  const { getUserInfo } = useFacultyData();
+  const { getUserInfo, facultyData } = useFacultyData();
   const [scheduleList, setScheduleList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDay, setSelectedDay] = useState('All Days');
   const [searchTerm, setSearchTerm] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   // Day options
   const dayOptions = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
   ];
 
+  // Handle connection errors
+  const handleConnectionError = (err) => {
+    if (err.code === 'ERR_NETWORK' || err.message.includes('Network Error')) {
+      setError('Cannot connect to server. Please check if the backend is running on http://localhost:8080');
+    } else if (err.code === 'ECONNREFUSED') {
+      setError('Connection refused. The backend server is not running.');
+    } else if (err.response?.status === 404) {
+      setError('API endpoint not found. Please check if the server is properly configured.');
+    } else if (err.response?.status === 500) {
+      setError('Server error. Please check the backend console for error details.');
+    } else if (err.response?.status === 401) {
+      setError('Authentication error. Please log in again.');
+    } else {
+      setError(`Failed to load schedule data: ${err.message}`);
+    }
+  };
+
   // Fetch faculty schedule data
-  useEffect(() => {
-    const fetchScheduleData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const userInfo = getUserInfo();
-        if (!userInfo || !userInfo.id) {
-          // Gracefully handle missing user info instead of throwing an error.
-          // The component will just show an empty schedule.
-          console.warn('Faculty information not available, cannot fetch schedule.');
-          return; 
-        }
-
-        // Fetch sections assigned to this faculty
-        const response = await courseSectionAPI.getSectionsByFaculty(userInfo.id);
-        
-        if (response.data && response.data.success) {
-          // Transform the API data to match our component's expected format
-          const transformedSchedule = response.data.data.map(section => ({
-            id: section.id,
-            course: section.courseName || section.course?.name || 'Unknown Course',
-            section: section.sectionName || `${section.course?.code || 'UNKNOWN'}-${section.sectionName || 'A'}`,
-            instructor: section.faculty?.name || userInfo.name || 'Unknown Instructor',
-            room: section.room || 'TBA',
-            day: section.day || 'TBA',
-            timeFrom: section.timeFrom || '00:00',
-            timeTo: section.timeTo || '00:00',
-            status: section.status || 'Active'
-          }));
-          
-          setScheduleList(transformedSchedule);
-        } else {
-          setScheduleList([]);
-        }
-      } catch (err) {
-        console.error('Error fetching schedule data:', err);
-        setError(err.message || 'Failed to load schedule data');
+  const fetchScheduleData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get faculty data directly from the hook
+      const facultyId = facultyData?.facultyID || facultyData?.facultyId;
+      if (!facultyData || !facultyId) {
+        console.warn('Faculty information not available, cannot fetch schedule.');
+        console.log('Available facultyData:', facultyData);
         setScheduleList([]);
-      } finally {
         setLoading(false);
+        return; 
       }
-    };
 
+      console.log('Fetching schedule for faculty ID:', facultyId);
+      console.log('Faculty data:', facultyData);
+
+      // First, let's try to get all sections to debug
+      try {
+        const allSectionsResponse = await courseSectionAPI.getAllSections();
+        console.log('All sections in database:', allSectionsResponse.data);
+        
+        // Filter sections that have faculty assigned
+        const sectionsWithFaculty = allSectionsResponse.data.filter(section => section.faculty);
+        console.log('Sections with faculty assigned:', sectionsWithFaculty);
+        
+        // Check if any section has our faculty
+        const ourSections = sectionsWithFaculty.filter(section => 
+          section.faculty && section.faculty.facultyID === facultyId
+        );
+        console.log('Sections assigned to our faculty:', ourSections);
+      } catch (debugErr) {
+        console.error('Debug query failed:', debugErr);
+      }
+
+      // Fetch sections assigned to this faculty
+      const response = await courseSectionAPI.getSectionsByFaculty(facultyId);
+      
+      console.log('API Response for faculty sections:', response);
+      
+      if (response && response.data) {
+        // Handle both direct array response and wrapped response
+        const sectionsData = Array.isArray(response.data) ? response.data : 
+                           (response.data.data || response.data.sections || []);
+        
+        console.log('Sections data for faculty:', sectionsData);
+        
+        // Transform the API data to match our component's expected format
+        const transformedSchedule = sectionsData.map(section => ({
+          id: section.sectionID || section.id,
+          courseCode: section.course?.courseCode || 'N/A',
+          courseName: section.course?.courseDescription || section.courseName || 'Unknown Course',
+          section: section.sectionName || `${section.course?.courseCode || 'UNKNOWN'}-${section.sectionName || 'A'}`,
+          instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : `${facultyData.firstName} ${facultyData.lastName}` || 'Unknown Instructor',
+          room: section.room || 'TBA',
+          day: section.day || 'TBA',
+          timeFrom: section.startTime || section.timeFrom || '00:00',
+          timeTo: section.endTime || section.timeTo || '00:00',
+          status: section.status || 'ACTIVE',
+          semester: section.semester || 'Current',
+          year: section.year || new Date().getFullYear(),
+          program: section.course?.program || 'N/A'
+        }));
+        
+        console.log('Transformed schedule:', transformedSchedule);
+        setScheduleList(transformedSchedule);
+      } else {
+        console.log('No data received from API');
+        setScheduleList([]);
+      }
+    } catch (err) {
+      console.error('Error fetching schedule data:', err);
+      handleConnectionError(err);
+      setScheduleList([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [facultyData]);
+
+  // Initial data load
+  useEffect(() => {
     fetchScheduleData();
-  }, [getUserInfo]);
+  }, [fetchScheduleData]);
+
+  // Refresh schedule data
+  const refreshScheduleData = async () => {
+    setRefreshing(true);
+    await fetchScheduleData();
+    setRefreshing(false);
+  };
+
 
   // Statistics calculations
   const totalSchedules = scheduleList.length;
@@ -72,16 +136,15 @@ const FacultySchedule = () => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     return s.day === today;
   }).length;
-  const weekSchedules = scheduleList.length; // All are weekly schedules
-  const uniqueCourses = [...new Set(scheduleList.map(s => s.course))].length;
+  const uniqueCourses = [...new Set(scheduleList.map(s => s.courseName))].length;
 
-  // Filter schedules based on search and day
+  // Filter schedules based on search, day, and status
   const filteredSchedules = scheduleList.filter(schedule => {
-    const matchesSearch = schedule.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = schedule.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         schedule.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          schedule.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.id.toString().toLowerCase().includes(searchTerm.toLowerCase());
+                         schedule.program.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDay = selectedDay === 'All Days' || schedule.day === selectedDay;
     return matchesSearch && matchesDay;
   });
@@ -224,8 +287,8 @@ const FacultySchedule = () => {
               <div className="stat-value">{todaySchedules}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Weekly Classes</div>
-              <div className="stat-value">{weekSchedules}</div>
+              <div className="stat-label">Program</div>
+              <div className="stat-value">{facultyData?.program || 'N/A'}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Unique Courses</div>
@@ -256,6 +319,14 @@ const FacultySchedule = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
                   />
+                  <button 
+                    onClick={refreshScheduleData}
+                    disabled={refreshing}
+                    className="refresh-button"
+                    title="Refresh Schedule"
+                  >
+                    {refreshing ? '🔄' : '↻'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -264,24 +335,22 @@ const FacultySchedule = () => {
               <table className="schedule-table">
                 <thead>
                   <tr>
-                    <th>Schedule ID</th>
-                    <th>Course & Section</th>
+                    <th>Course Code</th>
+                    <th>Course Name</th>
+                    <th>Section</th>
+                    <th>Program</th>
                     <th>Room</th>
                     <th>Day & Time</th>
-                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSchedules.length > 0 ? (
                     filteredSchedules.map((schedule) => (
                       <tr key={schedule.id}>
-                        <td>{schedule.id}</td>
-                        <td>
-                          <div className="schedule-info">
-                            <div className="schedule-course">{schedule.course}</div>
-                            <div className="schedule-section">{schedule.section}</div>
-                          </div>
-                        </td>
+                        <td className="course-code">{schedule.courseCode}</td>
+                        <td className="course-name">{schedule.courseName}</td>
+                        <td className="section-name">{schedule.section}</td>
+                        <td className="program-name">{schedule.program}</td>
                         <td>{schedule.room}</td>
                         <td>
                           <div className="time-info">
@@ -291,17 +360,12 @@ const FacultySchedule = () => {
                             <div className="day-info">{schedule.day}</div>
                           </div>
                         </td>
-                        <td>
-                          <span className={`status-badge ${schedule.status.toLowerCase()}`}>
-                            {schedule.status}
-                          </span>
-                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="no-data">
-                        {searchTerm || selectedDay !== 'All Days' 
+                      <td colSpan="6" className="no-data">
+                        {searchTerm || selectedDay !== 'All Days'
                           ? 'No schedules match your search criteria' 
                           : 'No schedules assigned yet'}
                       </td>

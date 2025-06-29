@@ -27,8 +27,13 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // Find by course
     List<CourseSection> findByCourse_Id(Long courseId);
     
-    // Find by faculty
-    List<CourseSection> findByFaculty_FacultyID(Long facultyId);
+    // Find by faculty with optimized fetch joins
+    @Query("SELECT cs FROM CourseSection cs " +
+           "JOIN FETCH cs.course c " +
+           "JOIN FETCH cs.program p " +
+           "JOIN FETCH cs.faculty f " +
+           "WHERE cs.faculty.facultyID = :facultyId")
+    List<CourseSection> findByFaculty_FacultyID(@Param("facultyId") Long facultyId);
     
     // Find by room
     List<CourseSection> findByRoom(String room);

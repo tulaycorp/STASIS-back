@@ -4,15 +4,19 @@ import com.stasis.stasis.model.EnrolledCourse;
 import com.stasis.stasis.model.SemesterEnrollment;
 import com.stasis.stasis.model.CourseSection;
 import com.stasis.stasis.model.Student;
+import com.stasis.stasis.model.Grade;
 import com.stasis.stasis.repository.EnrolledCourseRepository;
 import com.stasis.stasis.repository.CourseSectionRepository;
 import com.stasis.stasis.repository.StudentRepository;
 import com.stasis.stasis.repository.SemesterEnrollmentRepository;
+import com.stasis.stasis.repository.GradeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -29,6 +33,9 @@ public class EnrolledCourseService {
     
     @Autowired
     private SemesterEnrollmentRepository semesterEnrollmentRepository;
+    
+    @Autowired
+    private GradeRepository gradeRepository;
 
     public List<EnrolledCourse> getAllEnrolledCourses() {
         return enrolledCourseRepository.findAll();
@@ -139,5 +146,111 @@ public class EnrolledCourseService {
             .build();
         
         return semesterEnrollmentRepository.save(newSemesterEnrollment);
+    }
+
+    public EnrolledCourse updateGrades(Long enrolledCourseId, Map<String, Object> gradeData) {
+        EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
+            .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
+
+        // Calculate the overall grade from midterm and final
+        Double overallGrade = null;
+        if (gradeData.containsKey("overallGrade") && gradeData.get("overallGrade") != null) {
+            overallGrade = Double.valueOf(gradeData.get("overallGrade").toString());
+        }
+
+        // Create or update the grade
+        Grade grade = enrolledCourse.getGrade();
+        if (grade == null) {
+            grade = Grade.builder()
+                .enrolledCourse(enrolledCourse)
+                .gradeValue(overallGrade != null ? BigDecimal.valueOf(overallGrade) : null)
+                .gradeDate(LocalDate.now())
+                .build();
+        } else {
+            if (overallGrade != null) {
+                grade.setGradeValue(BigDecimal.valueOf(overallGrade));
+            }
+            grade.setGradeDate(LocalDate.now());
+        }
+
+        // Save the grade first
+        if (grade.getGradeID() == null) {
+            grade = gradeRepository.save(grade);
+        } else {
+            gradeRepository.save(grade);
+        }
+
+        // Update the enrolled course with the grade
+        enrolledCourse.setGrade(grade);
+        return enrolledCourseRepository.save(enrolledCourse);
+    }
+
+    public EnrolledCourse updateMidtermGrade(Long enrolledCourseId, Double midtermGrade) {
+        // For now, we'll store the midterm grade as the overall grade
+        // In a more complex system, you might want separate fields for midterm and final
+        EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
+            .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
+
+        Grade grade = enrolledCourse.getGrade();
+        if (grade == null) {
+            grade = Grade.builder()
+                .enrolledCourse(enrolledCourse)
+                .gradeValue(BigDecimal.valueOf(midtermGrade))
+                .gradeDate(LocalDate.now())
+                .build();
+            grade = gradeRepository.save(grade);
+        } else {
+            grade.setGradeValue(BigDecimal.valueOf(midtermGrade));
+            grade.setGradeDate(LocalDate.now());
+            gradeRepository.save(grade);
+        }
+
+        enrolledCourse.setGrade(grade);
+        return enrolledCourseRepository.save(enrolledCourse);
+    }
+
+    public EnrolledCourse updateFinalGrade(Long enrolledCourseId, Double finalGrade) {
+        // For now, we'll store the final grade as the overall grade
+        EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
+            .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
+
+        Grade grade = enrolledCourse.getGrade();
+        if (grade == null) {
+            grade = Grade.builder()
+                .enrolledCourse(enrolledCourse)
+                .gradeValue(BigDecimal.valueOf(finalGrade))
+                .gradeDate(LocalDate.now())
+                .build();
+            grade = gradeRepository.save(grade);
+        } else {
+            grade.setGradeValue(BigDecimal.valueOf(finalGrade));
+            grade.setGradeDate(LocalDate.now());
+            gradeRepository.save(grade);
+        }
+
+        enrolledCourse.setGrade(grade);
+        return enrolledCourseRepository.save(enrolledCourse);
+    }
+
+    public EnrolledCourse updateOverallGrade(Long enrolledCourseId, Double overallGrade) {
+        EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
+            .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
+
+        Grade grade = enrolledCourse.getGrade();
+        if (grade == null) {
+            grade = Grade.builder()
+                .enrolledCourse(enrolledCourse)
+                .gradeValue(BigDecimal.valueOf(overallGrade))
+                .gradeDate(LocalDate.now())
+                .build();
+            grade = gradeRepository.save(grade);
+        } else {
+            grade.setGradeValue(BigDecimal.valueOf(overallGrade));
+            grade.setGradeDate(LocalDate.now());
+            gradeRepository.save(grade);
+        }
+
+        enrolledCourse.setGrade(grade);
+        return enrolledCourseRepository.save(enrolledCourse);
     }
 }

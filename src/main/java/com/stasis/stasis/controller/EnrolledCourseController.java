@@ -82,4 +82,47 @@ public class EnrolledCourseController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/{id}/grades")
+    public ResponseEntity<EnrolledCourse> updateGrades(@PathVariable Long id, @RequestBody Map<String, Object> gradeData) {
+        try {
+            EnrolledCourse updated = enrolledCourseService.updateGrades(id, gradeData);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}/midterm-grade")
+    public ResponseEntity<EnrolledCourse> updateMidtermGrade(@PathVariable Long id, @RequestBody Map<String, Object> gradeData) {
+        try {
+            Double midtermGrade = Double.valueOf(gradeData.get("midtermGrade").toString());
+            EnrolledCourse updated = enrolledCourseService.updateMidtermGrade(id, midtermGrade);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}/final-grade")
+    public ResponseEntity<EnrolledCourse> updateFinalGrade(@PathVariable Long id, @RequestBody Map<String, Object> gradeData) {
+        try {
+            Double finalGrade = Double.valueOf(gradeData.get("finalGrade").toString());
+            EnrolledCourse updated = enrolledCourseService.updateFinalGrade(id, finalGrade);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}/overall-grade")
+    public ResponseEntity<EnrolledCourse> updateOverallGrade(@PathVariable Long id, @RequestBody Map<String, Object> gradeData) {
+        try {
+            Double overallGrade = Double.valueOf(gradeData.get("overallGrade").toString());
+            EnrolledCourse updated = enrolledCourseService.updateOverallGrade(id, overallGrade);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

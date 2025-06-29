@@ -11,7 +11,7 @@ import {
 } from '../services/api';
 
 const FacultyGrades = () => {
-  const { getUserInfo } = useFacultyData();
+  const { getUserInfo, facultyData } = useFacultyData();
   const navigate = useNavigate();
   
   // State management
@@ -31,8 +31,13 @@ const FacultyGrades = () => {
 
   // Fetch initial data on component mount
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    if (facultyData) {
+      fetchInitialData();
+    }
+  }, [facultyData]);
+
+  // Add loading state management to prevent duplicate calls
+  const [isInitializing, setIsInitializing] = useState(false);
 
   // Effect to update the course/section sidebars when a program or section filter changes
   useEffect(() => {
@@ -76,20 +81,67 @@ const FacultyGrades = () => {
 
   // Fetch programs and course sections
   const fetchInitialData = async () => {
+    if (!facultyData || isInitializing) {
+      if (!facultyData) {
+        setError('Faculty information not available. Please log in again.');
+        setLoading(false);
+      }
+      return;
+    }
+    
     try {
+      setIsInitializing(true);
       setLoading(true);
       setError(null);
-      const programsResponse = await programAPI.getAllPrograms();
-      const programsData = programsResponse.data.data || programsResponse.data;
+      
+      console.log('Faculty data:', facultyData);
+      console.log('Faculty data keys:', facultyData ? Object.keys(facultyData) : 'No faculty data');
+      
+      // Get faculty ID using the same approach as FacultySchedule
+      const facultyId = facultyData?.facultyID || facultyData?.facultyId;
+      
+      if (!facultyData || !facultyId) {
+        console.warn('Faculty information not available, cannot fetch grades.');
+        setError('Faculty information not available. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Loading sections for faculty ID:', facultyId);
+      
+      // Fetch only sections assigned to this faculty
+      const sectionsResponse = await courseSectionAPI.getSectionsByFaculty(facultyId);
+      const sectionsData = Array.isArray(sectionsResponse.data) ? sectionsResponse.data : 
+                          (sectionsResponse.data.data || sectionsResponse.data.sections || []);
+      
+      console.log('Faculty-specific sections loaded:', sectionsData.length);
+      console.log('Sections data:', sectionsData);
+      
+      if (sectionsData.length === 0) {
+        setError('No courses assigned to this faculty member.');
+        setLoading(false);
+        return;
+      }
+      
+      // Extract unique programs from faculty's assigned sections
+      const facultyPrograms = [...new Set(sectionsData
+        .map(section => section.program?.programName || section.course?.program || 'Unknown Program')
+        .filter(program => program !== 'Unknown Program')
+      )];
+      
+      // Create program objects for the sidebar
+      const programsData = facultyPrograms.map((programName, index) => ({
+        id: index + 1,
+        name: programName,
+        programName: programName
+      }));
+      
       setPrograms(programsData);
       
       if (programsData.length > 0) {
         const firstProgramName = programsData[0].name || programsData[0].programName;
         setSelectedProgram(firstProgramName);
       }
-
-      const sectionsResponse = await courseSectionAPI.getAllSections();
-      const sectionsData = sectionsResponse.data.data || sectionsResponse.data;
       
       const processedGrades = await processCourseSections(sectionsData);
       setGradesList(processedGrades);
@@ -106,17 +158,17 @@ const FacultyGrades = () => {
     const processedGrades = [];
     for (const section of sectionsData) {
       try {
-        const enrolledStudents = await fetchEnrolledStudents(section.id);
+        const enrolledStudents = await fetchEnrolledStudents(section.sectionID || section.id);
         const gradeItem = {
-          id: section.courseCode || `SEC${section.id}`,
-          course: section.courseName || section.course?.courseName || 'Unknown Course',
+          id: section.sectionID || section.id,
+          course: section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
           section: section.sectionName,
-          creditUnits: section.course?.creditUnits || section.creditUnits || 3,
-          program: section.course?.program?.name || section.course?.program?.programName || 'Unknown Program',
+          creditUnits: section.course?.credits || 3,
+          program: section.program?.programName || section.course?.program || 'Unknown Program',
           status: section.status || 'Active',
           instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'Dr. Alan Turing',
           students: enrolledStudents,
-          sectionId: section.id
+          sectionId: section.sectionID || section.id
         };
         processedGrades.push(gradeItem);
       } catch (err) { 
@@ -126,34 +178,44 @@ const FacultyGrades = () => {
     return processedGrades;
   };
 
-  // Fetch enrolled students for a specific section
+  // Fetch enrolled students for a specific section with caching
   const fetchEnrolledStudents = async (sectionId) => {
+    const cacheKey = `section_${sectionId}_students`;
+    const cachedData = sessionStorage.getItem(cacheKey);
+    
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+    
     try {
-      const enrolledResponse = await enrolledCourseAPI.getAllEnrolledCourses();
-      const allEnrolled = enrolledResponse.data.data || enrolledResponse.data;
-      const sectionEnrolled = allEnrolled.filter(e => 
-        e.courseSectionId === sectionId || e.courseSection?.id === sectionId
-      );
-      const students = [];
-      for (const enrollment of sectionEnrolled) {
-        try {
-          const studentId = enrollment.studentId || enrollment.student?.id;
-          if (studentId) {
-            const studentResponse = await studentAPI.getStudentById(studentId);
-            const student = studentResponse.data.data || studentResponse.data;
-            students.push({
-              id: student.studentId || student.id,
-              name: `${student.lastName}, ${student.firstName}`,
-              midterm: enrollment.midtermGrade || null,
-              final: enrollment.finalGrade || null,
-              weightedAverage: enrollment.overallGrade || null,
-              enrollmentId: enrollment.id
-            });
-          }
-        } catch (studentErr) { 
-          console.error('Error fetching student details:', studentErr); 
-        }
-      }
+      const enrolledResponse = await enrolledCourseAPI.getEnrolledCoursesBySection(sectionId);
+      const sectionEnrolled = enrolledResponse.data || [];
+      
+      const students = sectionEnrolled
+        .map(enrollment => {
+          const student = enrollment.semesterEnrollment?.student;
+          if (!student) return null;
+          
+          const gradeValue = enrollment.grade?.gradeValue || null;
+          
+          return {
+            id: student.id,
+            name: `${student.lastName}, ${student.firstName}`,
+            email: student.email,
+            yearLevel: student.year_level,
+            program: student.program?.programName || 'Unknown Program',
+            midterm: enrollment.midtermGrade || null,
+            final: enrollment.finalGrade || null,
+            weightedAverage: enrollment.overallGrade || gradeValue || null,
+            enrollmentId: enrollment.enrolledCourseID,
+            enrollmentStatus: enrollment.status,
+            semesterEnrollmentId: enrollment.semesterEnrollment?.semesterEnrollmentID,
+            remark: enrollment.remark || 'INCOMPLETE'
+          };
+        })
+        .filter(Boolean);
+      
+      sessionStorage.setItem(cacheKey, JSON.stringify(students));
       return students;
     } catch (err) { 
       console.error('Error fetching enrolled students:', err); 
@@ -170,14 +232,69 @@ const FacultyGrades = () => {
     setSelectedCourseId(courseId);
   };
 
-  const handleGradeChange = (studentId, field, value) => {
+  const handleGradeChange = async (studentId, field, value) => {
+    const student = selectedCourse.students.find(s => s.id === studentId);
+    if (!student || !student.enrollmentId) return;
+
+    const grades = studentsGrades[studentId] || {};
+    const updatedGrades = {
+      ...grades,
+      [field]: field === 'remark' ? value : (parseFloat(value) || null)
+    };
+
+    // Calculate new weighted average if both grades are present
+    let newWeightedAverage = null;
+    const midtermGrade = field === 'midterm' ? parseFloat(value) : (grades.midterm ?? student.midterm);
+    const finalGrade = field === 'final' ? parseFloat(value) : (grades.final ?? student.final);
+    
+    if (midtermGrade !== null && finalGrade !== null) {
+      newWeightedAverage = (midtermGrade + finalGrade) / 2;
+    }
+
+    // Update local state
     setStudentsGrades(prev => ({
       ...prev,
       [studentId]: {
-        ...prev[studentId],
-        [field]: parseFloat(value) || null
+        ...updatedGrades,
+        weightedAverage: newWeightedAverage
       }
     }));
+
+    // Save to backend
+    try {
+      const updateData = {
+        midtermGrade: midtermGrade,
+        finalGrade: finalGrade,
+        overallGrade: newWeightedAverage,
+        remark: updatedGrades.remark || 'INCOMPLETE'
+      };
+      
+      await enrolledCourseAPI.updateGrades(student.enrollmentId, updateData);
+
+      // Update gradesList state to reflect changes
+      setGradesList(prevGrades => 
+        prevGrades.map(grade => 
+          grade.id === selectedCourse.id 
+            ? { 
+                ...grade, 
+                students: grade.students.map(s => 
+                  s.id === studentId 
+                    ? { 
+                        ...s, 
+                        midterm: updateData.midtermGrade, 
+                        final: updateData.finalGrade, 
+                        weightedAverage: newWeightedAverage,
+                        remark: updateData.remark
+                      } 
+                    : s
+                ) 
+              }
+            : grade
+        )
+      );
+    } catch (err) {
+      console.error('Error saving grade:', err);
+    }
   };
 
   const handleSaveGrades = async (studentId, studentName) => {
@@ -192,14 +309,17 @@ const FacultyGrades = () => {
       let newWeightedAverage = student.weightedAverage;
       const midtermGrade = grades.midterm ?? student.midterm;
       const finalGrade = grades.final ?? student.final;
+      const remark = grades.remark || 'INCOMPLETE';
+      
       if (midtermGrade !== null && finalGrade !== null) {
-        newWeightedAverage = (midtermGrade * 0.5) + (finalGrade * 0.5);
+        newWeightedAverage = (midtermGrade + finalGrade) / 2;
       }
       
       const updateData = { 
         midtermGrade, 
         finalGrade, 
-        overallGrade: newWeightedAverage 
+        overallGrade: newWeightedAverage,
+        remark
       };
       await enrolledCourseAPI.updateGrades(student.enrollmentId, updateData);
 
@@ -214,7 +334,8 @@ const FacultyGrades = () => {
                         ...s, 
                         midterm: updateData.midtermGrade, 
                         final: updateData.finalGrade, 
-                        weightedAverage: newWeightedAverage 
+                        weightedAverage: newWeightedAverage,
+                        remark: updateData.remark
                       } 
                     : s
                 ) 
@@ -389,7 +510,6 @@ const FacultyGrades = () => {
                       >
                         <div className={styles.semesterInfo}>
                           <div className={styles.semesterMain}>{course.name}</div>
-                          <div className={styles.courseSectionLabel}>{course.section}</div>
                         </div>
                       </div>
                     ))
@@ -443,7 +563,6 @@ const FacultyGrades = () => {
                       <th rowSpan="2">Section</th>
                       <th colSpan="3">Student Grades</th>
                       <th rowSpan="2">Remarks</th>
-                      <th rowSpan="2">Actions</th>
                     </tr>
                     <tr>
                       <th>Midterm</th>
@@ -454,25 +573,29 @@ const FacultyGrades = () => {
                   <tbody>
                     {!selectedCourse ? (
                       <tr>
-                        <td colSpan="8" className={styles.placeholderCell}>
+                        <td colSpan="7" className={styles.placeholderCell}>
                           Please select a course to view student grades.
                         </td>
                       </tr>
                     ) : selectedCourse.students.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className={styles.placeholderCell}>
+                        <td colSpan="7" className={styles.placeholderCell}>
                           No students enrolled in this course.
                         </td>
                       </tr>
                     ) : filteredStudents.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className={styles.placeholderCell}>
+                        <td colSpan="7" className={styles.placeholderCell}>
                           No students match your search criteria.
                         </td>
                       </tr>
                     ) : (
                       filteredStudents.map((student) => {
-                        const remark = getRemark(student.weightedAverage, student.midterm, student.final);
+                        const currentGrades = studentsGrades[student.id] || {};
+                        const displayedMidterm = currentGrades.midterm ?? student.midterm;
+                        const displayedFinal = currentGrades.final ?? student.final;
+                        const displayedWeightedAverage = currentGrades.weightedAverage ?? student.weightedAverage;
+                        
                         return (
                           <tr key={student.id}>
                             <td>
@@ -492,10 +615,10 @@ const FacultyGrades = () => {
                               <div className={styles.cellContent}>
                                 <input 
                                   type="number" 
-                                  min="0" 
-                                  max="100" 
-                                  step="0.1" 
-                                  defaultValue={student.midterm ?? ''} 
+                                  min="1" 
+                                  max="5" 
+                                  step="0.01" 
+                                  value={displayedMidterm ?? ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'midterm', e.target.value)} 
                                   className={styles.gradeInput} 
                                 />
@@ -505,10 +628,10 @@ const FacultyGrades = () => {
                               <div className={styles.cellContent}>
                                 <input 
                                   type="number" 
-                                  min="0" 
-                                  max="100" 
-                                  step="0.1" 
-                                  defaultValue={student.final ?? ''} 
+                                  min="1" 
+                                  max="5" 
+                                  step="0.01" 
+                                  value={displayedFinal ?? ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'final', e.target.value)} 
                                   className={styles.gradeInput} 
                                 />
@@ -516,25 +639,20 @@ const FacultyGrades = () => {
                             </td>
                             <td>
                               <div className={`${styles.cellContent} ${styles.gradeScore}`}>
-                                {student.weightedAverage?.toFixed(1) ?? 'N/A'}
+                                {displayedWeightedAverage?.toFixed(2) ?? 'N/A'}
                               </div>
                             </td>
                             <td>
                               <div className={styles.cellContent}>
-                                <span className={`${styles.remarksBadge} ${remark.className}`}>
-                                  {remark.text}
-                                </span>
-                              </div>
-                            </td>
-                            <td>
-                              <div className={styles.cellContent}>
-                                <button 
-                                  onClick={() => handleSaveGrades(student.id, student.name)} 
-                                  disabled={saveLoading[student.id]} 
-                                  className={styles.saveButton}
+                                <select
+                                  value={studentsGrades[student.id]?.remark || 'INCOMPLETE'}
+                                  onChange={(e) => handleGradeChange(student.id, 'remark', e.target.value)}
+                                  className={styles.remarkSelect}
                                 >
-                                  {saveLoading[student.id] ? 'Saving...' : 'Save'}
-                                </button>
+                                  <option value="INCOMPLETE">INCOMPLETE</option>
+                                  <option value="PASS">PASS</option>
+                                  <option value="FAIL">FAIL</option>
+                                </select>
                               </div>
                             </td>
                           </tr>

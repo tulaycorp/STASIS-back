@@ -211,8 +211,11 @@ const ScheduleManagement = () => {
         status: scheduleForm.status,
         room: scheduleForm.room,
         course: { id: selectedCourse?.id },
-        faculty: { facultyID: selectedFaculty?.value }
+        faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
       };
+
+      console.log('Creating section with data:', sectionData);
+      console.log('Selected faculty:', selectedFaculty);
 
       await courseSectionAPI.createSection(sectionData);
       alert('Schedule added successfully!');
@@ -272,6 +275,9 @@ const ScheduleManagement = () => {
         course: selectedCourse ? { id: selectedCourse.id } : null,
         faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
       };
+
+      console.log('Updating section with data:', sectionData);
+      console.log('Selected faculty for update:', selectedFaculty);
 
       await courseSectionAPI.updateSection(editingSchedule.id, sectionData);
       alert('Schedule updated successfully!');
