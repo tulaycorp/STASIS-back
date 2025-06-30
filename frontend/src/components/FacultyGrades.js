@@ -265,13 +265,13 @@ const FacultyGrades = () => {
                   email: student.email || '',
                   yearLevel: student.yearLevel || student.year_level || '',
                   program: student.program?.programName || 'Unknown Program',
-                  midterm: enrollment.midtermGrade || null,
-                  final: enrollment.finalGrade || null,
-                  weightedAverage: enrollment.overallGrade || null,
+                  midterm: enrollment.grade?.midtermGrade || null,
+                  final: enrollment.grade?.finalGrade || null,
+                  weightedAverage: enrollment.grade?.overallGrade || null,
                   enrollmentId: enrollment.enrolledCourseID,
                   enrollmentStatus: enrollment.status || 'PENDING',
                   semesterEnrollmentId: enrollment.semesterEnrollment?.semesterEnrollmentID,
-                  remark: enrollment.remark || 'INCOMPLETE'
+                  remark: enrollment.grade?.remark || 'INCOMPLETE'
                 };
 
                 console.log('Successfully processed student data:', studentData);

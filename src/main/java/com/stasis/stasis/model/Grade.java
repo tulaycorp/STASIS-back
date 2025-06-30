@@ -24,4 +24,10 @@ public class Grade {
     private BigDecimal gradeValue; // Using BigDecimal for precise decimal handling
     
     private LocalDate gradeDate;
+    
+    // Grade components moved from EnrolledCourse
+    private Double midtermGrade;
+    private Double finalGrade;
+    private Double overallGrade;
+    private String remark;
 }

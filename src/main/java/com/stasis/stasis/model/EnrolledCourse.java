@@ -24,11 +24,6 @@ public class EnrolledCourse {
 
     private String status;
 
-    private Double midtermGrade;
-    private Double finalGrade;
-    private Double overallGrade;
-    private String remark;
-
     @OneToOne
     @JoinColumn(name = "gradeID", nullable = true)
     private Grade grade;

@@ -38,9 +38,13 @@ public class GradeService {
     public Grade updateGrade(Long id, Grade updatedGrade) {
         return gradeRepository.findById(id)
             .map(grade -> {
-                grade.setEnrolledCourse(updatedGrade.getEnrolledCourse()); // Fixed: changed from setEnrollment to setEnrolledCourse
+                grade.setEnrolledCourse(updatedGrade.getEnrolledCourse());
                 grade.setGradeValue(updatedGrade.getGradeValue());
                 grade.setGradeDate(updatedGrade.getGradeDate());
+                grade.setMidtermGrade(updatedGrade.getMidtermGrade());
+                grade.setFinalGrade(updatedGrade.getFinalGrade());
+                grade.setOverallGrade(updatedGrade.getOverallGrade());
+                grade.setRemark(updatedGrade.getRemark());
                 return gradeRepository.save(grade);
             })
             .orElseThrow(() -> new RuntimeException("Grade not found with ID " + id));

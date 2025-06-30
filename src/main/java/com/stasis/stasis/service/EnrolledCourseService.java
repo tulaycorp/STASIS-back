@@ -171,31 +171,33 @@ public class EnrolledCourseService {
             remark = gradeData.get("remark").toString();
         }
 
-        // Update the enrolled course fields
-        if (midtermGrade != null) {
-            enrolledCourse.setMidtermGrade(midtermGrade);
-        }
-        if (finalGrade != null) {
-            enrolledCourse.setFinalGrade(finalGrade);
-        }
-        if (overallGrade != null) {
-            enrolledCourse.setOverallGrade(overallGrade);
-        }
-        if (remark != null) {
-            enrolledCourse.setRemark(remark);
-        }
-
-        // Create or update the grade
+        // Create or update the grade entity with all grade components
         Grade grade = enrolledCourse.getGrade();
         if (grade == null) {
             grade = Grade.builder()
                 .enrolledCourse(enrolledCourse)
                 .gradeValue(overallGrade != null ? BigDecimal.valueOf(overallGrade) : null)
                 .gradeDate(LocalDate.now())
+                .midtermGrade(midtermGrade)
+                .finalGrade(finalGrade)
+                .overallGrade(overallGrade)
+                .remark(remark)
                 .build();
         } else {
             if (overallGrade != null) {
                 grade.setGradeValue(BigDecimal.valueOf(overallGrade));
+            }
+            if (midtermGrade != null) {
+                grade.setMidtermGrade(midtermGrade);
+            }
+            if (finalGrade != null) {
+                grade.setFinalGrade(finalGrade);
+            }
+            if (overallGrade != null) {
+                grade.setOverallGrade(overallGrade);
+            }
+            if (remark != null) {
+                grade.setRemark(remark);
             }
             grade.setGradeDate(LocalDate.now());
         }
@@ -240,8 +242,6 @@ public class EnrolledCourseService {
     }
 
     public EnrolledCourse updateMidtermGrade(Long enrolledCourseId, Double midtermGrade) {
-        // For now, we'll store the midterm grade as the overall grade
-        // In a more complex system, you might want separate fields for midterm and final
         EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
             .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
 
@@ -249,12 +249,12 @@ public class EnrolledCourseService {
         if (grade == null) {
             grade = Grade.builder()
                 .enrolledCourse(enrolledCourse)
-                .gradeValue(BigDecimal.valueOf(midtermGrade))
+                .midtermGrade(midtermGrade)
                 .gradeDate(LocalDate.now())
                 .build();
             grade = gradeRepository.save(grade);
         } else {
-            grade.setGradeValue(BigDecimal.valueOf(midtermGrade));
+            grade.setMidtermGrade(midtermGrade);
             grade.setGradeDate(LocalDate.now());
             gradeRepository.save(grade);
         }
@@ -264,7 +264,6 @@ public class EnrolledCourseService {
     }
 
     public EnrolledCourse updateFinalGrade(Long enrolledCourseId, Double finalGrade) {
-        // For now, we'll store the final grade as the overall grade
         EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
             .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
 
@@ -272,12 +271,12 @@ public class EnrolledCourseService {
         if (grade == null) {
             grade = Grade.builder()
                 .enrolledCourse(enrolledCourse)
-                .gradeValue(BigDecimal.valueOf(finalGrade))
+                .finalGrade(finalGrade)
                 .gradeDate(LocalDate.now())
                 .build();
             grade = gradeRepository.save(grade);
         } else {
-            grade.setGradeValue(BigDecimal.valueOf(finalGrade));
+            grade.setFinalGrade(finalGrade);
             grade.setGradeDate(LocalDate.now());
             gradeRepository.save(grade);
         }
@@ -295,11 +294,13 @@ public class EnrolledCourseService {
             grade = Grade.builder()
                 .enrolledCourse(enrolledCourse)
                 .gradeValue(BigDecimal.valueOf(overallGrade))
+                .overallGrade(overallGrade)
                 .gradeDate(LocalDate.now())
                 .build();
             grade = gradeRepository.save(grade);
         } else {
             grade.setGradeValue(BigDecimal.valueOf(overallGrade));
+            grade.setOverallGrade(overallGrade);
             grade.setGradeDate(LocalDate.now());
             gradeRepository.save(grade);
         }
