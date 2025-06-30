@@ -125,4 +125,24 @@ public class EnrolledCourseController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/faculty/{facultyId}")
+    public ResponseEntity<List<EnrolledCourse>> getEnrolledCoursesByFaculty(@PathVariable Long facultyId) {
+        List<EnrolledCourse> enrolledCourses = enrolledCourseService.getEnrolledCoursesByFaculty(facultyId);
+        return ResponseEntity.ok(enrolledCourses);
+    }
+
+    @GetMapping("/faculty/{facultyId}/program/{programId}")
+    public ResponseEntity<List<EnrolledCourse>> getEnrolledCoursesByFacultyAndProgram(
+            @PathVariable Long facultyId, 
+            @PathVariable Long programId) {
+        List<EnrolledCourse> enrolledCourses = enrolledCourseService.getEnrolledCoursesByFacultyAndProgram(facultyId, programId);
+        return ResponseEntity.ok(enrolledCourses);
+    }
+
+    @GetMapping("/course/{courseId}/students")
+    public ResponseEntity<List<EnrolledCourse>> getEnrolledStudentsByCourse(@PathVariable Long courseId) {
+        List<EnrolledCourse> enrolledCourses = enrolledCourseService.getEnrolledCoursesByCourse(courseId);
+        return ResponseEntity.ok(enrolledCourses);
+    }
 }

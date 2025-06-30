@@ -226,6 +226,30 @@ export const enrolledCourseAPI = {
     console.log('Calling deleteEnrollment API for ID:', id);
     return api.delete(`/enrolled-courses/${id}`);
   },
+
+  // Get enrolled courses by faculty's sections
+  getEnrolledCoursesByFaculty: (facultyId) => {
+    console.log('Calling getEnrolledCoursesByFaculty API for faculty ID:', facultyId);
+    return api.get(`/enrolled-courses/faculty/${facultyId}`);
+  },
+
+  // Get enrolled courses by faculty's sections (explicit endpoint)
+  getEnrolledCoursesByFacultySections: (facultyId) => {
+    console.log('Calling getEnrolledCoursesByFacultySections API for faculty ID:', facultyId);
+    return api.get(`/enrolled-courses/faculty/${facultyId}/sections`);
+  },
+
+  // Get enrolled courses by faculty and program
+  getEnrolledCoursesByFacultyAndProgram: (facultyId, programId) => {
+    console.log('Calling getEnrolledCoursesByFacultyAndProgram API for faculty ID:', facultyId, 'and program ID:', programId);
+    return api.get(`/enrolled-courses/faculty/${facultyId}/program/${programId}`);
+  },
+
+  // Get all students enrolled in a specific course (across all sections)
+  getEnrolledStudentsByCourse: (courseId) => {
+    console.log('Calling getEnrolledStudentsByCourse API for course ID:', courseId);
+    return api.get(`/enrolled-courses/course/${courseId}/students`);
+  },
 };
 
 // Course Prerequisites API endpoints

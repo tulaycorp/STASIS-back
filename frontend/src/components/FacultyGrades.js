@@ -7,7 +7,8 @@ import {
   courseSectionAPI, 
   programAPI, 
   enrolledCourseAPI,
-  studentAPI 
+  studentAPI,
+  curriculumDetailAPI
 } from '../services/api';
 
 const FacultyGrades = () => {
@@ -39,13 +40,40 @@ const FacultyGrades = () => {
   // Add loading state management to prevent duplicate calls
   const [isInitializing, setIsInitializing] = useState(false);
 
+  // Function to fetch enrolled courses by program
+  const fetchEnrolledCoursesByProgram = async (facultyId, programId) => {
+    try {
+      const response = await enrolledCourseAPI.getEnrolledCoursesByFacultyAndProgram(facultyId, programId);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching enrolled courses by program:', error);
+      return [];
+    }
+  };
+
   // Effect to update the course/section sidebars when a program or section filter changes
   useEffect(() => {
-    if (selectedProgram) {
-      const programCoursesRaw = gradesList.filter(grade => grade.program === selectedProgram);
+    console.log('=== FILTERING EFFECT TRIGGERED ===');
+    console.log('selectedProgram:', selectedProgram);
+    console.log('gradesList.length:', gradesList.length);
+    console.log('selectedSectionFilter:', selectedSectionFilter);
+    
+    if (selectedProgram && gradesList.length > 0) {
+      console.log('Filtering courses for program:', selectedProgram);
+      console.log('Available grades list:', gradesList);
+      
+      const programCoursesRaw = gradesList.filter(grade => {
+        console.log(`Checking grade program: '${grade.program}' against selected: '${selectedProgram}'`);
+        const matches = grade.program.trim().toLowerCase() === selectedProgram.trim().toLowerCase();
+        console.log('Match result:', matches);
+        return matches;
+      });
+
+      console.log('Program courses raw:', programCoursesRaw);
 
       // Derive unique sections for the selected program
       const uniqueSections = ['All Sections', ...new Set(programCoursesRaw.map(course => course.section))];
+      console.log('Unique sections:', uniqueSections);
       setProgramSections(uniqueSections);
 
       // Filter courses based on the section filter
@@ -53,18 +81,36 @@ const FacultyGrades = () => {
         ? programCoursesRaw
         : programCoursesRaw.filter(course => course.section === selectedSectionFilter);
 
+      console.log('Filtered program courses:', filteredProgramCourses);
+
       const newCourseList = filteredProgramCourses.map(grade => ({
         id: grade.id, 
         name: grade.course, 
         section: grade.section
       }));
+      
+      console.log('New course list:', newCourseList);
       setCourses(newCourseList);
 
       // If the currently selected course is not in the new filtered list, deselect it
       if (selectedCourseId && !newCourseList.some(c => c.id === selectedCourseId)) {
+        console.log('Deselecting course because it is not in the filtered list');
         setSelectedCourseId(null);
         setSelectedCourse(null);
       }
+    } else if (gradesList.length > 0 && !selectedProgram) {
+      console.log('No program selected but grades list exists, showing all courses');
+      // If no program is selected but we have grades, show all courses
+      const allCourses = gradesList.map(grade => ({
+        id: grade.id, 
+        name: grade.course, 
+        section: grade.section
+      }));
+      console.log('All courses:', allCourses);
+      setCourses(allCourses);
+    } else {
+      console.log('No courses to show - either no program selected or no grades list');
+      setCourses([]);
     }
   }, [selectedProgram, selectedSectionFilter, gradesList, selectedCourseId]);
 
@@ -79,7 +125,7 @@ const FacultyGrades = () => {
     }
   }, [selectedCourseId, gradesList]);
 
-  // Fetch programs and course sections
+  // Fetch programs and course sections based on faculty's assigned sections
   const fetchInitialData = async () => {
     if (!facultyData || isInitializing) {
       if (!facultyData) {
@@ -97,7 +143,7 @@ const FacultyGrades = () => {
       console.log('Faculty data:', facultyData);
       console.log('Faculty data keys:', facultyData ? Object.keys(facultyData) : 'No faculty data');
       
-      // Get faculty ID using the same approach as FacultySchedule
+      // Get faculty ID
       const facultyId = facultyData?.facultyID || facultyData?.facultyId;
       
       if (!facultyData || !facultyId) {
@@ -107,49 +153,173 @@ const FacultyGrades = () => {
         return;
       }
 
-      console.log('Loading sections for faculty ID:', facultyId);
+      // CORRECTED LOGIC: Get faculty's assigned course sections, then get student enrollments for those sections
+      console.log('Fetching faculty assigned sections for faculty ID:', facultyId);
       
-      // Fetch only sections assigned to this faculty
+      // Get all course sections assigned to this faculty with full details
       const sectionsResponse = await courseSectionAPI.getSectionsByFaculty(facultyId);
-      const sectionsData = Array.isArray(sectionsResponse.data) ? sectionsResponse.data : 
-                          (sectionsResponse.data.data || sectionsResponse.data.sections || []);
+      console.log('Faculty sections response:', sectionsResponse);
       
-      console.log('Faculty-specific sections loaded:', sectionsData.length);
-      console.log('Sections data:', sectionsData);
+      const facultySections = sectionsResponse.data || [];
+      console.log('Faculty assigned sections:', facultySections);
       
-      if (sectionsData.length === 0) {
-        setError('No courses assigned to this faculty member.');
+      if (facultySections.length === 0) {
+        console.log('No sections assigned to this faculty');
+        setPrograms([]);
+        setGradesList([]);
         setLoading(false);
+        setIsInitializing(false);
         return;
       }
-      
-      // Extract unique programs from faculty's assigned sections
-      const facultyPrograms = [...new Set(sectionsData
-        .map(section => section.program?.programName || section.course?.program || 'Unknown Program')
-        .filter(program => program !== 'Unknown Program')
-      )];
-      
-      // Create program objects for the sidebar
-      const programsData = facultyPrograms.map((programName, index) => ({
+
+      // Extract unique programs from the faculty's assigned sections
+      const uniquePrograms = [...new Set(facultySections.map(section => {
+        const programName = section.program?.programName || 
+                          section.course?.program?.programName || 
+                          'Unknown Program';
+        console.log('Program name for section:', section.sectionID, programName);
+        return programName;
+      }))].filter(program => program !== 'Unknown Program');
+
+      console.log('Unique programs:', uniquePrograms);
+
+      // Create program objects
+      const programsData = uniquePrograms.map((programName, index) => ({
         id: index + 1,
         name: programName,
         programName: programName
       }));
-      
+
+      console.log('Programs from faculty sections:', programsData);
       setPrograms(programsData);
-      
+
       if (programsData.length > 0) {
-        const firstProgramName = programsData[0].name || programsData[0].programName;
+        const firstProgramName = programsData[0].name;
         setSelectedProgram(firstProgramName);
+        console.log('Selected program:', firstProgramName);
+      }
+
+      // Now get student enrollments for each of the faculty's sections
+      const sectionMap = new Map();
+      
+      // ALWAYS add sections to the map, even if no students are enrolled
+      for (const section of facultySections) {
+        console.log('=== PROCESSING SECTION ===');
+        console.log('Section details:', section);
+        console.log('Section ID:', section.sectionID);
+        console.log('Course:', section.course?.courseDescription);
+        console.log('Section Name:', section.sectionName);
+        console.log('Program:', section.program?.programName);
+        
+        // First, add the section with empty students array
+        const sectionData = {
+          id: section.sectionID,
+          course: section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
+          section: section.sectionName,
+          creditUnits: section.course?.credits || 3,
+          program: section.program?.programName || 'Unknown Program',
+          status: section.status || 'ACTIVE',
+          instructor: `${section.faculty?.firstName} ${section.faculty?.lastName}`,
+          students: []
+        };
+        
+        console.log('Created section data:', sectionData);
+        sectionMap.set(section.sectionID, sectionData);
+        
+          // Then try to fetch students for this section
+          try {
+            console.log('Fetching enrollments for section:', section.sectionID);
+            const enrolledResponse = await enrolledCourseAPI.getEnrolledCoursesBySection(section.sectionID);
+            const enrolledData = enrolledResponse?.data || [];
+            
+            console.log(`Raw enrollments for section ${section.sectionID}:`, enrolledData);
+            
+            // Process enrolled students with better error handling
+            const students = enrolledData.reduce((acc, enrollment) => {
+              try {
+                // Validate required nested objects
+                if (!enrollment?.semesterEnrollment?.student) {
+                  console.warn('Enrollment missing student data:', enrollment);
+                  return acc;
+                }
+
+                const student = enrollment.semesterEnrollment.student;
+                
+                // Validate required student fields
+                if (!student.id || !student.lastName || !student.firstName) {
+                  console.warn('Student missing required fields:', student);
+                  return acc;
+                }
+
+                // Create student object with null checks for optional fields
+                const studentData = {
+                  id: student.id,
+                  name: `${student.lastName}, ${student.firstName}`,
+                  email: student.email || '',
+                  yearLevel: student.yearLevel || student.year_level || '',
+                  program: student.program?.programName || 'Unknown Program',
+                  midterm: enrollment.midtermGrade || null,
+                  final: enrollment.finalGrade || null,
+                  weightedAverage: enrollment.overallGrade || null,
+                  enrollmentId: enrollment.enrolledCourseID,
+                  enrollmentStatus: enrollment.status || 'PENDING',
+                  semesterEnrollmentId: enrollment.semesterEnrollment.semesterEnrollmentID,
+                  remark: enrollment.remark || 'INCOMPLETE'
+                };
+
+                console.log('Processed student data:', studentData);
+                acc.push(studentData);
+                return acc;
+              } catch (error) {
+                console.error('Error processing enrollment:', error);
+                return acc;
+              }
+            }, []);
+          
+          console.log('Processed students for section:', students);
+          
+          // Update the section with the students
+          sectionData.students = students;
+          sectionMap.set(section.sectionID, sectionData);
+          
+        } catch (err) {
+          console.error(`Error fetching enrollments for section ${section.sectionID}:`, err);
+          // Section is already added with empty students array, so we don't need to do anything
+        }
+      }
+
+      const processedGrades = Array.from(sectionMap.values());
+      console.log('=== FINAL PROCESSED GRADES ===');
+      console.log('Total sections processed:', processedGrades.length);
+      
+      // Enhanced logging for debugging
+      processedGrades.forEach((grade, index) => {
+        console.log(`Section ${index + 1}:`, {
+          id: grade.id,
+          course: grade.course,
+          section: grade.section,
+          program: grade.program,
+          studentCount: grade.students.length,
+          students: grade.students.map(s => ({ id: s.id, name: s.name }))
+        });
+      });
+      
+      // Validate that we have valid data before setting state
+      if (processedGrades.length === 0) {
+        console.warn('No processed grades found - this might indicate a data processing issue');
+        setError('No course sections found for this faculty member.');
+      } else {
+        const totalStudents = processedGrades.reduce((sum, grade) => sum + grade.students.length, 0);
+        console.log(`Successfully processed ${processedGrades.length} sections with ${totalStudents} total students`);
       }
       
-      const processedGrades = await processCourseSections(sectionsData);
       setGradesList(processedGrades);
     } catch (err) {
       console.error('Error fetching initial data:', err);
       setError('Failed to load course data. Please try again.');
     } finally {
       setLoading(false);
+      setIsInitializing(false);
     }
   };
 

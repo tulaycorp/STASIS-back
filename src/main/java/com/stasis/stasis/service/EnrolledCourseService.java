@@ -152,10 +152,37 @@ public class EnrolledCourseService {
         EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
             .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
 
-        // Calculate the overall grade from midterm and final
+        // Extract grade values from the request
+        Double midtermGrade = null;
+        Double finalGrade = null;
         Double overallGrade = null;
+        String remark = null;
+
+        if (gradeData.containsKey("midtermGrade") && gradeData.get("midtermGrade") != null) {
+            midtermGrade = Double.valueOf(gradeData.get("midtermGrade").toString());
+        }
+        if (gradeData.containsKey("finalGrade") && gradeData.get("finalGrade") != null) {
+            finalGrade = Double.valueOf(gradeData.get("finalGrade").toString());
+        }
         if (gradeData.containsKey("overallGrade") && gradeData.get("overallGrade") != null) {
             overallGrade = Double.valueOf(gradeData.get("overallGrade").toString());
+        }
+        if (gradeData.containsKey("remark") && gradeData.get("remark") != null) {
+            remark = gradeData.get("remark").toString();
+        }
+
+        // Update the enrolled course fields
+        if (midtermGrade != null) {
+            enrolledCourse.setMidtermGrade(midtermGrade);
+        }
+        if (finalGrade != null) {
+            enrolledCourse.setFinalGrade(finalGrade);
+        }
+        if (overallGrade != null) {
+            enrolledCourse.setOverallGrade(overallGrade);
+        }
+        if (remark != null) {
+            enrolledCourse.setRemark(remark);
         }
 
         // Create or update the grade
@@ -183,6 +210,33 @@ public class EnrolledCourseService {
         // Update the enrolled course with the grade
         enrolledCourse.setGrade(grade);
         return enrolledCourseRepository.save(enrolledCourse);
+    }
+
+    // Faculty grade management methods
+    public List<EnrolledCourse> getEnrolledCoursesByFaculty(Long facultyId) {
+        // First, get all course sections assigned to this faculty
+        List<CourseSection> facultySections = courseSectionRepository.findByFaculty_FacultyID(facultyId);
+        
+        if (facultySections.isEmpty()) {
+            return List.of(); // Return empty list if no sections assigned
+        }
+        
+        // Extract section IDs
+        List<Long> sectionIds = facultySections.stream()
+            .map(CourseSection::getSectionID)
+            .toList();
+        
+        // Get all enrollments for these sections with full details
+        return enrolledCourseRepository.findBySectionIds(sectionIds);
+    }
+
+    public List<EnrolledCourse> getEnrolledCoursesByFacultyAndProgram(Long facultyId, Long programId) {
+        return enrolledCourseRepository.findByFacultyAndProgram(facultyId, programId);
+    }
+
+    // New method to get all students enrolled in a specific course (across all sections)
+    public List<EnrolledCourse> getEnrolledCoursesByCourse(Long courseId) {
+        return enrolledCourseRepository.findByCourseId(courseId);
     }
 
     public EnrolledCourse updateMidtermGrade(Long enrolledCourseId, Double midtermGrade) {
