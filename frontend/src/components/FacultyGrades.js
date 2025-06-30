@@ -5,10 +5,7 @@ import Sidebar from './FacultySidebar';
 import { useFacultyData } from '../hooks/useFacultyData';
 import { 
   courseSectionAPI, 
-  programAPI, 
-  enrolledCourseAPI,
-  studentAPI,
-  curriculumDetailAPI
+  enrolledCourseAPI
 } from '../services/api';
 
 const FacultyGrades = () => {
@@ -30,26 +27,15 @@ const FacultyGrades = () => {
   const [error, setError] = useState(null);
   const [saveLoading, setSaveLoading] = useState({});
 
+  // Add loading state management to prevent duplicate calls
+  const [isInitializing, setIsInitializing] = useState(false);
+
   // Fetch initial data on component mount
   useEffect(() => {
     if (facultyData) {
       fetchInitialData();
     }
   }, [facultyData]);
-
-  // Add loading state management to prevent duplicate calls
-  const [isInitializing, setIsInitializing] = useState(false);
-
-  // Function to fetch enrolled courses by program
-  const fetchEnrolledCoursesByProgram = async (facultyId, programId) => {
-    try {
-      const response = await enrolledCourseAPI.getEnrolledCoursesByFacultyAndProgram(facultyId, programId);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching enrolled courses by program:', error);
-      return [];
-    }
-  };
 
   // Effect to update the course/section sidebars when a program or section filter changes
   useEffect(() => {
@@ -92,8 +78,10 @@ const FacultyGrades = () => {
       console.log('New course list:', newCourseList);
       setCourses(newCourseList);
 
-      // If the currently selected course is not in the new filtered list, deselect it
-      if (selectedCourseId && !newCourseList.some(c => c.id === selectedCourseId)) {
+      // Only deselect if the course is not in the filtered list AND we're not in the middle of saving grades
+      if (selectedCourseId && 
+          !newCourseList.some(c => c.id === selectedCourseId) && 
+          !Object.values(studentsGrades).some(g => g.hasChanges)) {
         console.log('Deselecting course because it is not in the filtered list');
         setSelectedCourseId(null);
         setSelectedCourse(null);
@@ -113,6 +101,18 @@ const FacultyGrades = () => {
       setCourses([]);
     }
   }, [selectedProgram, selectedSectionFilter, gradesList, selectedCourseId]);
+
+  // Track changes separately to avoid dependency array issues
+  useEffect(() => {
+    const hasUnsavedChanges = Object.values(studentsGrades).some(g => g.hasChanges);
+    if (hasUnsavedChanges && selectedCourseId) {
+      // Keep the current course selected if there are unsaved changes
+      const courseExists = courses.some(c => c.id === selectedCourseId);
+      if (!courseExists) {
+        console.log('Course not in filtered list but keeping selection due to unsaved changes');
+      }
+    }
+  }, [studentsGrades, selectedCourseId, courses]);
 
   // Effect to update the main table when a course is selected
   useEffect(() => {
@@ -202,7 +202,7 @@ const FacultyGrades = () => {
       // Now get student enrollments for each of the faculty's sections
       const sectionMap = new Map();
       
-      // ALWAYS add sections to the map, even if no students are enrolled
+      // Process each section and fetch student enrollments
       for (const section of facultySections) {
         console.log('=== PROCESSING SECTION ===');
         console.log('Section details:', section);
@@ -211,7 +211,7 @@ const FacultyGrades = () => {
         console.log('Section Name:', section.sectionName);
         console.log('Program:', section.program?.programName);
         
-        // First, add the section with empty students array
+        // Create section data with empty students array initially
         const sectionData = {
           id: section.sectionID,
           course: section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
@@ -224,37 +224,44 @@ const FacultyGrades = () => {
         };
         
         console.log('Created section data:', sectionData);
-        sectionMap.set(section.sectionID, sectionData);
         
-          // Then try to fetch students for this section
-          try {
-            console.log('Fetching enrollments for section:', section.sectionID);
-            const enrolledResponse = await enrolledCourseAPI.getEnrolledCoursesBySection(section.sectionID);
-            const enrolledData = enrolledResponse?.data || [];
-            
+        // Try to fetch students for this section
+        try {
+          console.log('Fetching enrollments for section:', section.sectionID);
+          const enrolledResponse = await enrolledCourseAPI.getEnrolledCoursesBySection(section.sectionID);
+          console.log('Enrolled response:', enrolledResponse);
+          
+          if (enrolledResponse?.data && Array.isArray(enrolledResponse.data) && enrolledResponse.data.length > 0) {
+            const enrolledData = enrolledResponse.data;
             console.log(`Raw enrollments for section ${section.sectionID}:`, enrolledData);
             
+            // Log the structure of the first enrollment to understand the data
+            console.log('Sample enrollment structure:', JSON.stringify(enrolledData[0], null, 2));
+            
             // Process enrolled students with better error handling
-            const students = enrolledData.reduce((acc, enrollment) => {
+            const students = enrolledData.map(enrollment => {
               try {
-                // Validate required nested objects
-                if (!enrollment?.semesterEnrollment?.student) {
-                  console.warn('Enrollment missing student data:', enrollment);
-                  return acc;
-                }
-
-                const student = enrollment.semesterEnrollment.student;
+                console.log('Processing enrollment:', enrollment);
                 
-                // Validate required student fields
-                if (!student.id || !student.lastName || !student.firstName) {
-                  console.warn('Student missing required fields:', student);
-                  return acc;
+                // Check if enrollment has the basic structure
+                if (!enrollment) {
+                  console.warn('Null enrollment found');
+                  return null;
                 }
 
-                // Create student object with null checks for optional fields
+                // Extract student data from enrollment
+                const student = enrollment.semesterEnrollment?.student;
+                if (!student) {
+                  console.warn('No student data found in enrollment:', enrollment);
+                  return null;
+                }
+
+                console.log('Student data found:', student);
+                
+                // Create student object with comprehensive fallbacks
                 const studentData = {
                   id: student.id,
-                  name: `${student.lastName}, ${student.firstName}`,
+                  name: `${student.lastName || 'Unknown'}, ${student.firstName || 'Unknown'}`,
                   email: student.email || '',
                   yearLevel: student.yearLevel || student.year_level || '',
                   program: student.program?.programName || 'Unknown Program',
@@ -263,29 +270,32 @@ const FacultyGrades = () => {
                   weightedAverage: enrollment.overallGrade || null,
                   enrollmentId: enrollment.enrolledCourseID,
                   enrollmentStatus: enrollment.status || 'PENDING',
-                  semesterEnrollmentId: enrollment.semesterEnrollment.semesterEnrollmentID,
+                  semesterEnrollmentId: enrollment.semesterEnrollment?.semesterEnrollmentID,
                   remark: enrollment.remark || 'INCOMPLETE'
                 };
 
-                console.log('Processed student data:', studentData);
-                acc.push(studentData);
-                return acc;
+                console.log('Successfully processed student data:', studentData);
+                return studentData;
               } catch (error) {
                 console.error('Error processing enrollment:', error);
-                return acc;
+                console.error('Enrollment that caused error:', enrollment);
+                return null;
               }
-            }, []);
+            }).filter(student => student !== null); // Remove null entries
           
-          console.log('Processed students for section:', students);
-          
-          // Update the section with the students
-          sectionData.students = students;
-          sectionMap.set(section.sectionID, sectionData);
+            console.log('Processed students for section:', students);
+            sectionData.students = students;
+          } else {
+            console.warn('No enrollments found for section:', section.sectionID);
+          }
           
         } catch (err) {
           console.error(`Error fetching enrollments for section ${section.sectionID}:`, err);
-          // Section is already added with empty students array, so we don't need to do anything
+          // Section will have empty students array
         }
+        
+        // Always add the section to the map (with or without students)
+        sectionMap.set(section.sectionID, sectionData);
       }
 
       const processedGrades = Array.from(sectionMap.values());
@@ -323,75 +333,6 @@ const FacultyGrades = () => {
     }
   };
 
-  // Process course sections and add student enrollment data
-  const processCourseSections = async (sectionsData) => {
-    const processedGrades = [];
-    for (const section of sectionsData) {
-      try {
-        const enrolledStudents = await fetchEnrolledStudents(section.sectionID || section.id);
-        const gradeItem = {
-          id: section.sectionID || section.id,
-          course: section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
-          section: section.sectionName,
-          creditUnits: section.course?.credits || 3,
-          program: section.program?.programName || section.course?.program || 'Unknown Program',
-          status: section.status || 'Active',
-          instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'Dr. Alan Turing',
-          students: enrolledStudents,
-          sectionId: section.sectionID || section.id
-        };
-        processedGrades.push(gradeItem);
-      } catch (err) { 
-        console.error(`Error processing section ${section.id}:`, err); 
-      }
-    }
-    return processedGrades;
-  };
-
-  // Fetch enrolled students for a specific section with caching
-  const fetchEnrolledStudents = async (sectionId) => {
-    const cacheKey = `section_${sectionId}_students`;
-    const cachedData = sessionStorage.getItem(cacheKey);
-    
-    if (cachedData) {
-      return JSON.parse(cachedData);
-    }
-    
-    try {
-      const enrolledResponse = await enrolledCourseAPI.getEnrolledCoursesBySection(sectionId);
-      const sectionEnrolled = enrolledResponse.data || [];
-      
-      const students = sectionEnrolled
-        .map(enrollment => {
-          const student = enrollment.semesterEnrollment?.student;
-          if (!student) return null;
-          
-          const gradeValue = enrollment.grade?.gradeValue || null;
-          
-          return {
-            id: student.id,
-            name: `${student.lastName}, ${student.firstName}`,
-            email: student.email,
-            yearLevel: student.year_level,
-            program: student.program?.programName || 'Unknown Program',
-            midterm: enrollment.midtermGrade || null,
-            final: enrollment.finalGrade || null,
-            weightedAverage: enrollment.overallGrade || gradeValue || null,
-            enrollmentId: enrollment.enrolledCourseID,
-            enrollmentStatus: enrollment.status,
-            semesterEnrollmentId: enrollment.semesterEnrollment?.semesterEnrollmentID,
-            remark: enrollment.remark || 'INCOMPLETE'
-          };
-        })
-        .filter(Boolean);
-      
-      sessionStorage.setItem(cacheKey, JSON.stringify(students));
-      return students;
-    } catch (err) { 
-      console.error('Error fetching enrolled students:', err); 
-      return []; 
-    }
-  };
 
   const handleProgramSelect = (programName) => {
     setSelectedProgram(programName);
@@ -402,7 +343,7 @@ const FacultyGrades = () => {
     setSelectedCourseId(courseId);
   };
 
-  const handleGradeChange = async (studentId, field, value) => {
+  const handleGradeChange = (studentId, field, value) => {
     const student = selectedCourse.students.find(s => s.id === studentId);
     if (!student || !student.enrollmentId) return;
 
@@ -413,7 +354,7 @@ const FacultyGrades = () => {
     };
 
     // Calculate new weighted average if both grades are present
-    let newWeightedAverage = null;
+    let newWeightedAverage = student.weightedAverage; // Keep existing if not calculated
     const midtermGrade = field === 'midterm' ? parseFloat(value) : (grades.midterm ?? student.midterm);
     const finalGrade = field === 'final' ? parseFloat(value) : (grades.final ?? student.final);
     
@@ -421,122 +362,103 @@ const FacultyGrades = () => {
       newWeightedAverage = (midtermGrade + finalGrade) / 2;
     }
 
-    // Update local state
+    // Only update local state - no backend save
     setStudentsGrades(prev => ({
       ...prev,
       [studentId]: {
         ...updatedGrades,
-        weightedAverage: newWeightedAverage
+        weightedAverage: newWeightedAverage,
+        enrollmentId: student.enrollmentId,
+        hasChanges: true // Mark this student's grades as changed
       }
     }));
-
-    // Save to backend
-    try {
-      const updateData = {
-        midtermGrade: midtermGrade,
-        finalGrade: finalGrade,
-        overallGrade: newWeightedAverage,
-        remark: updatedGrades.remark || 'INCOMPLETE'
-      };
-      
-      await enrolledCourseAPI.updateGrades(student.enrollmentId, updateData);
-
-      // Update gradesList state to reflect changes
-      setGradesList(prevGrades => 
-        prevGrades.map(grade => 
-          grade.id === selectedCourse.id 
-            ? { 
-                ...grade, 
-                students: grade.students.map(s => 
-                  s.id === studentId 
-                    ? { 
-                        ...s, 
-                        midterm: updateData.midtermGrade, 
-                        final: updateData.finalGrade, 
-                        weightedAverage: newWeightedAverage,
-                        remark: updateData.remark
-                      } 
-                    : s
-                ) 
-              }
-            : grade
-        )
-      );
-    } catch (err) {
-      console.error('Error saving grade:', err);
-    }
   };
 
-  const handleSaveGrades = async (studentId, studentName) => {
+  // New function to handle encoding/saving all changed grades
+  const handleEncodeGrades = async () => {
+    const changedStudents = Object.entries(studentsGrades).filter(([_, grades]) => grades.hasChanges);
+    
+    if (changedStudents.length === 0) {
+      alert('No grades have been changed');
+      return;
+    }
+
+    console.log('=== ENCODING GRADES ===');
+    console.log('Changed students:', changedStudents);
+    console.log('Current gradesList before update:', gradesList);
+    console.log('Selected course:', selectedCourse);
+
     try {
-      setSaveLoading(prev => ({ ...prev, [studentId]: true }));
-      const grades = studentsGrades[studentId] || {};
-      const student = selectedCourse.students.find(s => s.id === studentId);
-      if (!student || !student.enrollmentId) {
-        throw new Error('Student enrollment not found');
+      setSaveLoading(prev => ({
+        ...prev,
+        all: true
+      }));
+
+      // Save each student's grades
+      for (const [studentId, grades] of changedStudents) {
+        const updateData = {
+          midtermGrade: grades.midterm,
+          finalGrade: grades.final,
+          overallGrade: grades.weightedAverage,
+          remark: grades.remark || 'INCOMPLETE'
+        };
+
+        console.log(`Updating grades for student ${studentId}:`, updateData);
+        await enrolledCourseAPI.updateGrades(grades.enrollmentId, updateData);
+        console.log(`Successfully updated grades for student ${studentId}`);
       }
 
-      let newWeightedAverage = student.weightedAverage;
-      const midtermGrade = grades.midterm ?? student.midterm;
-      const finalGrade = grades.final ?? student.final;
-      const remark = grades.remark || 'INCOMPLETE';
+      // Create a deep copy of gradesList to avoid mutation issues
+      const updatedGradesList = JSON.parse(JSON.stringify(gradesList));
       
-      if (midtermGrade !== null && finalGrade !== null) {
-        newWeightedAverage = (midtermGrade + finalGrade) / 2;
+      // Find and update the current course section
+      const currentSectionIndex = updatedGradesList.findIndex(grade => grade.id === selectedCourse.id);
+      
+      if (currentSectionIndex !== -1) {
+        console.log('Found matching grade section, updating students...');
+        const currentSection = updatedGradesList[currentSectionIndex];
+        
+        // Update students with new grades while preserving all students
+        currentSection.students = currentSection.students.map(student => {
+          const updatedGrades = studentsGrades[student.id];
+          if (updatedGrades?.hasChanges) {
+            console.log(`Updating student ${student.id} with new grades:`, updatedGrades);
+            return {
+              ...student,
+              midterm: updatedGrades.midterm ?? student.midterm,
+              final: updatedGrades.final ?? student.final,
+              weightedAverage: updatedGrades.weightedAverage ?? student.weightedAverage,
+              remark: updatedGrades.remark ?? student.remark
+            };
+          }
+          return student; // Keep unchanged students exactly as they are
+        });
+        
+        console.log('Updated students count:', currentSection.students.length);
       }
       
-      const updateData = { 
-        midtermGrade, 
-        finalGrade, 
-        overallGrade: newWeightedAverage,
-        remark
-      };
-      await enrolledCourseAPI.updateGrades(student.enrollmentId, updateData);
+      // Update the state with the new gradesList
+      setGradesList(updatedGradesList);
+      
+      // Update the selectedCourse to reflect the changes
+      if (currentSectionIndex !== -1) {
+        setSelectedCourse(updatedGradesList[currentSectionIndex]);
+      }
 
-      setGradesList(prevGrades => 
-        prevGrades.map(grade => 
-          grade.id === selectedCourse.id 
-            ? { 
-                ...grade, 
-                students: grade.students.map(s => 
-                  s.id === studentId 
-                    ? { 
-                        ...s, 
-                        midterm: updateData.midtermGrade, 
-                        final: updateData.finalGrade, 
-                        weightedAverage: newWeightedAverage,
-                        remark: updateData.remark
-                      } 
-                    : s
-                ) 
-              }
-            : grade
-        )
-      );
+      // Clear all temporary grades after successful update
+      setStudentsGrades({});
       
-      setStudentsGrades(prev => { 
-        const updated = { ...prev }; 
-        delete updated[studentId]; 
-        return updated; 
-      });
-      
-      alert(`Grades saved successfully for ${studentName}!`);
+      console.log('=== ENCODING COMPLETE ===');
+      alert('All grades have been successfully encoded!');
     } catch (err) {
-      console.error('Error saving grades:', err);
-      alert(`Failed to save grades for ${studentName}. Please try again.`);
+      console.error('Error encoding grades:', err);
+      alert('Failed to encode some grades. Please try again.');
     } finally {
-      setSaveLoading(prev => ({ ...prev, [studentId]: false }));
+      setSaveLoading(prev => ({
+        ...prev,
+        all: false
+      }));
     }
-  };
-  
-  const getRemark = (grade, midterm, final) => {
-    if (grade === null || midterm === null || final === null) {
-      return { text: 'In Progress', className: styles.remarksProgress };
-    }
-    if (grade >= 75) {
-      return { text: 'Passed', className: styles.remarksPassed };
-    }
-    return { text: 'Failed', className: styles.remarksFailed };
   };
 
   const showSection = (section) => {
@@ -741,26 +663,50 @@ const FacultyGrades = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {!selectedCourse ? (
-                      <tr>
-                        <td colSpan="7" className={styles.placeholderCell}>
-                          Please select a course to view student grades.
-                        </td>
-                      </tr>
-                    ) : selectedCourse.students.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" className={styles.placeholderCell}>
-                          No students enrolled in this course.
-                        </td>
-                      </tr>
-                    ) : filteredStudents.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" className={styles.placeholderCell}>
-                          No students match your search criteria.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredStudents.map((student) => {
+                    {(() => {
+                      console.log('=== TABLE RENDERING DEBUG ===');
+                      console.log('selectedCourse:', selectedCourse);
+                      console.log('selectedCourse?.students:', selectedCourse?.students);
+                      console.log('selectedCourse?.students?.length:', selectedCourse?.students?.length);
+                      console.log('filteredStudents:', filteredStudents);
+                      console.log('filteredStudents.length:', filteredStudents.length);
+                      console.log('studentSearchTerm:', studentSearchTerm);
+                      
+                      if (!selectedCourse) {
+                        console.log('Showing: Please select a course');
+                        return (
+                          <tr>
+                            <td colSpan="7" className={styles.placeholderCell}>
+                              Please select a course to view student grades.
+                            </td>
+                          </tr>
+                        );
+                      }
+                      
+                      if (!selectedCourse.students || selectedCourse.students.length === 0) {
+                        console.log('Showing: No students enrolled');
+                        return (
+                          <tr>
+                            <td colSpan="7" className={styles.placeholderCell}>
+                              No students enrolled in this course.
+                            </td>
+                          </tr>
+                        );
+                      }
+                      
+                      if (filteredStudents.length === 0) {
+                        console.log('Showing: No students match search criteria');
+                        return (
+                          <tr>
+                            <td colSpan="7" className={styles.placeholderCell}>
+                              No students match your search criteria.
+                            </td>
+                          </tr>
+                        );
+                      }
+                      
+                      console.log('Showing student rows for:', filteredStudents.length, 'students');
+                      return filteredStudents.map((student) => {
                         const currentGrades = studentsGrades[student.id] || {};
                         const displayedMidterm = currentGrades.midterm ?? student.midterm;
                         const displayedFinal = currentGrades.final ?? student.final;
@@ -790,7 +736,7 @@ const FacultyGrades = () => {
                                   step="0.01" 
                                   value={displayedMidterm ?? ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'midterm', e.target.value)} 
-                                  className={styles.gradeInput} 
+                                  className={`${styles.gradeInput} ${studentsGrades[student.id]?.hasChanges ? styles.changed : ''}`}
                                 />
                               </div>
                             </td>
@@ -803,7 +749,7 @@ const FacultyGrades = () => {
                                   step="0.01" 
                                   value={displayedFinal ?? ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'final', e.target.value)} 
-                                  className={styles.gradeInput} 
+                                  className={`${styles.gradeInput} ${studentsGrades[student.id]?.hasChanges ? styles.changed : ''}`}
                                 />
                               </div>
                             </td>
@@ -815,9 +761,9 @@ const FacultyGrades = () => {
                             <td>
                               <div className={styles.cellContent}>
                                 <select
-                                  value={studentsGrades[student.id]?.remark || 'INCOMPLETE'}
+                                  value={studentsGrades[student.id]?.remark || student.remark || 'INCOMPLETE'}
                                   onChange={(e) => handleGradeChange(student.id, 'remark', e.target.value)}
-                                  className={styles.remarkSelect}
+                                  className={`${styles.remarkSelect} ${studentsGrades[student.id]?.hasChanges ? styles.changed : ''}`}
                                 >
                                   <option value="INCOMPLETE">INCOMPLETE</option>
                                   <option value="PASS">PASS</option>
@@ -827,11 +773,24 @@ const FacultyGrades = () => {
                             </td>
                           </tr>
                         );
-                      })
-                    )}
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
+              
+              {/* Add Encode Grades button */}
+              {selectedCourse && Object.values(studentsGrades).some(g => g.hasChanges) && (
+                <div className={styles.encodeGradesContainer}>
+                  <button
+                    onClick={handleEncodeGrades}
+                    className={styles.encodeGradesButton}
+                    disabled={saveLoading.all}
+                  >
+                    {saveLoading.all ? 'Encoding...' : 'Encode Grades'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

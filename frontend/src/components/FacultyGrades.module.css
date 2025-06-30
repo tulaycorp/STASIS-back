@@ -335,6 +335,11 @@
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
+.gradeInput.changed {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
 .gradeScore {
   font-weight: 600;
   color: #1e293b;
@@ -418,4 +423,57 @@
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+.remarkSelect {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.remarkSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.remarkSelect.changed {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.encodeGradesContainer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+}
+
+.encodeGradesButton {
+  padding: 10px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.encodeGradesButton:hover:not(:disabled) {
+  background-color: #218838;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.encodeGradesButton:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  box-shadow: none;
 }
