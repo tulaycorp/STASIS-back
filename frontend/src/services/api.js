@@ -528,6 +528,12 @@ export const curriculumAPI = {
   searchCurriculums: (searchTerm) => {
     console.log('Calling searchCurriculums API with term:', searchTerm);
     return api.get(`/curriculums/search?name=${encodeURIComponent(searchTerm)}`);
+  },
+
+  // Get student count for curriculum
+  getStudentCount: (curriculumId) => {
+    console.log('Calling getStudentCount API for curriculum:', curriculumId);
+    return api.get(`/curriculums/${curriculumId}/student-count`);
   }
 };
 

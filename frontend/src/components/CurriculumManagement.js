@@ -12,6 +12,7 @@ const CurriculumManagement = () => {
   const [curriculumData, setCurriculumData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [studentCounts, setStudentCounts] = useState({});
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
@@ -98,6 +99,21 @@ const CurriculumManagement = () => {
       
       // Transform backend data to match frontend expectations
       const transformedData = response.data.map(curriculum => {
+        // Fetch student count for each curriculum
+        curriculumAPI.getStudentCount(curriculum.curriculumID)
+          .then(countResponse => {
+            setStudentCounts(prev => ({
+              ...prev,
+              [curriculum.curriculumID]: countResponse.data
+            }));
+          })
+          .catch(error => {
+            console.error('Error fetching student count:', error);
+            setStudentCounts(prev => ({
+              ...prev,
+              [curriculum.curriculumID]: 0
+            }));
+          });
         console.log('Processing curriculum:', curriculum);
         return {
           id: curriculum.curriculumID,
@@ -862,6 +878,7 @@ const CurriculumManagement = () => {
                         <th>Program</th>
                         <th>Academic Year</th>
                         <th>Status</th>
+                        <th>Students</th>
                         <th>Last Updated</th>
                         <th>Actions</th>
                         <th></th>
@@ -889,6 +906,7 @@ const CurriculumManagement = () => {
                                 {curriculum.status}
                               </span>
                             </td>
+                            <td>{studentCounts[curriculum.id] || 0}</td>
                             <td>{formatDate(curriculum.lastUpdated)}</td>
                             <td>
                               <div className="action-buttons">
@@ -920,7 +938,7 @@ const CurriculumManagement = () => {
                           </tr>
                           {expandedCurricula.has(curriculum.id) && (
                             <tr className="curriculum-details-row">
-                              <td colSpan="7">
+                              <td colSpan="8">
                                 <div className="curriculum-courses">
                                   <h4>Courses</h4>
                                   {curriculumCourses[curriculum.id] ? (

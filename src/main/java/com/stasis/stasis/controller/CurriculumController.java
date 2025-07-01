@@ -69,4 +69,10 @@ public class CurriculumController {
     public List<Curriculum> searchCurriculums(@RequestParam String name) {
         return curriculumService.searchCurriculumsByName(name);
     }
+
+    @GetMapping("/{id}/student-count")
+    public ResponseEntity<Long> getStudentCount(@PathVariable Long id) {
+        Long count = curriculumService.getStudentCountByCurriculum(id);
+        return ResponseEntity.ok(count);
+    }
 }
