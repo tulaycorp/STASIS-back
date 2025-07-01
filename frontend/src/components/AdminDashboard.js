@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { facultyAPI, programAPI, studentAPI } from '../services/api';
+import { facultyAPI, programAPI, studentAPI, curriculumAPI, courseSectionAPI, courseAPI } from '../services/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -62,8 +62,13 @@ const AdminDashboard = () => {
     email: '',
     dateOfBirth: '',
     year_level: 1,
-    programId: ''
+    programId: '',
+    curriculumId: '',     
+    sectionId: ''         
   });
+
+  const [availableCurriculums, setAvailableCurriculums] = useState([]);
+  const [availableSectionsForStudent, setAvailableSectionsForStudent] = useState([]);
 
   const showAddStudentForm = () => {
     setStudentForm({
@@ -72,7 +77,9 @@ const AdminDashboard = () => {
       email: '',
       dateOfBirth: '',
       year_level: 1,
-      programId: ''
+      programId: '',
+      curriculumId: '',   
+      sectionId: ''      
     });
     setShowAddStudentModal(true);
   };
@@ -88,9 +95,32 @@ const AdminDashboard = () => {
     }));
   };
 
+  const handleStudentProgramChange = async (programId) => {
+    handleStudentFormChange('programId', programId);
+    handleStudentFormChange('curriculumId', '');
+    handleStudentFormChange('sectionId', '');
+    if (!programId) {
+      setAvailableCurriculums([]);
+      setAvailableSectionsForStudent([]);
+      return;
+    }
+    try {
+      // Fetch curriculums for the selected program
+      const currRes = await curriculumAPI.getCurriculumsByProgram(programId);
+      setAvailableCurriculums(currRes.data || []);
+
+      // Fetch sections for the selected program
+      const secRes = await courseSectionAPI.getSectionsByProgram(programId);
+      setAvailableSectionsForStudent(secRes.data || []);
+    } catch (err) {
+      setAvailableCurriculums([]);
+      setAvailableSectionsForStudent([]);
+    }
+  };
+
   const handleAddStudent = async () => {
     // Validate required fields
-    if (!studentForm.firstName || !studentForm.lastName || !studentForm.email) {
+    if (!studentForm.firstName || !studentForm.lastName || !studentForm.email || !studentForm.programId || !studentForm.curriculumId) {
       alert('Please fill in all required fields');
       return;
     }
@@ -112,13 +142,15 @@ const AdminDashboard = () => {
         email: studentForm.email,
         dateOfBirth: studentForm.dateOfBirth,
         year_level: parseInt(studentForm.year_level),
-        program: selectedProgramObj || null
+        program: selectedProgramObj || null,
+        curriculumId: studentForm.curriculumId,
+        sectionId: studentForm.sectionId || null
       };
 
       await studentAPI.createStudent(studentData);
       alert('Student added successfully!');
       closeAddStudentModal();
-      
+
       // Refresh student count
       const countResponse = await studentAPI.getStudentCount();
       setStudentCount(countResponse.data.count);
@@ -145,9 +177,9 @@ const AdminDashboard = () => {
     firstName: '',
     lastName: '',
     email: '',
-    department: '',
+    Program: '',
     position: '',
-    employmentStatus: ''
+    Status: ''
   });
 
   const showAddFacultyForm = () => {
@@ -160,9 +192,9 @@ const AdminDashboard = () => {
       firstName: '',
       lastName: '',
       email: '',
-      department: '',
+      Program: '',
       position: '',
-      employmentStatus: ''
+      Status: ''
     });
   };
 
@@ -173,23 +205,60 @@ const AdminDashboard = () => {
     }));
   };
 
-  const handleAddFaculty = () => {
+  const handleAddFaculty = async () => {
     // Validate required fields
-    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email || !facultyForm.department) {
+    if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email || !facultyForm.Program) {
       alert('Please fill in all required fields');
       return;
     }
-    
-    console.log('Adding faculty:', facultyForm);
-    alert('Faculty added successfully!');
-    closeAddFacultyModal();
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(facultyForm.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      // Find the selected program object
+      const selectedProgramObj = programsList.find(p => p.programID.toString() === facultyForm.Program);
+
+      const facultyData = {
+        firstName: facultyForm.firstName,
+        lastName: facultyForm.lastName,
+        email: facultyForm.email,
+        position: facultyForm.position || 'Assistant Professor',
+        status: facultyForm.Status || 'Active',
+        program: selectedProgramObj || null
+      };
+
+      await facultyAPI.createFaculty(facultyData);
+
+      alert('Faculty added successfully!');
+      closeAddFacultyModal();
+
+      // Refresh faculty list so the new faculty appears in the table
+      const facultyResponse = await facultyAPI.getAllFaculty();
+      setFacultyList(facultyResponse.data);
+
+    } catch (error) {
+      console.error('Error adding faculty:', error);
+      if (error.response?.status === 400) {
+        alert('Email already exists or invalid data provided!');
+      } else {
+        alert('Failed to add faculty. Please try again.');
+      }
+    }
   };
 
   // Course Modal State and Handlers
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+
   const [courseForm, setCourseForm] = useState({
     courseCode: '',
+    courseDescription: '',
     courseName: '',
+    credits: '',
     program: '',
     status: 'Active'
   });
@@ -197,18 +266,22 @@ const AdminDashboard = () => {
   const showAddCourseForm = () => {
     setCourseForm({
       courseCode: '',
+      courseDescription: '',
       courseName: '',
+      credits: '',
       program: '',
       status: 'Active'
     });
     setShowAddCourseModal(true);
   };
 
-  const closeAddCourseModal = () => {
+  const closeModal = () => {
     setShowAddCourseModal(false);
     setCourseForm({
       courseCode: '',
+      courseDescription: '',
       courseName: '',
+      credits: '',
       program: '',
       status: 'Active'
     });
@@ -221,31 +294,72 @@ const AdminDashboard = () => {
     }));
   };
 
-  const handleAddCourse = () => {
-    // Validate required fields
-    if (!courseForm.courseCode || !courseForm.courseName || !courseForm.program) {
-      alert('Please fill in all required fields');
-      return;
-    }
-    
-    console.log('Adding course:', courseForm);
-    alert('Course added successfully!');
-    closeAddCourseModal();
-  };
+  const handleAddCourse = async () => {
+     if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
+       alert('Please fill in all required fields');
+       return;
+     }
+     
+     if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
+       alert('Credits must be a positive number');
+       return;
+     }
+     
+     try {
+       const courseData = {
+         courseCode: courseForm.courseCode,
+         courseDescription: courseForm.courseDescription,
+         credits: parseInt(courseForm.credits),
+         program: courseForm.program
+       };
+ 
+       console.log('Creating course:', courseData);
+       await courseAPI.createCourse(courseData);
+       alert('Course added successfully!');
+       closeModal();
+     } catch (error) {
+       console.error('Error adding course:', error);
+       if (error.response?.status === 400) {
+         alert('Course code already exists or invalid data provided!');
+       } else {
+         alert('Failed to add course. Please try again.');
+       }
+     }
+   };
 
   // Schedule Modal State and Handlers
   const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
+  const [courseOptions, setCourseOptions] = useState([]);
+  const [instructorOptions, setInstructorOptions] = useState([]);
+  const [sectionsList, setSectionsList] = useState([]);
+  const [statusOptions, setStatusOptions] = useState(['ACTIVE', 'CANCELLED', 'COMPLETED', 'FULL']);
+
   const [scheduleForm, setScheduleForm] = useState({
     course: '',
-    section: '',
+    sectionName: '',
     instructor: '',
     room: '',
     day: '',
-    timeFrom: '',
-    timeTo: ''
+    startTime: '',
+    endTime: '',
+    status: statusOptions[0],
+    semester: 'Current',
+    year: new Date().getFullYear()
   });
 
   const showScheduleManager = () => {
+    setScheduleForm({
+      course: '',
+      sectionName: '',
+      instructor: '',
+      room: '',
+      day: '',
+      startTime: '',
+      endTime: '',
+      status: statusOptions[0],
+      semester: 'Current',
+      year: new Date().getFullYear()
+    });
     setShowAddScheduleModal(true);
   };
 
@@ -253,12 +367,15 @@ const AdminDashboard = () => {
     setShowAddScheduleModal(false);
     setScheduleForm({
       course: '',
-      section: '',
+      sectionName: '',
       instructor: '',
       room: '',
       day: '',
-      timeFrom: '',
-      timeTo: ''
+      startTime: '',
+      endTime: '',
+      status: statusOptions[0],
+      semester: 'Current',
+      year: new Date().getFullYear()
     });
   };
 
@@ -269,23 +386,110 @@ const AdminDashboard = () => {
     }));
   };
 
-  const handleAddSchedule = () => {
-    // Validate required fields
-    if (!scheduleForm.course || !scheduleForm.section || !scheduleForm.instructor || 
-        !scheduleForm.room || !scheduleForm.day || !scheduleForm.timeFrom || !scheduleForm.timeTo) {
-      alert('Please fill in all required fields');
-      return;
+  useEffect(() => {
+    const loadScheduleDropdowns = async () => {
+      try {
+        const [coursesRes, instructorsRes, sectionsRes] = await Promise.all([
+          courseAPI.getAllCourses(),
+          facultyAPI.getAllFaculty(),
+          courseSectionAPI.getAllSections()
+        ]);
+        setCourseOptions(
+          coursesRes.data.map(course => ({
+            id: course.id,
+            label: `${course.courseCode} - ${course.courseDescription}`,
+            value: course.courseCode
+          }))
+        );
+        setInstructorOptions(
+          instructorsRes.data.map(faculty => ({
+            id: faculty.facultyID,
+            label: `${faculty.firstName} ${faculty.lastName}`,
+            value: faculty.facultyID
+          }))
+        );
+        setSectionsList(sectionsRes.data);
+      } catch (err) {
+        setCourseOptions([]);
+        setInstructorOptions([]);
+        setSectionsList([]);
+      }
+    };
+    if (showAddScheduleModal) {
+      loadScheduleDropdowns();
     }
+  }, [showAddScheduleModal]);
 
-    // Validate time
-    if (scheduleForm.timeFrom >= scheduleForm.timeTo) {
-      alert('End time must be after start time');
-      return;
+  const [scheduleList, setScheduleList] = useState([]);
+
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        const response = await courseSectionAPI.getAllSections();
+        setScheduleList(response.data);
+      } catch (err) {
+        setScheduleList([]);
+      }
+    };
+    fetchSchedules();
+  }, []);
+
+  const handleAddSchedule = async () => {
+    try {
+      // Validate required fields
+      if (
+        !scheduleForm.course ||
+        !scheduleForm.sectionName ||
+        !scheduleForm.instructor ||
+        !scheduleForm.room ||
+        !scheduleForm.day ||
+        !scheduleForm.startTime ||
+        !scheduleForm.endTime
+      ) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+
+      // Validate time
+      if (scheduleForm.startTime >= scheduleForm.endTime) {
+        alert('End time must be after start time');
+        return;
+      }
+
+      // Find course and faculty objects
+      const selectedCourse = courseOptions.find(c => c.value === scheduleForm.course);
+      const selectedFaculty = instructorOptions.find(f => f.value === parseInt(scheduleForm.instructor));
+
+      // Prepare section data for API
+      const sectionData = {
+        sectionName: scheduleForm.sectionName,
+        semester: scheduleForm.semester,
+        year: scheduleForm.year,
+        startTime: scheduleForm.startTime,
+        endTime: scheduleForm.endTime,
+        day: scheduleForm.day,
+        status: scheduleForm.status,
+        room: scheduleForm.room,
+        course: { id: selectedCourse?.id },
+        faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
+      };
+
+      await courseSectionAPI.createSection(sectionData);
+      alert('Schedule added successfully!');
+      closeAddScheduleModal();
+
+      // --- Fetch and update the schedule list so the new schedule is included ---
+      const response = await courseSectionAPI.getAllSections();
+      setScheduleList(response.data);
+
+    } catch (error) {
+      console.error('Error adding schedule:', error);
+      if (error.response?.status === 400) {
+        alert(error.response.data || 'Invalid schedule data provided!');
+      } else {
+        alert('Failed to add schedule. Please try again.');
+      }
     }
-    
-    console.log('Adding schedule:', scheduleForm);
-    alert('Schedule added successfully!');
-    closeAddScheduleModal();
   };
 
   // Calendar State and Handlers
@@ -343,60 +547,23 @@ const AdminDashboard = () => {
     setSelectedDate(1);
   };
 
-  // Static data options
-  const departmentOptions = [
-    "Computer Science",
-    "Information Technology",
-    "Engineering",
-    "Mathematics",
-    "Physics",
-    "Chemistry",
-    "Business Administration",
-    "Liberal Arts"
-  ];
-
   const positionOptions = [
     "Professor",
     "Associate Professor",
     "Assistant Professor",
     "Instructor",
     "Lecturer",
-    "Department Head",
+    "Program Head",
     "Dean"
   ];
 
-  const employmentStatusOptions = [
-    "Full-time",
-    "Part-time",
-    "Contract",
-    "Adjunct"
+  const StatusOptions = [
+    'Active',
+    'Inactive',
+    'On Leave',
+    'Retired'
   ];
 
-  const programs = [
-    "Bachelor of Science in Computer Science",
-    "Bachelor of Science in Information Technology",
-    "Bachelor of Engineering",
-    "Bachelor of Science in Mathematics",
-    "Bachelor of Arts",
-    "Master of Science in Computer Science",
-    "Master of Business Administration"
-  ];
-
-  const courseOptions = [
-    "CS101 - Introduction to Programming",
-    "CS102 - Data Structures",
-    "MATH101 - Calculus I",
-    "PHYS101 - General Physics",
-    "CHEM101 - General Chemistry"
-  ];
-
-  const instructorOptions = [
-    "Dr. John Smith",
-    "Prof. Jane Doe",
-    "Dr. Michael Johnson",
-    "Prof. Sarah Wilson",
-    "Dr. David Brown"
-  ];
 
   const roomOptions = [
     "Room 101",
@@ -594,7 +761,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Add Student Modal */}
       {showAddStudentModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -606,87 +772,68 @@ const AdminDashboard = () => {
               <div className="modal-grid">
                 <div className="form-group">
                   <label className="form-label">First Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter first name"
-                    value={studentForm.firstName}
-                    onChange={(e) => handleStudentFormChange('firstName', e.target.value)}
-                  />
+                  <input type="text" className="form-input" placeholder="Enter first name" value={studentForm.firstName} onChange={(e) => handleStudentFormChange('firstName', e.target.value)} />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Last Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter last name"
-                    value={studentForm.lastName}
-                    onChange={(e) => handleStudentFormChange('lastName', e.target.value)}
-                  />
+                  <input type="text" className="form-input" placeholder="Enter last name" value={studentForm.lastName} onChange={(e) => handleStudentFormChange('lastName', e.target.value)} />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Email *</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="Enter email address"
-                    value={studentForm.email}
-                    onChange={(e) => handleStudentFormChange('email', e.target.value)}
-                  />
+                  <input type="email" className="form-input" placeholder="Enter email address" value={studentForm.email} onChange={(e) => handleStudentFormChange('email', e.target.value)} />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Date of Birth</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={studentForm.dateOfBirth}
-                    onChange={(e) => handleStudentFormChange('dateOfBirth', e.target.value)}
-                  />
+                  <input type="date" className="form-input" value={studentForm.dateOfBirth} onChange={(e) => handleStudentFormChange('dateOfBirth', e.target.value)} />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Year Level</label>
-                  <select
-                    className="form-input"
-                    value={studentForm.year_level}
-                    onChange={(e) => handleStudentFormChange('year_level', e.target.value)}
-                  >
-                    <option value={1}>Year 1</option>
-                    <option value={2}>Year 2</option>
-                    <option value={3}>Year 3</option>
-                    <option value={4}>Year 4</option>
+                  <select className="form-input" value={studentForm.year_level} onChange={(e) => handleStudentFormChange('year_level', e.target.value)}>
+                    <option value={1}>Year 1</option> <option value={2}>Year 2</option> <option value={3}>Year 3</option> <option value={4}>Year 4</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Program</label>
-                  <select
-                    className="form-input"
-                    value={studentForm.programId}
-                    onChange={(e) => handleStudentFormChange('programId', e.target.value)}
-                    disabled={!programsLoaded}
-                  >
+                  <label className="form-label">Program *</label>
+                  <select className="form-input" value={studentForm.programId} onChange={(e) => handleStudentProgramChange(e.target.value)}>
                     <option value="">Select Program</option>
                     {programsList.map((program) => (
-                      <option key={program.programID} value={program.programID}>
-                        {program.programName}
-                      </option>
+                      <option key={program.programID} value={program.programID}>{program.programName}</option>
                     ))}
                   </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Curriculum *</label>
+                  <select className="form-input" value={studentForm.curriculumId} onChange={(e) => handleStudentFormChange('curriculumId', e.target.value)} disabled={!studentForm.programId}>
+                    <option value="">Select Curriculum</option>
+                    {availableCurriculums.map((curriculum) => (
+                      <option key={curriculum.curriculumID} value={curriculum.curriculumID}>{curriculum.curriculumName} ({curriculum.academicYear})</option>
+                    ))}
+                  </select>
+                  {studentForm.programId && availableCurriculums.length === 0 && (<p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>No active curriculums for this program.</p>)}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Section</label>
+                  <select className="form-input" value={studentForm.sectionId} onChange={(e) => handleStudentFormChange('sectionId', e.target.value)} disabled={!studentForm.programId}>
+                    <option value="">Select Section *</option>
+                    {availableSectionsForStudent.map((section) => (
+                        <option key={section.sectionID} value={section.sectionID}>{section.sectionName}</option>
+                    ))}
+                  </select>
+                  {studentForm.programId && availableSectionsForStudent.length === 0 && (<p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>No sections available for this program.</p>)}
                 </div>
               </div>
             </div>
 
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeAddStudentModal}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleAddStudent}>
-                Add Student
-              </button>
+              <button className="btn btn-secondary" onClick={closeAddStudentModal}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleAddStudent}>Add Student</button>
             </div>
           </div>
         </div>
@@ -736,15 +883,15 @@ const AdminDashboard = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Department *</label>
+                  <label className="form-label">Program *</label>
                   <select
                     className="form-input" 
-                    value={facultyForm.department}
-                    onChange={(e) => handleFacultyFormChange('department', e.target.value)}
+                    value={facultyForm.Program}
+                    onChange={(e) => handleFacultyFormChange('Program', e.target.value)}
                   >
-                    <option value="">Select department</option>
-                    {departmentOptions.map((dept) => (
-                      <option key={dept} value={dept}>{dept}</option>
+                    <option value="">Select Program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programID}>{program.programName}</option>
                     ))}
                   </select>
                 </div>
@@ -764,14 +911,14 @@ const AdminDashboard = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Employment Status</label>
+                  <label className="form-label">Status</label>
                   <select
                     className="form-input" 
-                    value={facultyForm.employmentStatus}
-                    onChange={(e) => handleFacultyFormChange('employmentStatus', e.target.value)}
+                    value={facultyForm.Status}
+                    onChange={(e) => handleFacultyFormChange('Status', e.target.value)}
                   >
                     <option value="">Select status</option>
-                    {employmentStatusOptions.map((status) => (
+                    {StatusOptions.map((status) => (
                       <option key={status} value={status}>{status}</option>
                     ))}
                   </select>
@@ -791,77 +938,80 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Add Course Modal */}
-      {showAddCourseModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Add New Course</h2>
-            </div>
-            
-            <div className="modal-body">
-              <div className="modal-grid">
-                <div className="form-group">
-                  <label className="form-label">Course Code *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter Course Code (e.g., CS101)"
-                    value={courseForm.courseCode}
-                    onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Course Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter Course Name"
-                    value={courseForm.courseName}
-                    onChange={(e) => handleCourseFormChange('courseName', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Program *</label>
-                  <select
-                    className="form-input"
-                    value={courseForm.program}
-                    onChange={(e) => handleCourseFormChange('program', e.target.value)}
-                  >
-                    <option value="">Select Program</option>
-                    {programs.map((program) => (
-                      <option key={program} value={program}>{program}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select
-                    className="form-input"
-                    value={courseForm.status}
-                    onChange={(e) => handleCourseFormChange('status', e.target.value)}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
+      {/* Course Modal */}
+    {showAddCourseModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2 className="modal-title">Add New Course</h2>
+          </div>
+          <div className="modal-body">
+            <div className="modal-grid">
+              <div className="form-group">
+                <label className="form-label">Course Code *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter Course Code (e.g., CS101)"
+                  value={courseForm.courseCode}
+                  onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Course Description *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Enter Course Description"
+                  value={courseForm.courseDescription}
+                  onChange={(e) => handleCourseFormChange('courseDescription', e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Credits *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="Enter number of credits"
+                  min="1"
+                  max="6"
+                  value={courseForm.credits}
+                  onChange={(e) => handleCourseFormChange('credits', e.target.value)}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Program *</label>
+                <select
+                  className="form-input"
+                  value={courseForm.program}
+                  onChange={(e) => handleCourseFormChange('program', e.target.value)}
+                >
+                  <option value="">Select Program</option>
+                  {programsList.map((program) => (
+                    <option key={program.programID} value={program.programName}>{program.programName}</option>
+                  ))}
+                </select>
               </div>
             </div>
-            
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeAddCourseModal}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleAddCourse}>
-                Add Course
-              </button>
-            </div>
+          </div>
+          
+          <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={closeModal}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleAddCourse}
+            >
+              Add Course
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* Add Schedule Modal */}
       {showAddScheduleModal && (
@@ -870,7 +1020,6 @@ const AdminDashboard = () => {
             <div className="modal-header">
               <h2 className="modal-title">Add New Schedule</h2>
             </div>
-      
             <div className="modal-body">
               <div className="modal-grid">
                 <div className="form-group">
@@ -882,22 +1031,26 @@ const AdminDashboard = () => {
                   >
                     <option value="">Select course</option>
                     {courseOptions.map((course) => (
-                      <option key={course} value={course}>{course}</option>
+                      <option key={course.id} value={course.value}>{course.label}</option>
                     ))}
                   </select>
                 </div>
-          
                 <div className="form-group">
-                  <label className="form-label">Section *</label>
-                  <input
-                    type="text"
+                  <label className="form-label">Section Name *</label>
+                  <select
                     className="form-input"
-                    placeholder="e.g., CS-101-A"
-                    value={scheduleForm.section}
-                    onChange={(e) => handleScheduleFormChange('section', e.target.value)}
-                  />
+                    value={scheduleForm.sectionName}
+                    onChange={(e) => handleScheduleFormChange('sectionName', e.target.value)}
+                  >
+                    <option value="">Select section</option>
+                    {sectionsList.map((section) => (
+                      <option key={section.sectionID} value={section.sectionName}>
+                        {section.sectionName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-          
+                
                 <div className="form-group">
                   <label className="form-label">Instructor *</label>
                   <select
@@ -907,11 +1060,11 @@ const AdminDashboard = () => {
                   >
                     <option value="">Select instructor</option>
                     {instructorOptions.map((instructor) => (
-                      <option key={instructor} value={instructor}>{instructor}</option>
+                      <option key={instructor.id} value={instructor.value}>{instructor.label}</option>
                     ))}
                   </select>
                 </div>
-          
+                
                 <div className="form-group">
                   <label className="form-label">Room *</label>
                   <select
@@ -925,7 +1078,7 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
-          
+                
                 <div className="form-group">
                   <label className="form-label">Day *</label>
                   <select
@@ -939,27 +1092,42 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
-          
+                
                 <div className="form-group">
-                  <label className="form-label">Time Period *</label>
-                  <div style={{display: 'flex', gap: '10px'}}>
-                    <input
-                      type="time"
-                      className="form-input"
-                      value={scheduleForm.timeFrom}
-                      onChange={(e) => handleScheduleFormChange('timeFrom', e.target.value)}
-                    />
-                    <input
-                      type="time"
-                      className="form-input"
-                      value={scheduleForm.timeTo}
-                      onChange={(e) => handleScheduleFormChange('timeTo', e.target.value)}
-                    />
-                  </div>
+                  <label className="form-label">Start Time *</label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    value={scheduleForm.startTime}
+                    onChange={(e) => handleScheduleFormChange('startTime', e.target.value)}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">End Time *</label>
+                  <input
+                    type="time"
+                    className="form-input"
+                    value={scheduleForm.endTime}
+                    onChange={(e) => handleScheduleFormChange('endTime', e.target.value)}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Status</label>
+                  <select
+                    className="form-input"
+                    value={scheduleForm.status}
+                    onChange={(e) => handleScheduleFormChange('status', e.target.value)}
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
-      
+            
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={closeAddScheduleModal}>
                 Cancel

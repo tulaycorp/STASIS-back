@@ -658,7 +658,7 @@ const CourseManagement = () => {
       </div>
     </div>
 
-    {/* Course Modal */}
+    {/*Add Course Modal */}
     {(showAddCourseModal || showEditCourseModal) && (
       <div className="modal-overlay">
         <div className="modal-content">
