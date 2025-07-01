@@ -175,7 +175,6 @@ public class EnrolledCourseService {
         Grade grade = enrolledCourse.getGrade();
         if (grade == null) {
             grade = Grade.builder()
-                .enrolledCourse(enrolledCourse)
                 .gradeValue(overallGrade != null ? BigDecimal.valueOf(overallGrade) : null)
                 .gradeDate(LocalDate.now())
                 .midtermGrade(midtermGrade)
@@ -248,7 +247,6 @@ public class EnrolledCourseService {
         Grade grade = enrolledCourse.getGrade();
         if (grade == null) {
             grade = Grade.builder()
-                .enrolledCourse(enrolledCourse)
                 .midtermGrade(midtermGrade)
                 .gradeDate(LocalDate.now())
                 .build();
@@ -270,7 +268,6 @@ public class EnrolledCourseService {
         Grade grade = enrolledCourse.getGrade();
         if (grade == null) {
             grade = Grade.builder()
-                .enrolledCourse(enrolledCourse)
                 .finalGrade(finalGrade)
                 .gradeDate(LocalDate.now())
                 .build();
@@ -292,7 +289,6 @@ public class EnrolledCourseService {
         Grade grade = enrolledCourse.getGrade();
         if (grade == null) {
             grade = Grade.builder()
-                .enrolledCourse(enrolledCourse)
                 .gradeValue(BigDecimal.valueOf(overallGrade))
                 .overallGrade(overallGrade)
                 .gradeDate(LocalDate.now())

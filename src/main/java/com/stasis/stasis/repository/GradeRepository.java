@@ -1,7 +1,6 @@
 package com.stasis.stasis.repository;
 
 import com.stasis.stasis.model.Grade;
-import com.stasis.stasis.model.EnrolledCourse;
 import com.stasis.stasis.model.SemesterEnrollment;
 import com.stasis.stasis.model.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,13 +10,10 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface GradeRepository extends JpaRepository<Grade, Long> {
     
-    // Find grade by enrolled course
-    Optional<Grade> findByEnrolledCourse(EnrolledCourse enrolledCourse);
     
     // Find grades by grade value range
     List<Grade> findByGradeValueBetween(BigDecimal minGrade, BigDecimal maxGrade);
@@ -29,17 +25,17 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
     List<Grade> findByGradeValueGreaterThanEqual(BigDecimal gradeValue);
     
     // Custom queries for complex relationships
-    @Query("SELECT g FROM Grade g JOIN g.enrolledCourse ec JOIN ec.semesterEnrollment se WHERE se.student = :student AND se.semester = :semester AND se.academicYear = :academicYear")
+    @Query("SELECT g FROM EnrolledCourse ec JOIN ec.grade g JOIN ec.semesterEnrollment se WHERE se.student = :student AND se.semester = :semester AND se.academicYear = :academicYear")
     List<Grade> findGradesByStudentAndSemester(@Param("student") Student student, 
                                               @Param("semester") String semester, 
                                               @Param("academicYear") String academicYear);
     
-    @Query("SELECT g FROM Grade g JOIN g.enrolledCourse ec JOIN ec.semesterEnrollment se WHERE se.student = :student")
+    @Query("SELECT g FROM EnrolledCourse ec JOIN ec.grade g JOIN ec.semesterEnrollment se WHERE se.student = :student")
     List<Grade> findGradesByStudent(@Param("student") Student student);
     
-    @Query("SELECT g FROM Grade g JOIN g.enrolledCourse ec WHERE ec.semesterEnrollment = :semesterEnrollment")
+    @Query("SELECT g FROM EnrolledCourse ec JOIN ec.grade g WHERE ec.semesterEnrollment = :semesterEnrollment")
     List<Grade> findGradesBySemesterEnrollment(@Param("semesterEnrollment") SemesterEnrollment semesterEnrollment);
     
-    @Query("SELECT g FROM Grade g JOIN g.enrolledCourse ec JOIN ec.semesterEnrollment se WHERE se.student = :student ORDER BY se.academicYear, se.semester")
+    @Query("SELECT g FROM EnrolledCourse ec JOIN ec.grade g JOIN ec.semesterEnrollment se WHERE se.student = :student ORDER BY se.academicYear, se.semester")
     List<Grade> findGradesByStudentOrderBySemester(@Param("student") Student student);
 }

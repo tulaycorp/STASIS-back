@@ -38,7 +38,6 @@ public class GradeService {
     public Grade updateGrade(Long id, Grade updatedGrade) {
         return gradeRepository.findById(id)
             .map(grade -> {
-                grade.setEnrolledCourse(updatedGrade.getEnrolledCourse());
                 grade.setGradeValue(updatedGrade.getGradeValue());
                 grade.setGradeDate(updatedGrade.getGradeDate());
                 grade.setMidtermGrade(updatedGrade.getMidtermGrade());
@@ -58,7 +57,7 @@ public class GradeService {
      * Get all grades for a specific enrolled course
      */
     public Optional<Grade> getGradeByEnrolledCourse(EnrolledCourse enrolledCourse) {
-        return gradeRepository.findByEnrolledCourse(enrolledCourse);
+        return Optional.ofNullable(enrolledCourse.getGrade());
     }
 
     /**
@@ -83,7 +82,7 @@ public class GradeService {
             .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
 
         // Check if grade already exists
-        Optional<Grade> existingGrade = gradeRepository.findByEnrolledCourse(enrolledCourse);
+        Optional<Grade> existingGrade = Optional.ofNullable(enrolledCourse.getGrade());
         
         if (existingGrade.isPresent()) {
             // Update existing grade
@@ -94,11 +93,13 @@ public class GradeService {
         } else {
             // Create new grade
             Grade newGrade = Grade.builder()
-                .enrolledCourse(enrolledCourse)
                 .gradeValue(gradeValue)
                 .gradeDate(java.time.LocalDate.now())
                 .build();
-            return gradeRepository.save(newGrade);
+            Grade saved = gradeRepository.save(newGrade);
+            enrolledCourse.setGrade(saved);
+            enrolledCourseRepository.save(enrolledCourse);
+            return saved;
         }
     }
 
@@ -113,7 +114,7 @@ public class GradeService {
      * Check if a student has completed all requirements for a course
      */
     public boolean hasPassingGrade(EnrolledCourse enrolledCourse) {
-        Optional<Grade> grade = gradeRepository.findByEnrolledCourse(enrolledCourse);
+        Optional<Grade> grade = Optional.ofNullable(enrolledCourse.getGrade());
         if (grade.isPresent()) {
             BigDecimal gradeValue = grade.get().getGradeValue();
             return gradeValue != null && gradeValue.compareTo(new BigDecimal("60.0")) >= 0;
