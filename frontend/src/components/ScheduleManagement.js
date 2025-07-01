@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from './Sidebar';
@@ -816,7 +816,6 @@ const ScheduleManagement = () => {
             <div className="modal-header">
               <h2 className="modal-title">Add New Schedule</h2>
             </div>
-            
             <div className="modal-body">
               <div className="modal-grid">
                 <div className="form-group">
@@ -832,16 +831,20 @@ const ScheduleManagement = () => {
                     ))}
                   </select>
                 </div>
-                
                 <div className="form-group">
                   <label className="form-label">Section Name *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-input"
-                    placeholder="e.g., CS-101-A"
                     value={scheduleForm.sectionName}
                     onChange={(e) => handleScheduleFormChange('sectionName', e.target.value)}
-                  />
+                  >
+                    <option value="">Select section</option>
+                    {sectionsList.map((section) => (
+                      <option key={section.sectionID} value={section.sectionName}>
+                        {section.sectionName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="form-group">
@@ -940,7 +943,6 @@ const ScheduleManagement = () => {
             <div className="modal-header">
               <h2 className="modal-title">Edit Schedule</h2>
             </div>
-            
             <div className="modal-body">
               <div className="modal-grid">
                 <div className="form-group">
@@ -956,16 +958,20 @@ const ScheduleManagement = () => {
                     ))}
                   </select>
                 </div>
-                
                 <div className="form-group">
                   <label className="form-label">Section Name *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-input"
-                    placeholder="e.g., CS-101-A"
                     value={scheduleForm.sectionName}
                     onChange={(e) => handleScheduleFormChange('sectionName', e.target.value)}
-                  />
+                  >
+                    <option value="">Select section</option>
+                    {sectionsList.map((section) => (
+                      <option key={section.sectionID} value={section.sectionName}>
+                        {section.sectionName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="form-group">
