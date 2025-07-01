@@ -33,8 +33,5 @@ public class Users {
     private String email;
 
     @OneToOne(optional = true)
-    private SemesterEnrollment semesterEnrollment; // Updated reference
-
-    @OneToOne(optional = true)
     private Faculty faculty;
 }

@@ -39,4 +39,7 @@ public class Student {
     
     @Transient
     private String username;
+
+    @OneToOne(optional = true)
+    private SemesterEnrollment semesterEnrollment;
 }
