@@ -42,6 +42,18 @@ const CourseManagement = () => {
 
   const [facultyList, setFacultyList] = useState([]);
 
+  // Toast state and helpers
+  const [toasts, setToasts] = useState([]);
+
+  // Add a toast
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
+
   // Available Faculty Chairmen
   const facultyChairmen = [
     'Dr. Maria Santos',
@@ -196,15 +208,13 @@ const CourseManagement = () => {
 
   const handleAddCourse = async () => {
     if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
-    
     if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
-      alert('Credits must be a positive number');
+      showToast('Credits must be a positive number', 'error');
       return;
     }
-    
     try {
       const courseData = {
         courseCode: courseForm.courseCode,
@@ -212,33 +222,28 @@ const CourseManagement = () => {
         credits: parseInt(courseForm.credits),
         program: courseForm.program
       };
-
-      console.log('Creating course:', courseData);
       await courseAPI.createCourse(courseData);
-      alert('Course added successfully!');
+      showToast('Course added successfully!', 'success');
       closeModal();
       loadCourses();
     } catch (error) {
-      console.error('Error adding course:', error);
       if (error.response?.status === 400) {
-        alert('Course code already exists or invalid data provided!');
+        showToast('Course code already exists or invalid data provided!', 'error');
       } else {
-        alert('Failed to add course. Please try again.');
+        showToast('Failed to add course. Please try again.', 'error');
       }
     }
   };
 
   const handleEditCourse = async () => {
     if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
-    
     if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
-      alert('Credits must be a positive number');
+      showToast('Credits must be a positive number', 'error');
       return;
     }
-    
     try {
       const courseData = {
         courseCode: courseForm.courseCode,
@@ -246,19 +251,17 @@ const CourseManagement = () => {
         credits: parseInt(courseForm.credits),
         program: courseForm.program
       };
-
       await courseAPI.updateCourse(editingCourse.id, courseData);
-      alert('Course updated successfully!');
+      showToast('Course updated successfully!', 'success');
       closeModal();
       loadCourses();
     } catch (error) {
-      console.error('Error updating course:', error);
       if (error.response?.status === 400) {
-        alert('Course code already exists or invalid data provided!');
+        showToast('Course code already exists or invalid data provided!', 'error');
       } else if (error.response?.status === 404) {
-        alert('Course not found!');
+        showToast('Course not found!', 'error');
       } else {
-        alert('Failed to update course. Please try again.');
+        showToast('Failed to update course. Please try again.', 'error');
       }
     }
   };
@@ -267,14 +270,13 @@ const CourseManagement = () => {
     if (window.confirm('Are you sure you want to delete this course?')) {
       try {
         await courseAPI.deleteCourse(courseId);
-        alert('Course deleted successfully!');
+        showToast('Course deleted successfully!', 'success');
         loadCourses();
       } catch (error) {
-        console.error('Error deleting course:', error);
         if (error.response?.status === 404) {
-          alert('Course not found!');
+          showToast('Course not found!', 'error');
         } else {
-          alert('Failed to delete course. Please try again.');
+          showToast('Failed to delete course. Please try again.', 'error');
         }
       }
     }
@@ -308,7 +310,7 @@ const CourseManagement = () => {
 
   const handleAddProgram = async () => {
     if (!programForm.programName) {
-      alert('Please enter a program name.');
+      showToast('Please enter a program name.', 'error');
       return;
     }
     const payload = { programName: programForm.programName };
@@ -319,9 +321,10 @@ const CourseManagement = () => {
       await programAPI.createProgram(payload);
       setShowAddProgramModal(false);
       setProgramForm({ programName: '', facultyChairman: '' });
+      showToast('Program added successfully!', 'success');
       loadPrograms();
     } catch (err) {
-      alert('Failed to add program.');
+      showToast('Failed to add program.', 'error');
     }
   };
 
@@ -340,15 +343,22 @@ const CourseManagement = () => {
     if (!programToDelete) return;
     try {
       await programAPI.deleteProgram(programToDelete);
-      loadPrograms(); // <-- reload programs
+      loadPrograms();
       setShowDeleteProgramModal(false);
       setProgramToDelete('');
       setDeleteProgramError('');
+      showToast('Program deleted successfully!', 'success');
     } catch (err) {
       setDeleteProgramError(
         err.response?.status === 409
           ? 'Cannot delete: Program has courses assigned.'
           : 'Failed to delete program.'
+      );
+      showToast(
+        err.response?.status === 409
+          ? 'Cannot delete: Program has courses assigned.'
+          : 'Failed to delete program.',
+        'error'
       );
     }
   };
@@ -503,6 +513,15 @@ const CourseManagement = () => {
 
   return (
   <div className="container">
+    {/* Toast Container */}
+    <div id="toast-container">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast ${t.type}`}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+
     <Sidebar 
       onNavigate={showSection}
       userInfo={getUserInfo()}

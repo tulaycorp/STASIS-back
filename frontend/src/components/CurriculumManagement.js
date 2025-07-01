@@ -37,6 +37,16 @@ const CurriculumManagement = () => {
     activeSemesterTab: '1' // Default to 1st semester tab
   });
 
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
+
   // Load data on component mount
   useEffect(() => {
     loadInitialData();
@@ -333,7 +343,7 @@ const CurriculumManagement = () => {
         setIsModalOpen(true);
       } catch (error) {
         console.error('Error loading curriculum details:', error);
-        alert('Failed to load curriculum details. Please try again.');
+        showToast('Failed to load curriculum details. Please try again.', 'error');
       }
     }
   };
@@ -342,22 +352,22 @@ const CurriculumManagement = () => {
   const saveCurriculum = async () => {
     // Enhanced validation
     if (!formData.curriculumName?.trim()) {
-      alert('Please enter a curriculum name');
+      showToast('Please enter a curriculum name', 'error');
       return;
     }
     
     if (!formData.programId) {
-      alert('Please select a program');
+      showToast('Please select a program', 'error');
       return;
     }
     
     if (!formData.academicYear) {
-      alert('Please select an academic year');
+      showToast('Please select an academic year', 'error');
       return;
     }
     
     if (!formData.status) {
-      alert('Please select a status');
+      showToast('Please select a status', 'error');
       return;
     }
 
@@ -365,7 +375,7 @@ const CurriculumManagement = () => {
       const selectedProgramObj = programsList.find(p => p.programID.toString() === formData.programId);
       
       if (!selectedProgramObj) {
-        alert('Selected program not found');
+        showToast('Selected program not found', 'error');
         return;
       }
       
@@ -409,8 +419,8 @@ const CurriculumManagement = () => {
                     return curriculumDetailAPI.createCurriculumDetail({
                       curriculum: { curriculumID: curriculumId },
                       course: { id: courseId },
-                      yearLevel: formData.courseYearLevels?.[courseId] || 1,    // Corrected field name casing
-                      semester: formData.courseSemesters?.[courseId] || "1"     // Corrected field name casing
+                      yearLevel: formData.courseYearLevels?.[courseId] || 1,
+                      semester: formData.courseSemesters?.[courseId] || "1"
                     });
                   }
                   return null;
@@ -421,7 +431,7 @@ const CurriculumManagement = () => {
         }
       }
 
-      alert(editingId ? 'Curriculum updated successfully!' : 'Curriculum created successfully!');
+      showToast(editingId ? 'Curriculum updated successfully!' : 'Curriculum created successfully!', 'success');
       closeModal();
       loadCurriculums(); // Fixed function name
     } catch (error) {
@@ -429,13 +439,13 @@ const CurriculumManagement = () => {
       
       // Better error handling
       if (error.response?.status === 400) {
-        alert('Invalid data provided. Please check your input.');
+        showToast('Invalid data provided. Please check your input.', 'error');
       } else if (error.response?.status === 409) {
-        alert('A curriculum with this code already exists.');
+        showToast('A curriculum with this code already exists.', 'error');
       } else if (error.response?.status === 500) {
-        alert('Server error. Please try again later.');
+        showToast('Server error. Please try again later.', 'error');
       } else {
-        alert('Failed to save curriculum. Please try again.');
+        showToast('Failed to save curriculum. Please try again.', 'error');
       }
     }
   };
@@ -470,16 +480,16 @@ const CurriculumManagement = () => {
     if (window.confirm('Are you sure you want to delete this curriculum?')) {
       try {
         await curriculumAPI.deleteCurriculum(id);
-        alert('Curriculum deleted successfully!');
+        showToast('Curriculum deleted successfully!', 'success');
         loadCurriculums(); // Reload the list
       } catch (error) {
         console.error('Error deleting curriculum:', error);
         if (error.response?.status === 404) {
-          alert('Curriculum not found!');
+          showToast('Curriculum not found!', 'error');
         } else if (error.response?.status === 500) {
-          alert('Server error. Please try again later.');
+          showToast('Server error. Please try again later.', 'error');
         } else {
-          alert('Failed to delete curriculum. Please try again.');
+          showToast('Failed to delete curriculum. Please try again.', 'error');
         }
       }
     }
@@ -730,6 +740,14 @@ const CurriculumManagement = () => {
 
   return (
     <div className="container">
+      {/* Toast Container */}
+      <div id="toast-container">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`toast ${toast.type}`}>
+            {toast.message}
+          </div>
+        ))}
+      </div>
       {/* Sidebar */}
       <Sidebar 
         onNavigate={showSection}

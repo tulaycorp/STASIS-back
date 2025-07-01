@@ -27,6 +27,7 @@ const FacultyManagement = () => {
 
   const [selectedProgram, setSelectedProgram] = useState('All Programs');
   const [searchTerm, setSearchTerm] = useState('');
+  const [toasts, setToasts] = useState([]);
 
   // Position options for faculty
   const positionOptions = [
@@ -46,6 +47,14 @@ const FacultyManagement = () => {
     'On Leave',
     'Retired'
   ];
+
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
 
   // Load data on component mount
   useEffect(() => {
@@ -209,13 +218,14 @@ const FacultyManagement = () => {
       setGeneratedCredentials(response.data);
       closeAddFacultyModal();
       setShowCredentialsModal(true);
-      loadFaculty(); // Reload faculty list
+      loadFaculty();
+      showToast('Faculty added successfully!', 'success');
     } catch (error) {
       console.error('Error adding faculty:', error);
       if (error.response?.status === 400) {
-        alert('Email already exists or invalid data provided!');
+        showToast('Email already exists or invalid data provided!', 'error');
       } else {
-        alert('Failed to add faculty. Please try again.');
+        showToast('Failed to add faculty. Please try again.', 'error');
       }
     }
   };
@@ -250,23 +260,22 @@ const FacultyManagement = () => {
 
       console.log('Sending updated faculty data:', facultyData);
       await facultyAPI.updateFaculty(editingFaculty.facultyID, facultyData);
-      alert('Faculty updated successfully!');
+      showToast('Faculty updated successfully!', 'success');
       closeEditFacultyModal();
-      loadFaculty(); // Reload faculty list
+      loadFaculty();
     } catch (error) {
       console.error('Error updating faculty:', error);
       if (error.response?.status === 400) {
-        // Check if the error message contains specific text
         const errorMessage = error.response?.data || 'Invalid data provided';
         if (typeof errorMessage === 'string' && errorMessage.includes('Email already exists')) {
-          alert('This email address is already in use by another student or faculty member.');
+          showToast('This email address is already in use by another student or faculty member.', 'error');
         } else {
-          alert('Invalid data provided. Please check your input.');
+          showToast('Invalid data provided. Please check your input.', 'error');
         }
       } else if (error.response?.status === 404) {
-        alert('Faculty not found!');
+        showToast('Faculty not found!', 'error');
       } else {
-        alert('Failed to update faculty. Please try again.');
+        showToast('Failed to update faculty. Please try again.', 'error');
       }
     }
   };
@@ -275,14 +284,14 @@ const FacultyManagement = () => {
     if (window.confirm('Are you sure you want to delete this faculty member?')) {
       try {
         await facultyAPI.deleteFaculty(facultyId);
-        alert('Faculty deleted successfully!');
-        loadFaculty(); // Reload faculty list
+        showToast('Faculty deleted successfully!', 'success');
+        loadFaculty();
       } catch (error) {
         console.error('Error deleting faculty:', error);
         if (error.response?.status === 404) {
-          alert('Faculty not found!');
+          showToast('Faculty not found!', 'error');
         } else {
-          alert('Failed to delete faculty. Please try again.');
+          showToast('Failed to delete faculty. Please try again.', 'error');
         }
       }
     }
@@ -411,7 +420,13 @@ const FacultyManagement = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
+      <div id="toast-container">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`toast ${toast.type}`}>
+            {toast.message}
+          </div>
+        ))}
+      </div>
       <Sidebar 
         onNavigate={showSection}
         userInfo={getUserInfo()}
@@ -439,10 +454,8 @@ const FacultyManagement = () => {
         ]}
       />
 
-      {/* Main Content */}
       <div className="main-content">
         <div className="content-wrapper">
-          {/* Breadcrumb */}
           <div className="breadcrumb">
             <span 
               className="breadcrumb-link" 
@@ -454,7 +467,6 @@ const FacultyManagement = () => {
             <span className="breadcrumb-current">Faculty Management</span>
           </div>
           
-          {/* Header */}
           <div className="page-header">
             <h1 className="page-title">Faculty Management</h1>
             <button 
@@ -465,7 +477,6 @@ const FacultyManagement = () => {
             </button>
           </div>
 
-          {/* Stats Cards - Updated */}
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-label">Total Faculty</div>
@@ -485,7 +496,6 @@ const FacultyManagement = () => {
             </div>
           </div>
 
-          {/* Faculty List */}
           <div className="faculty-list-container">
             <div className="list-header">
               <div className="list-controls">
@@ -546,13 +556,13 @@ const FacultyManagement = () => {
                         </span>
                       </td>
                       <td className="action-buttons">
-                        <button //Edit Button
+                        <button
                           className="btn-edit"
                           onClick={() => showEditFacultyForm(faculty)}
                           title="Edit Faculty"
                         >
                         </button>
-                        <button //Delete Button
+                        <button
                           className="btn-delete"
                           onClick={() => handleDeleteFaculty(faculty.facultyID)}
                           title="Delete Faculty"
@@ -574,7 +584,6 @@ const FacultyManagement = () => {
         </div>
       </div>
 
-      {/* Add Faculty Modal */}
       {showAddFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-container">
@@ -689,7 +698,6 @@ const FacultyManagement = () => {
         </div>
       )}
 
-      {/* Edit Faculty Modal */}
       {showEditFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-container">
@@ -804,7 +812,6 @@ const FacultyManagement = () => {
         </div>
       )}
 
-      {/* Credentials Modal */}
       {showCredentialsModal && generatedCredentials && (
         <div className="modal-overlay">
           <div className="modal-container">

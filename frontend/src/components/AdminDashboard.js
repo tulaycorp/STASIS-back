@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './Sidebar';
@@ -121,14 +121,14 @@ const AdminDashboard = () => {
   const handleAddStudent = async () => {
     // Validate required fields
     if (!studentForm.firstName || !studentForm.lastName || !studentForm.email || !studentForm.programId || !studentForm.curriculumId) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(studentForm.email)) {
-      alert('Please enter a valid email address');
+      showToast('Please enter a valid email address');
       return;
     }
 
@@ -148,7 +148,7 @@ const AdminDashboard = () => {
       };
 
       await studentAPI.createStudent(studentData);
-      alert('Student added successfully!');
+      showToast('Student added successfully!');
       closeAddStudentModal();
 
       // Refresh student count
@@ -164,9 +164,9 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error adding student:', error);
       if (error.response?.status === 400) {
-        alert('Email already exists or invalid data provided!');
+        showToast('Email already exists or invalid data provided!');
       } else {
-        alert('Failed to add student. Please try again.');
+        showToast('Failed to add student. Please try again.');
       }
     }
   };
@@ -208,14 +208,14 @@ const AdminDashboard = () => {
   const handleAddFaculty = async () => {
     // Validate required fields
     if (!facultyForm.firstName || !facultyForm.lastName || !facultyForm.email || !facultyForm.Program) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(facultyForm.email)) {
-      alert('Please enter a valid email address');
+      showToast('Please enter a valid email address');
       return;
     }
 
@@ -234,7 +234,7 @@ const AdminDashboard = () => {
 
       await facultyAPI.createFaculty(facultyData);
 
-      alert('Faculty added successfully!');
+      showToast('Faculty added successfully!');
       closeAddFacultyModal();
 
       // Refresh faculty list so the new faculty appears in the table
@@ -244,9 +244,9 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error adding faculty:', error);
       if (error.response?.status === 400) {
-        alert('Email already exists or invalid data provided!');
+        showToast('Email already exists or invalid data provided!');
       } else {
-        alert('Failed to add faculty. Please try again.');
+        showToast('Failed to add faculty. Please try again.');
       }
     }
   };
@@ -296,12 +296,12 @@ const AdminDashboard = () => {
 
   const handleAddCourse = async () => {
      if (!courseForm.courseCode || !courseForm.courseDescription || !courseForm.credits || !courseForm.program) {
-       alert('Please fill in all required fields');
+       showToast('Please fill in all required fields');
        return;
      }
      
      if (isNaN(courseForm.credits) || courseForm.credits <= 0) {
-       alert('Credits must be a positive number');
+       showToast('Credits must be a positive number');
        return;
      }
      
@@ -315,14 +315,14 @@ const AdminDashboard = () => {
  
        console.log('Creating course:', courseData);
        await courseAPI.createCourse(courseData);
-       alert('Course added successfully!');
+       showToast('Course added successfully!');
        closeModal();
      } catch (error) {
        console.error('Error adding course:', error);
        if (error.response?.status === 400) {
-         alert('Course code already exists or invalid data provided!');
+         showToast('Course code already exists or invalid data provided!');
        } else {
-         alert('Failed to add course. Please try again.');
+         showToast('Failed to add course. Please try again.');
        }
      }
    };
@@ -446,13 +446,13 @@ const AdminDashboard = () => {
         !scheduleForm.startTime ||
         !scheduleForm.endTime
       ) {
-        alert('Please fill in all required fields.');
+        showToast('Please fill in all required fields.');
         return;
       }
 
       // Validate time
       if (scheduleForm.startTime >= scheduleForm.endTime) {
-        alert('End time must be after start time');
+        showToast('End time must be after start time');
         return;
       }
 
@@ -475,7 +475,7 @@ const AdminDashboard = () => {
       };
 
       await courseSectionAPI.createSection(sectionData);
-      alert('Schedule added successfully!');
+      showToast('Schedule added successfully!');
       closeAddScheduleModal();
 
       // --- Fetch and update the schedule list so the new schedule is included ---
@@ -485,9 +485,9 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error adding schedule:', error);
       if (error.response?.status === 400) {
-        alert(error.response.data || 'Invalid schedule data provided!');
+        showToast(error.response.data || 'Invalid schedule data provided!');
       } else {
-        alert('Failed to add schedule. Please try again.');
+        showToast('Failed to add schedule. Please try again.');
       }
     }
   };
@@ -619,6 +619,18 @@ const AdminDashboard = () => {
 
   const calendarDays = generateCalendarDays();
   
+  // Toast state and helper
+  const [toasts, setToasts] = useState([]);
+  const toastId = useRef(0);
+
+  const showToast = (message, type = "success") => {
+    const id = toastId.current++;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
@@ -1139,6 +1151,13 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Toast state and helper */}
+      <div id="toast-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast ${toast.type}`}>{toast.message}</div>
+        ))}
+      </div>
     </div>
   );
 };

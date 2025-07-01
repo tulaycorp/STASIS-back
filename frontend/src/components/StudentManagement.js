@@ -58,8 +58,17 @@ const StudentManagement = () => {
 
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
+  const [toasts, setToasts] = useState([]);
 
 
+  // Toast notification function
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
   
   // Load data on component mount
   useEffect(() => {
@@ -228,7 +237,7 @@ const StudentManagement = () => {
   const handleAddSection = async () => {
     // Validate required fields
     if (!sectionForm.sectionName || !sectionForm.programId) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
 
@@ -239,7 +248,7 @@ const StudentManagement = () => {
 
       // Add a check in case the program isn't found (unlikely but good practice)
       if (!selectedProgramObj) {
-        alert('Could not find the selected program. Please refresh and try again.');
+        showToast('Could not find the selected program. Please refresh and try again.', 'error');
         return;
       }
 
@@ -252,19 +261,19 @@ const StudentManagement = () => {
       console.log("Sending this data to create section:", sectionData);
       await courseSectionAPI.createSection(sectionData);
 
-      alert('Section added successfully!');
+      showToast('Section added successfully!', 'success');
       closeAddSectionModal(); // Close the modal
       loadInitialData();     // Reload all data to show the new section in the list
 
     } catch (error) {
       console.error('Error adding section:', error);
       if (error.response?.status === 409) { // 409 Conflict
-        alert('A section with this name already exists for the selected program.');
+        showToast('A section with this name already exists for the selected program.', 'error');
       } else if (error.response?.data?.message) {
-        alert(`Failed to add section: ${error.response.data.message}`);
+        showToast(`Failed to add section: ${error.response.data.message}`, 'error');
       }
       else {
-        alert('Failed to add section. Please check the console for details.');
+        showToast('Failed to add section. Please check the console for details.', 'error');
       }
     }
   };
@@ -322,7 +331,7 @@ const StudentManagement = () => {
   // Updated handleDeleteSection to use API only
   const handleDeleteSection = async () => {
     if (!deleteSectionForm.sectionId) {
-      alert('Please select a section to delete');
+      showToast('Please select a section to delete', 'error');
       return;
     }
 
@@ -331,7 +340,7 @@ const StudentManagement = () => {
         // Call API to delete section
         await courseSectionAPI.deleteSection(deleteSectionForm.sectionId);
 
-        alert('Section deleted successfully!');
+        showToast('Section deleted successfully!', 'success');
         closeDeleteSectionModal();
 
         // Reload data to get the updated sections list
@@ -340,11 +349,11 @@ const StudentManagement = () => {
       } catch (error) {
         console.error('Error deleting section:', error);
         if (error.response?.status === 404) {
-          alert('Section not found!');
+          showToast('Section not found!', 'error');
         } else if (error.response?.status === 400) {
-          alert('Cannot delete section. It may have associated students.');
+          showToast('Cannot delete section. It may have associated students.', 'error');
         } else {
-          alert('Failed to delete section. Please try again.');
+          showToast('Failed to delete section. Please try again.', 'error');
         }
       }
     }
@@ -353,14 +362,14 @@ const StudentManagement = () => {
   const handleAddStudent = async () => {
     // Validate required fields
     if (!studentForm.firstName || !studentForm.lastName || !studentForm.email || !studentForm.programId || !studentForm.curriculumId) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(studentForm.email)) {
-      alert('Please enter a valid email address');
+      showToast('Please enter a valid email address', 'error');
       return;
     }
 
@@ -392,7 +401,7 @@ const StudentManagement = () => {
         });
         setShowCredentialsModal(true);
       } else {
-        alert('Student added successfully!');
+        showToast('Student added successfully!', 'success');
       }
 
       closeAddStudentModal();
@@ -400,9 +409,9 @@ const StudentManagement = () => {
     } catch (error) {
       console.error('Error adding student:', error);
       if (error.response?.status === 400) {
-        alert('Email already exists or invalid data provided!');
+        showToast('Email already exists or invalid data provided!', 'error');
       } else {
-        alert('Failed to add student. Please try again.');
+        showToast('Failed to add student. Please try again.', 'error');
       }
     }
   };
@@ -429,14 +438,14 @@ const StudentManagement = () => {
   const handleUpdateStudent = async () => {
     // Validate required fields
     if (!studentForm.firstName || !studentForm.lastName || !studentForm.email || !studentForm.programId || !studentForm.curriculumId) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(studentForm.email)) {
-      alert('Please enter a valid email address');
+      showToast('Please enter a valid email address', 'error');
       return;
     }
 
@@ -458,7 +467,7 @@ const StudentManagement = () => {
       };
 
       await studentAPI.updateStudent(editingStudent.id, studentData);
-      alert('Student updated successfully!');
+      showToast('Student updated successfully!', 'success');
       closeEditStudentModal();
       loadInitialData(); // Reload student list
     } catch (error) {
@@ -467,14 +476,14 @@ const StudentManagement = () => {
         // Check if the error message contains specific text
         const errorMessage = error.response?.data || 'Invalid data provided';
         if (typeof errorMessage === 'string' && errorMessage.includes('Email already exists')) {
-          alert('This email address is already in use by another student or faculty member.');
+          showToast('This email address is already in use by another student or faculty member.', 'error');
         } else {
-          alert('Invalid data provided. Please check your input.');
+          showToast('Invalid data provided. Please check your input.', 'error');
         }
       } else if (error.response?.status === 404) {
-        alert('Student not found!');
+        showToast('Student not found!', 'error');
       } else {
-        alert('Failed to update student. Please try again.');
+        showToast('Failed to update student. Please try again.', 'error');
       }
     }
   };
@@ -483,14 +492,14 @@ const StudentManagement = () => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
         await studentAPI.deleteStudent(studentId);
-        alert('Student deleted successfully!');
+        showToast('Student deleted successfully!', 'success');
         loadInitialData(); // Reload student list
       } catch (error) {
         console.error('Error deleting student:', error);
         if (error.response?.status === 404) {
-          alert('Student not found!');
+          showToast('Student not found!', 'error');
         } else {
-          alert('Failed to delete student. Please try again.');
+          showToast('Failed to delete student. Please try again.', 'error');
         }
       }
     }
@@ -500,14 +509,14 @@ const StudentManagement = () => {
     if (window.confirm('Are you sure you want to promote this student to the next year level?')) {
       try {
         await studentAPI.promoteStudent(studentId);
-        alert('Student promoted successfully!');
+        showToast('Student promoted successfully!', 'success');
         loadInitialData(); // Reload student list
       } catch (error) {
         console.error('Error promoting student:', error);
         if (error.response?.status === 404) {
-          alert('Student not found!');
+          showToast('Student not found!', 'error');
         } else {
-          alert('Failed to promote student. Please try again.');
+          showToast('Failed to promote student. Please try again.', 'error');
         }
       }
     }
@@ -698,6 +707,14 @@ const StudentManagement = () => {
 
   return (
     <div className="dashboard-container">
+      {/* Toast Container */}
+      <div id="toast-container">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`toast ${toast.type}`}>
+            {toast.message}
+          </div>
+        ))}
+      </div>
       {/* Sidebar */}
       <Sidebar
         onNavigate={showSection}

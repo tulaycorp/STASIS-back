@@ -55,6 +55,9 @@ const ScheduleManagement = () => {
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
   ];
 
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
   // Load data on component mount
   useEffect(() => {
     loadInitialData();
@@ -176,13 +179,22 @@ const ScheduleManagement = () => {
     }));
   };
 
+  // Toast notification function
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
+
   // Add new schedule
   const handleAddSchedule = async () => {
     try {
       // Validate required fields
       if (!scheduleForm.course || !scheduleForm.sectionName || !scheduleForm.instructor || 
           !scheduleForm.room || !scheduleForm.day || !scheduleForm.startTime || !scheduleForm.endTime) {
-        alert('Please fill in all required fields.');
+        showToast('Please fill in all required fields.', 'error');
         return;
       }
 
@@ -214,19 +226,16 @@ const ScheduleManagement = () => {
         faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
       };
 
-      console.log('Creating section with data:', sectionData);
-      console.log('Selected faculty:', selectedFaculty);
-
       await courseSectionAPI.createSection(sectionData);
-      alert('Schedule added successfully!');
+      showToast('Schedule added successfully!', 'success');
       closeAddScheduleModal();
       reloadSchedules();
     } catch (error) {
       console.error('Error adding schedule:', error);
       if (error.response?.status === 400) {
-        alert(error.response.data || 'Invalid schedule data provided!');
+        showToast(error.response.data || 'Invalid schedule data provided!', 'error');
       } else {
-        alert('Failed to add schedule. Please try again.');
+        showToast('Failed to add schedule. Please try again.', 'error');
       }
     }
   };
@@ -276,16 +285,13 @@ const ScheduleManagement = () => {
         faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
       };
 
-      console.log('Updating section with data:', sectionData);
-      console.log('Selected faculty for update:', selectedFaculty);
-
       await courseSectionAPI.updateSection(editingSchedule.id, sectionData);
-      alert('Schedule updated successfully!');
+      showToast('Schedule updated successfully!', 'success');
       closeEditScheduleModal();
       reloadSchedules();
     } catch (error) {
       console.error('Error updating schedule:', error);
-      alert('Failed to update schedule. Please try again.');
+      showToast('Failed to update schedule. Please try again.', 'error');
     }
   };
 
@@ -293,12 +299,12 @@ const ScheduleManagement = () => {
   const handleDeleteSchedule = async (scheduleId) => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
       try {
-      await courseSectionAPI.deleteSection(scheduleId);
-      alert('Schedule deleted successfully!');
-      reloadSchedules();
+        await courseSectionAPI.deleteSection(scheduleId);
+        showToast('Schedule deleted successfully!', 'success');
+        reloadSchedules();
       } catch (error) {
         console.error('Error deleting schedule:', error);
-        alert('Failed to delete schedule. Please try again.');
+        showToast('Failed to delete schedule. Please try again.', 'error');
       }
     }
   };
@@ -307,11 +313,11 @@ const ScheduleManagement = () => {
   const handleUpdateStatus = async (scheduleId, newStatus) => {
     try {
       await courseSectionAPI.updateSectionStatus(scheduleId, newStatus);
-      alert('Status updated successfully!');
+      showToast('Status updated successfully!', 'success');
       reloadSchedules();
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update status. Please try again.');
+      showToast('Failed to update status. Please try again.', 'error');
     }
   };
 
@@ -556,6 +562,14 @@ const ScheduleManagement = () => {
 
   return (
     <div className="dashboard-container">
+      {/* Toast Container */}
+      <div id="toast-container">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`toast ${toast.type}`}>
+            {toast.message}
+          </div>
+        ))}
+      </div>
       <Sidebar 
         onNavigate={showSection}
         userInfo={getUserInfo()}

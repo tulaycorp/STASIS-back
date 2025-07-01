@@ -467,7 +467,6 @@ const Enrollment = () => {
             <div className="student-info">
               <p><strong>Program:</strong> {studentData?.program?.programName || 'N/A'}</p>
               <p><strong>Year Level:</strong> {studentData?.year_level}</p>
-              <p><strong>Curriculum:</strong> {studentData?.curriculum?.curriculumName || 'N/A'}</p>
             </div>
           </div>
 
@@ -494,13 +493,13 @@ const Enrollment = () => {
           {/* Tab Navigation */}
           <div className="tab-navigation">
             <button 
-              className={`btn-secondary ${selectedTab === 'available' ? 'active' : ''}`}
+              className={`page-btn ${selectedTab === 'available' ? 'active' : ''}`}
               onClick={() => setSelectedTab('available')}
             >
               Available Courses
             </button>
             <button 
-              className={`btn-secondary ${selectedTab === 'enrolled' ? 'active' : ''}`}
+              className={`page-btn ${selectedTab === 'enrolled' ? 'active' : ''}`}
               onClick={() => setSelectedTab('enrolled')}
             >
               My Enrollments ({myEnrollments.length})
@@ -509,7 +508,7 @@ const Enrollment = () => {
 
           {/* Course List */}
           <div className="schedule-list-container">
-            <div className="list-header">
+            <div className="list-header" style={{ marginBottom: '20px' }}>
               <div className="list-controls">
                 <h2 className="list-title">
                   {selectedTab === 'available' ? 'Available Courses' : 'My Enrollments'}
