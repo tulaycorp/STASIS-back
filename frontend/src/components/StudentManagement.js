@@ -56,6 +56,9 @@ const StudentManagement = () => {
     curriculumId: ''
   };
 
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [generatedCredentials, setGeneratedCredentials] = useState(null);
+
 
   
   // Load data on component mount
@@ -378,8 +381,20 @@ const StudentManagement = () => {
         curriculum: selectedCurriculumObj || null
       };
 
-      await studentAPI.createStudent(studentData);
-      alert('Student added successfully!');
+      // Await the API call and expect credentials in response
+      const response = await studentAPI.createStudent(studentData);
+
+      // If credentials are returned, show modal
+      if (response.data && response.data.username && response.data.password) {
+        setGeneratedCredentials({
+          username: response.data.username,
+          password: response.data.password
+        });
+        setShowCredentialsModal(true);
+      } else {
+        alert('Student added successfully!');
+      }
+
       closeAddStudentModal();
       loadInitialData(); // Reload student list
     } catch (error) {
@@ -1301,6 +1316,46 @@ const StudentManagement = () => {
                 disabled={!deleteSectionForm.sectionId}
               >
                 Delete Section
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials Modal */}
+      {showCredentialsModal && generatedCredentials && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h2 className="modal-title">Student Account Created</h2>
+              <button className="modal-close" onClick={() => setShowCredentialsModal(false)}>×</button>
+            </div>
+            
+            <div className="modal-content">
+              <div className="credentials-info">
+                <p>Student account has been created successfully. Please save these credentials:</p>
+                <div className="credentials-details">
+                  <div className="credential-item">
+                    <label>Username:</label>
+                    <span className="credential-value">{generatedCredentials.username}</span>
+                  </div>
+                  <div className="credential-item">
+                    <label>Password:</label>
+                    <span className="credential-value">{generatedCredentials.password}</span>
+                  </div>
+                </div>
+                <p className="credentials-note">
+                  Note: These credentials will be shown only once. Please make sure to save them.
+                </p>
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowCredentialsModal(false)}
+              >
+                Close
               </button>
             </div>
           </div>
