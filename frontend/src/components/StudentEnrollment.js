@@ -186,22 +186,41 @@ const Enrollment = () => {
       return eligibleCourses.map(curriculumDetail => {
         // Find matching sections for this course
         const courseSections = availableSections.filter(section => {
+          // Debug the structure of each section to understand what we're working with
+          console.log(`Checking section ${section.sectionID || section.id} for course ${curriculumDetail.courseId}:`, {
+            sectionCourseId: section.course?.id,
+            directCourseId: section.courseId,
+            course_id: section.course_id,
+            course: section.course,
+            status: section.status,
+            scheduleStatus: section.schedule?.status
+          });
+          
+          // Convert IDs to strings for comparison to avoid type mismatches
+          const courseIdStr = String(curriculumDetail.courseId);
+          
           // Check if section has course object with matching ID
-          if (section.course?.id === curriculumDetail.courseId) {
-            return section.status === 'Active' || section.status === 'ACTIVE';
+          if (section.course && (String(section.course.id) === courseIdStr || String(section.course.courseID) === courseIdStr)) {
+            return true;
           }
+          
           // Check if section has courseId field directly
-          if (section.courseId === curriculumDetail.courseId) {
-            return section.status === 'Active' || section.status === 'ACTIVE';
+          if (section.courseId && String(section.courseId) === courseIdStr) {
+            return true;
           }
+          
           // Check if section has course_id field
-          if (section.course_id === curriculumDetail.courseId) {
-            return section.status === 'Active' || section.status === 'ACTIVE';
+          if (section.course_id && String(section.course_id) === courseIdStr) {
+            return true;
           }
+          
           return false;
         });
         
         console.log('Sections found for course', curriculumDetail.courseId, ':', courseSections.length);
+        if (courseSections.length > 0) {
+          console.log('First matching section:', courseSections[0]);
+        }
         
         return {
           ...curriculumDetail,
@@ -549,13 +568,18 @@ const Enrollment = () => {
                                 <option value="">Select Schedule</option>
                                 {course.availableSections && course.availableSections.length > 0 ? (
                                   course.availableSections
-                                    .filter(section => section.status === 'Active' || section.status === 'ACTIVE')
+                                    .filter(section => 
+                                      section.status === 'Active' || 
+                                      section.status === 'ACTIVE' ||
+                                      section.schedule?.status === 'Active' || 
+                                      section.schedule?.status === 'ACTIVE'
+                                    )
                                     .map(section => (
                                       <option 
                                         key={section.sectionID} 
                                         value={section.sectionID}
                                       >
-                                        {section.sectionName} - {section.day} {formatTime(section.startTime)}-{formatTime(section.endTime)} {section.room ? `• ${section.room}` : ''}
+                                        {section.sectionName} - {section.schedule?.day || 'TBA'} {formatTime(section.schedule?.startTime)}-{formatTime(section.schedule?.endTime)} {section.schedule?.room ? `• ${section.schedule.room}` : ''}
                                       </option>
                                     ))
                                 ) : null}
@@ -614,9 +638,9 @@ const Enrollment = () => {
                           <td>
                             <div className="time-info">
                               <div className="time-period">
-                                {formatTime(enrollment.section?.startTime)} - {formatTime(enrollment.section?.endTime)}
+                                {formatTime(enrollment.section?.schedule?.startTime)} - {formatTime(enrollment.section?.schedule?.endTime)}
                               </div>
-                              <div className="day-info">{enrollment.section?.day} • {enrollment.section?.room}</div>
+                              <div className="day-info">{enrollment.section?.schedule?.day || 'TBA'} • {enrollment.section?.schedule?.room || 'TBA'}</div>
                             </div>
                           </td>
                           <td className="font-semibold">{enrollment.section?.course?.credits || 0}</td>
@@ -667,8 +691,8 @@ const Enrollment = () => {
                 <p><strong>Course:</strong> {selectedSection.course?.courseCode} - {selectedSection.course?.courseName}</p>
                 <p><strong>Section:</strong> {selectedSection.sectionName}</p>
                 <p><strong>Instructor:</strong> {selectedSection.faculty?.firstName} {selectedSection.faculty?.lastName}</p>
-                <p><strong>Schedule:</strong> {selectedSection.day}, {formatTime(selectedSection.startTime)} - {formatTime(selectedSection.endTime)}</p>
-                <p><strong>Room:</strong> {selectedSection.room}</p>
+                <p><strong>Schedule:</strong> {selectedSection.schedule?.day || 'TBA'}, {formatTime(selectedSection.schedule?.startTime)} - {formatTime(selectedSection.schedule?.endTime)}</p>
+                <p><strong>Room:</strong> {selectedSection.schedule?.room || 'TBA'}</p>
                 <p><strong>Credits:</strong> {selectedSection.course?.credits}</p>
                 <p><strong>Capacity:</strong> {selectedSection.enrolledCount || 0}/{selectedSection.capacity}</p>
                 <br />

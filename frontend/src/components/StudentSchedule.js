@@ -51,10 +51,14 @@ const StudentSchedule = () => {
               instructor: ec.section?.faculty
                 ? `${ec.section.faculty.firstName} ${ec.section.faculty.lastName}`
                 : 'TBA',
-              room: ec.section?.room || 'TBA',
-              day: ec.section?.day || '',
-              timeFrom: ec.section?.startTime ? ec.section.startTime.substring(0, 5) : '',
-              timeTo: ec.section?.endTime ? ec.section.endTime.substring(0, 5) : '',
+              room: ec.section?.schedule?.room || 'TBA',
+              day: ec.section?.schedule?.day || '',
+              timeFrom: ec.section?.schedule?.startTime 
+                ? ec.section.schedule.startTime.substring(0, 5) 
+                : '',
+              timeTo: ec.section?.schedule?.endTime 
+                ? ec.section.schedule.endTime.substring(0, 5) 
+                : '',
               status: ec.status
             };
           });
