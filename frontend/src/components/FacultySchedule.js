@@ -7,6 +7,7 @@ import { courseSectionAPI, testConnection } from '../services/api';
 
 const FacultySchedule = () => {
   const { getUserInfo, facultyData } = useFacultyData();
+  const navigate = useNavigate();
   const [scheduleList, setScheduleList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -158,53 +159,11 @@ const FacultySchedule = () => {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  // Navigation
-  const navigate = useNavigate();
-  const showSection = (section) => {
-    switch(section){
-      case 'FacultyDashboard':
-        navigate('/faculty-dashboard');
-        break;
-      case 'FacultySchedule':
-        navigate('/faculty-schedule');
-        break;
-      case 'FacultyGrades':
-        navigate('/faculty-grades');
-        break;
-      case 'FacultySettings':
-        navigate('/faculty-settings');
-        break;
-      default:
-        // No action for unknown sections
-    }
-  };
-
   // Loading state
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-                { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
             <div className="loading-container">
@@ -219,29 +178,7 @@ const FacultySchedule = () => {
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-            ]
-          }
-        ]}
-      />
-
+      <Sidebar userInfo={getUserInfo()}/>
       {/* Main Content */}
       <div className="main-content">
         <div className="content-wrapper">

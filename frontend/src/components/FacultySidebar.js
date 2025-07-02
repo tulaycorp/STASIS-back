@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './FacultySidebar.module.css';
 
 // Utility function to get active page from current URL
@@ -22,7 +23,25 @@ const getActivePageFromURL = () => {
 const FacultySidebar = ({ onNavigate, userInfo, sections }) => {
   // Automatically determine active page from URL instead of using prop
   const activePage = getActivePageFromURL();
-  
+  const navigate = useNavigate();
+  const showSection = (section) => {
+    switch(section){
+      case 'FacultyDashboard':
+        navigate('/faculty-dashboard');
+        break;
+      case 'FacultySchedule':
+        navigate('/faculty-schedule');
+        break;
+        case 'FacultyGrades':
+          navigate('/faculty-grades');
+        break;
+      case 'FacultySettings':
+        navigate('/faculty-settings');
+        break;
+      default:
+        // No action for unknown sections
+    }
+  };
   // Get user initials for avatar
   const getUserInitials = () => {
     if (!userInfo?.name) return 'FA';
@@ -36,66 +55,45 @@ const FacultySidebar = ({ onNavigate, userInfo, sections }) => {
         <div className="logo">S</div>
       </div>
       <div className="sidebar-content">
-        {sections ? (
-          sections.map((section, index) => (
-            <div key={index} className="nav-section">
-              {section.label && <div className="nav-label">{section.label}</div>}
-              <div className="nav-items">
-                {section.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`nav-item${activePage === item.id ? ' active-page' : ''}`}
-                    onClick={() => onNavigate(item.id)}
-                  >
-                    {item.icon} {item.label}
-                  </div>
-                ))}
-              </div>
+        <div className="nav-section">
+          <div className="nav-label">Main</div>
+          <div className="nav-items">
+            <div
+              className={`nav-item${activePage === 'FacultyDashboard' ? ' active-page' : ''}`}
+              onClick={() => showSection('FacultyDashboard')}
+            >
+              📊 Dashboard
             </div>
-          ))
-        ) : (
-          <>
-            <div className="nav-section">
-              <div className="nav-label">Main</div>
-              <div className="nav-items">
-                <div
-                  className={`nav-item${activePage === 'FacultyDashboard' ? ' active-page' : ''}`}
-                  onClick={() => onNavigate('FacultyDashboard')}
-                >
-                  📊 Dashboard
-                </div>
-              </div>
+          </div>
+        </div>
+        <div className="nav-section">
+          <div className="nav-label">Management</div>
+          <div className="nav-items">
+            <div
+              className={`nav-item${activePage === 'FacultySchedule' ? ' active-page' : ''}`}
+              onClick={() => showSection('FacultySchedule')}
+            >
+              📅 Schedule
             </div>
-            <div className="nav-section">
-              <div className="nav-label">Management</div>
-              <div className="nav-items">
-                <div
-                  className={`nav-item${activePage === 'FacultySchedule' ? ' active-page' : ''}`}
-                  onClick={() => onNavigate('FacultySchedule')}
-                >
-                  📅 Schedule
-                </div>
-                <div
-                  className={`nav-item${activePage === 'FacultyGrades' ? ' active-page' : ''}`}
-                  onClick={() => onNavigate('FacultyGrades')}
-                >
-                  📈 Grades
-                </div>
-              </div>
+            <div
+              className={`nav-item${activePage === 'FacultyGrades' ? ' active-page' : ''}`}
+              onClick={() => showSection('FacultyGrades')}
+            >
+              📈 Grades
             </div>
-            <div className="nav-section">
-              <div className="nav-label">System</div>
-              <div className="nav-items">
-                <div
-                  className={`nav-item${activePage === 'FacultySettings' ? ' active-page' : ''}`}
-                  onClick={() => onNavigate('FacultySettings')}
-                >
-                  ⚙️ Settings
-                </div>
-              </div>
+          </div>
+        </div>
+        <div className="nav-section">
+          <div className="nav-label">System</div>
+          <div className="nav-items">
+            <div
+              className={`nav-item${activePage === 'FacultySettings' ? ' active-page' : ''}`}
+              onClick={() => showSection('FacultySettings')}
+            >
+              ⚙️ Settings
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
       <div className="sidebar-footer">
         <button className="logout-button" onClick={() => {
