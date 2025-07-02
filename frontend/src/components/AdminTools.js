@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './AdminTools.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
@@ -7,7 +6,6 @@ import { userAPI } from '../services/api';
 
 const AdminTools = () => {
   const { getUserInfo } = useAdminData();
-  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('logs');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -26,35 +24,6 @@ const AdminTools = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
-
-  // Navigation
-  const showSection = (section) => {
-    switch(section){
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Curriculum':
-        navigate('/curriculum-management');
-        break;
-      case 'Students':
-        navigate('/student-management');
-        break;
-      case 'Schedule':
-        navigate('/schedule-management');
-        break;
-      case 'Faculty':
-        navigate('/faculty-management');
-        break;
-      case 'Courses':
-        navigate('/course-management');
-        break;
-      case 'Settings':
-        navigate('/settings');
-        break;
-      default:
-        // No action for unknown sections
-    }
-  };
 
   // Load data on component mount
   useEffect(() => {
@@ -434,33 +403,8 @@ const AdminTools = () => {
 
   return (
     <div className="admin-container">
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'Students', label: 'Students', icon: '👥' },
-              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'Schedule', label: 'Schedule', icon: '📅' },
-              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-              { id: 'Courses', label: 'Courses', icon: '📖' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️' },
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-            ]
-          }
-        ]}
-      />
-      
+      <Sidebar userInfo={getUserInfo()} />
+
       <div className="admin-main-content">
         <div className="admin-header">
           <h1 className="admin-title">Admin Tools</h1>

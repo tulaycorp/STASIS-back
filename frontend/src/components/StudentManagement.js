@@ -7,6 +7,7 @@ import { studentAPI, programAPI, courseSectionAPI, curriculumAPI, testConnection
 
 const StudentManagement = () => {
   const { getUserInfo } = useAdminData();
+  const navigate = useNavigate();
   const [studentsData, setStudentsData] = useState([]);
   const [programsList, setProgramsList] = useState([]);
   const [sectionsList, setSectionsList] = useState([]);
@@ -522,40 +523,6 @@ const StudentManagement = () => {
     }
   };
 
-  // Navigation
-  const navigate = useNavigate();
-
-  const showSection = (section) => {
-    switch (section) {
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Curriculum':
-        navigate('/curriculum-management');
-        break;
-      case 'Students':
-        navigate('/student-management');
-        break;
-      case 'Schedule':
-        navigate('/schedule-management');
-        break;
-      case 'Faculty':
-        navigate('/faculty-management');
-        break;
-      case 'Courses':
-        navigate('/course-management');
-        break;
-      case 'Settings':
-        navigate('/settings');
-        break;
-      case 'AdminTools':
-        navigate('/admin-tools');
-        break;
-      default:
-      // No action for unknown sections
-    }
-  };
-
   // Handle program selection
   const handleProgramSelect = (programName) => {
     setSelectedProgram(programName);
@@ -594,34 +561,7 @@ const StudentManagement = () => {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={
-            [
-              {
-                items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-              },
-              {
-                label: 'Management',
-                items: [
-                  { id: 'Students', label: 'Students', icon: '👥' },
-                  { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                  { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                  { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                  { id: 'Courses', label: 'Courses', icon: '📖' }
-                ]
-              },
-              {
-                label: 'System',
-                items: [
-                  { id: 'Settings', label: 'Settings', icon: '⚙️' },
-                  { id: 'AdminTools', label: 'Admin Tools', icon: '🔧' }
-                ]
-              }
-            ]
-          }
-        />
+        <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
             <div style={
@@ -638,34 +578,7 @@ const StudentManagement = () => {
   if (error) {
     return (
       <div className="dashboard-container">
-        <Sidebar
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={
-            [
-              {
-                items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-              },
-              {
-                label: 'Management',
-                items: [
-                  { id: 'Students', label: 'Students', icon: '👥' },
-                  { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                  { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                  { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                  { id: 'Courses', label: 'Courses', icon: '📖' }
-                ]
-              },
-              {
-                label: 'System',
-                items: [
-                  { id: 'Settings', label: 'Settings', icon: '⚙️' },
-                  { id: 'AdminTools', label: 'Admin Tools', icon: '🔧' }
-                ]
-              }
-            ]
-          }
-        />
+        <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
             <div style={
@@ -716,35 +629,7 @@ const StudentManagement = () => {
         ))}
       </div>
       {/* Sidebar */}
-      <Sidebar
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={
-          [
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️' },
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧' }
-              ]
-            }
-          ]
-        }
-      />
-
+      <Sidebar userInfo={getUserInfo()}/>
       <div className="main-content">
         <div className="content-wrapper">
           <div className="breadcrumb">
@@ -766,7 +651,6 @@ const StudentManagement = () => {
           </div>
 
           <div className="student-content-wrapper">
-            {/* Sidebar Container - NEW: Wraps both Programs and Sections */}
             <div className="student-sidebar">
               {/* Program Navigation Card */}
               <div className="student-nav-section">
@@ -939,12 +823,14 @@ const StudentManagement = () => {
         </div>
       </div>
 
-      {/* Add Student Modal */}
-      {showAddStudentModal && (
+      {/* Combined Add/Edit Student Modal */}
+      {(showAddStudentModal || showEditStudentModal) && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2 className="modal-title">Add New Student</h2>
+              <h2 className="modal-title">
+                {editingStudent ? 'Edit Student' : 'Add New Student'}
+              </h2>
             </div>
 
             <div className="modal-body">
@@ -959,7 +845,6 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('firstName', e.target.value)}
                   />
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Last Name *</label>
                   <input
@@ -970,7 +855,6 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('lastName', e.target.value)}
                   />
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Email *</label>
                   <input
@@ -981,7 +865,6 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('email', e.target.value)}
                   />
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Date of Birth</label>
                   <input
@@ -991,7 +874,6 @@ const StudentManagement = () => {
                     onChange={(e) => handleStudentFormChange('dateOfBirth', e.target.value)}
                   />
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Year Level</label>
                   <select
@@ -1005,7 +887,6 @@ const StudentManagement = () => {
                     <option value={4}>Year 4</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Program *</label>
                   <select
@@ -1021,7 +902,6 @@ const StudentManagement = () => {
                     ))}
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Curriculum *</label>
                   <select
@@ -1038,12 +918,11 @@ const StudentManagement = () => {
                     ))}
                   </select>
                   {studentForm.programId && availableCurriculums.length === 0 && (
-                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
-                        No curriculums available for this program.
-                      </p>
+                    <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                      No curriculums available for this program.
+                    </p>
                   )}
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Section</label>
                   <select
@@ -1054,167 +933,38 @@ const StudentManagement = () => {
                   >
                     <option value="">Select Section</option>
                     {availableSectionsForStudent.map((section) => (
-                        <option key={section.sectionID} value={section.sectionID}>
-                          {section.sectionName}
-                        </option>
+                      <option key={section.sectionID} value={section.sectionID}>
+                        {section.sectionName}
+                      </option>
                     ))}
                   </select>
                   {studentForm.programId && availableSectionsForStudent.length === 0 && (
-                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
-                        No sections available for this program.
-                      </p>
-                    )}
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeAddStudentModal}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleAddStudent}>
-                Add Student
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Student Modal */}
-      {showEditStudentModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Edit Student</h2>
-            </div>
-
-            <div className="modal-body">
-              <div className="modal-grid">
-                <div className="form-group">
-                  <label className="form-label">First Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter first name"
-                    value={studentForm.firstName}
-                    onChange={(e) => handleStudentFormChange('firstName', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Last Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter last name"
-                    value={studentForm.lastName}
-                    onChange={(e) => handleStudentFormChange('lastName', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email *</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="Enter email address"
-                    value={studentForm.email}
-                    onChange={(e) => handleStudentFormChange('email', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Date of Birth</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={studentForm.dateOfBirth}
-                    onChange={(e) => handleStudentFormChange('dateOfBirth', e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Year Level</label>
-                  <select
-                    className="form-input"
-                    value={studentForm.year_level}
-                    onChange={(e) => handleStudentFormChange('year_level', e.target.value)}
-                  >
-                    <option value={1}>Year 1</option>
-                    <option value={2}>Year 2</option>
-                    <option value={3}>Year 3</option>
-                    <option value={4}>Year 4</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Program *</label>
-                  <select
-                    className="form-input"
-                    value={studentForm.programId}
-                    onChange={(e) => handleStudentProgramChange(e.target.value)}
-                  >
-                    <option value="">Select Program</option>
-                    {programsList.map((program) => (
-                      <option key={program.programID} value={program.programID}>
-                        {program.programName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Curriculum *</label>
-                  <select
-                    className="form-input"
-                    value={studentForm.curriculumId}
-                    onChange={(e) => handleStudentFormChange('curriculumId', e.target.value)}
-                    disabled={!studentForm.programId}
-                  >
-                    <option value="">Select Curriculum</option>
-                    {availableCurriculums.map((curriculum) => (
-                      <option key={curriculum.curriculumID} value={curriculum.curriculumID}>
-                        {curriculum.curriculumName} ({curriculum.academicYear})
-                      </option>
-                    ))}
-                  </select>
-                  {studentForm.programId && availableCurriculums.length === 0 && (
-                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
-                        No curriculums available for this program.
-                      </p>
+                    <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                      No sections available for this program.
+                    </p>
                   )}
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Section</label>
-                  <select
-                    className="form-input"
-                    value={studentForm.sectionId}
-                    onChange={(e) => handleStudentFormChange('sectionId', e.target.value)}
-                    disabled={!studentForm.programId}
-                  >
-                    <option value="">Select Section</option>
-                    {availableSectionsForStudent.map((section) => (
-                        <option key={section.sectionID} value={section.sectionID}>
-                          {section.sectionName}
-                        </option>
-                      ))}
-                  </select>
-                  {studentForm.programId && availableSectionsForStudent.length === 0 && (
-                      <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
-                        No sections available for this program.
-                      </p>
-                    )}
-                </div>
               </div>
             </div>
 
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeEditStudentModal}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  if (editingStudent) {
+                    closeEditStudentModal();
+                  } else {
+                    closeAddStudentModal();
+                  }
+                }}
+              >
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleUpdateStudent}>
-                Update Student
+              <button
+                className="btn btn-primary"
+                onClick={editingStudent ? handleUpdateStudent : handleAddStudent}
+              >
+                {editingStudent ? 'Update Student' : 'Add Student'}
               </button>
             </div>
           </div>

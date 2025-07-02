@@ -6,7 +6,6 @@ import { useAdminData } from '../hooks/useAdminData';
 import { facultyAPI, programAPI, studentAPI, curriculumAPI, courseSectionAPI, courseAPI } from '../services/api';
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const { getAdminName, getUserInfo } = useAdminData();
   
   // State to hold the fetched lists
@@ -585,38 +584,6 @@ const AdminDashboard = () => {
     "Saturday"
   ];
 
-  // Navigation
-  const showSection = (section) => {
-    switch(section){
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Curriculum':
-        navigate('/curriculum-management');
-        break;
-      case 'Students':
-        navigate('/student-management');
-        break;
-      case 'Schedule':
-        navigate('/schedule-management');
-        break;
-      case 'Faculty':
-        navigate('/faculty-management');
-        break;
-      case 'Courses':
-        navigate('/course-management');
-        break;
-      case 'Settings':
-        navigate('/settings');
-        break;
-      case 'AdminTools':
-        navigate('/admin-tools');
-      break;
-      default:
-        // No action for unknown sections
-    }
-  };
-
   const calendarDays = generateCalendarDays();
   
   // Toast state and helper
@@ -633,33 +600,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'Students', label: 'Students', icon: '👥' },
-              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'Schedule', label: 'Schedule', icon: '📅' },
-              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-              { id: 'Courses', label: 'Courses', icon: '📖' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️'},
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-            ]
-          }
-        ]}
-      />
+      <Sidebar userInfo={getUserInfo()} />
 
       {/* Main Content */}
       <div className="main-content">

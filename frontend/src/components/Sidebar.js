@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Sidebar.css'; // You can extract sidebar styles here
 
 // Utility function to get active page from current URL
@@ -27,18 +28,47 @@ const getActivePageFromURL = () => {
   return '';
 };
 
-const Sidebar = ({ onNavigate, userInfo }) => {
-  // Automatically determine active page from URL instead of using prop
+const Sidebar = ({ userInfo }) => {
+  const navigate = useNavigate();
   const activePage = getActivePageFromURL();
-  
-  // Default user info if not provided
   const defaultUserInfo = {
     name: "Admin User",
     role: "Administrator"
   };
-  
   const user = userInfo || defaultUserInfo;
-  
+
+  // Navigation logic moved here
+  const handleNavigate = (section) => {
+    switch(section){
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Curriculum':
+        navigate('/curriculum-management');
+        break;
+      case 'Students':
+        navigate('/student-management');
+        break;
+      case 'Schedule':
+        navigate('/schedule-management');
+        break;
+      case 'Faculty':
+        navigate('/faculty-management');
+        break;
+      case 'Courses':
+        navigate('/course-management');
+        break;
+      case 'Settings':
+        navigate('/settings');
+        break;
+      case 'AdminTools':
+        navigate('/admin-tools');
+        break;
+      default:
+        // No action for unknown sections
+    }
+  };
+
   // Generate user initials from name
   const getUserInitials = (name) => {
     return name
@@ -59,7 +89,7 @@ const Sidebar = ({ onNavigate, userInfo }) => {
           <div className="nav-items">
             <div
               className={`nav-item${activePage === 'Dashboard' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Dashboard')}
+              onClick={() => handleNavigate('Dashboard')}
             >
               📊 Dashboard
             </div>
@@ -70,31 +100,31 @@ const Sidebar = ({ onNavigate, userInfo }) => {
           <div className="nav-items">
             <div
               className={`nav-item${activePage === 'Students' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Students')}
+              onClick={() => handleNavigate('Students')}
             >
               👥 Students
             </div>
             <div
               className={`nav-item${activePage === 'Curriculum' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Curriculum')}
+              onClick={() => handleNavigate('Curriculum')}
             >
               📚 Curriculum
             </div>
             <div
               className={`nav-item${activePage === 'Schedule' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Schedule')}
+              onClick={() => handleNavigate('Schedule')}
             >
               📅 Schedule
             </div>
             <div
               className={`nav-item${activePage === 'Faculty' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Faculty')}
+              onClick={() => handleNavigate('Faculty')}
             >
               👨‍🏫 Faculty
             </div>
             <div
               className={`nav-item${activePage === 'Courses' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Courses')}
+              onClick={() => handleNavigate('Courses')}
             >
               📖 Courses
             </div>
@@ -105,13 +135,13 @@ const Sidebar = ({ onNavigate, userInfo }) => {
           <div className="nav-items">
             <div
               className={`nav-item${activePage === 'Settings' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Settings')}
+              onClick={() => handleNavigate('Settings')}
             >
               ⚙️ Settings
             </div>
             <div
               className={`nav-item${activePage === 'AdminTools' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('AdminTools')}
+              onClick={() => handleNavigate('AdminTools')}
             >
               🔧 Admin Tools
           </div>

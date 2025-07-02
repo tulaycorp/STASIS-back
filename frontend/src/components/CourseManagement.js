@@ -8,6 +8,7 @@ import axios from 'axios';
 
 const CourseManagement = () => {
   const { getUserInfo } = useAdminData();
+  const navigate = useNavigate();
   const [coursesData, setCoursesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -363,35 +364,6 @@ const CourseManagement = () => {
     }
   };
 
-  // Navigation
-  const navigate = useNavigate();
-  const showSection = (section) => {
-    switch(section){
-        case 'Dashboard':
-            navigate('/admin-dashboard');
-            break;
-        case 'Students':
-            navigate('/student-management');
-            break;        
-        case 'Curriculum':
-            navigate('/curriculum-management');
-            break;
-        case 'Schedule':
-            navigate('/schedule-management');
-            break;
-        case 'Faculty':
-            navigate('/faculty-management');
-            break;
-        case 'Settings':
-            navigate('/settings');
-        break;
-        case 'AdminTools':
-          navigate('/admin-tools');
-        break;
-        default:
-            // No action for unknown sections
-    }
-  };
 
   const handleProgramSelect = (program) => {
     setSelectedProgram(program);
@@ -401,32 +373,7 @@ const CourseManagement = () => {
   if (loading) {
     return (
       <div className="container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -442,32 +389,7 @@ const CourseManagement = () => {
   if (error) {
     return (
       <div className="container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -482,7 +404,7 @@ const CourseManagement = () => {
                   fontSize: '14px'
                 }}>
                   {error}
-                </pre>
+                </pre>  
                 <div style={{ marginTop: '1rem', fontSize: '14px', color: '#666' }}>
                   <p><strong>Troubleshooting steps:</strong></p>
                   <ol style={{ textAlign: 'left', display: 'inline-block' }}>
@@ -522,33 +444,7 @@ const CourseManagement = () => {
       ))}
     </div>
 
-    <Sidebar 
-      onNavigate={showSection}
-      userInfo={getUserInfo()}
-      sections={[
-        {
-          items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-        },
-        {
-          label: 'Management',
-          items: [
-            { id: 'Students', label: 'Students', icon: '👥' },
-            { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-            { id: 'Schedule', label: 'Schedule', icon: '📅' },
-            { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-            { id: 'Courses', label: 'Courses', icon: '📖' }
-          ]
-        },
-        {
-          label: 'System',
-          items: [
-            { id: 'Settings', label: 'Settings', icon: '⚙️'},
-            { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-          ]
-        }
-      ]}
-    />
-
+    <Sidebar userInfo={getUserInfo()} />
     <div className="main-content">
       <div className="content-wrapper">
         <div className="breadcrumb">
