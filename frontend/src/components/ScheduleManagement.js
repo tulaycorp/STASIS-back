@@ -82,10 +82,32 @@ const ScheduleManagement = () => {
         courseSectionAPI.getAllSections()
       ]);
 
-      // Build schedules list from sections (each section owns one schedule)
+      // Build schedules list - modified to support multiple schedules per section
       const transformedSchedules = [];
       sectionsResponse.data.forEach(section => {
-        if (section.schedule) {
+        // Handle case where section has multiple schedules (array)
+        if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+          section.schedules.forEach(schedule => {
+            transformedSchedules.push({
+              id: schedule.scheduleID,
+              courseName: section.course?.courseDescription || 'Unknown Course',
+              courseId: section.course?.courseCode || 'N/A',
+              section: section.sectionName || 'N/A',
+              instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
+              room: schedule.room || 'TBA',
+              day: schedule.day || 'TBA',
+              timeFrom: schedule.startTime || '00:00',
+              timeTo: schedule.endTime || '00:00',
+              status: schedule.status || 'ACTIVE',
+              semester: section.semester || 'Current',
+              year: section.year || new Date().getFullYear(),
+              program: section.program?.programName || 'N/A',
+              sectionID: section.sectionID
+            });
+          });
+        } 
+        // Backward compatibility - handle case where section has a single schedule object
+        else if (section.schedule) {
           transformedSchedules.push({
             id: section.schedule.scheduleID,
             courseName: section.course?.courseDescription || 'Unknown Course',
@@ -158,7 +180,29 @@ const ScheduleManagement = () => {
 
       const transformedData = [];
       sectionsResponse.data.forEach(section => {
-        if (section.schedule) {
+        // Handle multiple schedules per section
+        if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+          section.schedules.forEach(schedule => {
+            transformedData.push({
+              id: schedule.scheduleID,
+              courseName: section.course?.courseDescription || 'Unknown Course',
+              courseId: section.course?.courseCode || 'N/A',
+              section: section.sectionName || 'N/A',
+              instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
+              room: schedule.room || 'TBA',
+              day: schedule.day || 'TBA',
+              timeFrom: schedule.startTime || '00:00',
+              timeTo: schedule.endTime || '00:00',
+              status: schedule.status || 'ACTIVE',
+              semester: section.semester || 'Current',
+              year: section.year || new Date().getFullYear(),
+              program: section.program?.programName || 'N/A',
+              sectionID: section.sectionID
+            });
+          });
+        }
+        // Handle legacy single schedule format
+        else if (section.schedule) {
           transformedData.push({
             id: section.schedule.scheduleID,
             courseName: section.course?.courseDescription || 'Unknown Course',
@@ -215,7 +259,7 @@ const ScheduleManagement = () => {
       const selectedCourse = courseOptions.find(c => c.value === scheduleForm.course);
       const selectedFaculty = instructorOptions.find(f => f.value === parseInt(scheduleForm.instructor));
       
-      // IMPORTANT: Find the existing section by name
+      // Find the existing section by name
       const existingSection = sectionsList.find(s => s.sectionName === scheduleForm.sectionName);
       
       if (!existingSection) {
@@ -223,9 +267,6 @@ const ScheduleManagement = () => {
         return;
       }
 
-      // Log the section we're using to help debug
-      console.log('Using existing section:', existingSection);
-      
       // Update the section to include selected course and faculty if they have changed
       let sectionNeedsUpdate = false;
       const sectionUpdateData = { ...existingSection };
@@ -245,26 +286,21 @@ const ScheduleManagement = () => {
         await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
       }
 
-      // Create a schedule with reference to the existing section
+      // Create a schedule with reference to the existing section - no checks preventing multiple schedules
       const scheduleData = {
         startTime: scheduleForm.startTime,
         endTime: scheduleForm.endTime,
         day: scheduleForm.day,
         status: scheduleForm.status,
         room: scheduleForm.room,
-        courseSectionId: existingSection.sectionID // Reference the existing section
+        courseSectionId: existingSection.sectionID
       };
 
       console.log('Sending schedule data with section ID:', scheduleData);
       
-      // Create the schedule with reference to the existing section
+      // Create the schedule
       const scheduleResponse = await scheduleAPI.createSchedule(scheduleData, existingSection.sectionID);
       console.log('Schedule creation response:', scheduleResponse);
-      console.log('Created schedule course details:', {
-        courseCode: scheduleResponse.data.courseCode,
-        courseName: scheduleResponse.data.courseName,
-        sectionName: scheduleResponse.data.sectionName
-      });
       
       showToast('Schedule added successfully!', 'success');
       closeAddScheduleModal();
@@ -856,40 +892,48 @@ const ScheduleManagement = () => {
                     </thead>
                     <tbody>
                       {filteredSchedules.length > 0 ? (
-                        filteredSchedules.map((schedule) => (
-                          <tr key={schedule.id}>
-                            <td className="course-id">{schedule.courseId || 'N/A'}</td>
-                            <td className="course-name">{schedule.courseName || schedule.course || 'N/A'}</td>
-                            <td className="section">{schedule.section}</td>
-                            <td className="instructor">{schedule.instructor}</td>
-                            <td className="room">{schedule.room}</td>
-                            <td className="day-time">
-                              <div className="student-name">{schedule.day}</div>
-                              <div className="student-email">{schedule.timeFrom} - {schedule.timeTo}</div>
-                            </td>
-                            <td className="status">
-                              <span className={`status-badge status-${schedule.status.toLowerCase()}`}>
-                                {schedule.status}
-                              </span>
-                            </td>
-                            <td className="actions">
-                              <div className="action-buttons">
-                                <button
-                                  className="btn-action btn-edit"
-                                  onClick={() => showEditScheduleForm(schedule)}
-                                  title="Edit Schedule"
-                                >
-                                </button>
-                                <button
-                                  className="btn-action btn-delete"
-                                  onClick={() => handleDeleteSchedule(schedule.id)}
-                                  title="Delete Schedule"
-                                >
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+                        filteredSchedules.map((schedule, index, scheduleArray) => {
+                          // Check if this is a duplicate section from the previous row
+                          const isDuplicateSection = index > 0 && schedule.section === scheduleArray[index-1].section;
+                          
+                          return (
+                            <tr key={schedule.id} className={isDuplicateSection ? 'duplicate-section-row' : ''}>
+                              <td className="course-id">{schedule.courseId || 'N/A'}</td>
+                              <td className="course-name">{schedule.courseName || schedule.course || 'N/A'}</td>
+                              <td className="section">
+                                {schedule.section}
+                                {isDuplicateSection && <span className="badge multiple-badge" title="Multiple schedules for this section">+</span>}
+                              </td>
+                              <td className="instructor">{schedule.instructor}</td>
+                              <td className="room">{schedule.room}</td>
+                              <td className="day-time">
+                                <div className="student-name">{schedule.day}</div>
+                                <div className="student-email">{schedule.timeFrom} - {schedule.timeTo}</div>
+                              </td>
+                              <td className="status">
+                                <span className={`status-badge status-${schedule.status.toLowerCase()}`}>
+                                  {schedule.status}
+                                </span>
+                              </td>
+                              <td className="actions">
+                                <div className="action-buttons">
+                                  <button
+                                    className="btn-action btn-edit"
+                                    onClick={() => showEditScheduleForm(schedule)}
+                                    title="Edit Schedule"
+                                  >
+                                  </button>
+                                  <button
+                                    className="btn-action btn-delete"
+                                    onClick={() => handleDeleteSchedule(schedule.id)}
+                                    title="Delete Schedule"
+                                  >
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
                           <td colSpan="8" className="no-students">
