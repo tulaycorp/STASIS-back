@@ -761,10 +761,11 @@ export const scheduleAPI = {
     return api.get(`/schedules/${id}`);
   },
   
-  // Create new schedule
-  createSchedule: (scheduleData) => {
-    console.log('Calling createSchedule API with data:', scheduleData);
-    return api.post('/schedules', scheduleData);
+  // Create new schedule. Pass courseSectionId as optional second argument.
+  createSchedule: (scheduleData, courseSectionId) => {
+    const url = courseSectionId ? `/schedules?courseSectionId=${encodeURIComponent(courseSectionId)}` : '/schedules';
+    console.log('Calling createSchedule API to', url, 'with data:', scheduleData);
+    return api.post(url, scheduleData);
   },
   
   // Update schedule

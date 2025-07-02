@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/schedules")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class ScheduleController {
 
     @Autowired
@@ -31,7 +31,9 @@ public class ScheduleController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createSchedule(@RequestBody Schedule schedule) {
+    public ResponseEntity<?> createSchedule(
+            @RequestParam(required = false) Long courseSectionId,
+            @RequestBody Schedule schedule) {
         // Validate the required fields
         if (schedule.getStartTime() == null || schedule.getEndTime() == null) {
             return ResponseEntity.badRequest().body("Start time and end time are required");
@@ -39,12 +41,9 @@ public class ScheduleController {
         if (schedule.getDay() == null || schedule.getDay().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Day is required");
         }
-        if (schedule.getCourseSectionId() == null) {
-            return ResponseEntity.badRequest().body("Course Section ID is required");
-        }
         
         try {
-            Schedule createdSchedule = scheduleService.createSchedule(schedule);
+            Schedule createdSchedule = scheduleService.createSchedule(schedule, courseSectionId);
             return ResponseEntity.ok(createdSchedule);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to create schedule: " + e.getMessage());
@@ -112,7 +111,7 @@ public class ScheduleController {
     }
     
     @PostMapping("/validate")
-    public ResponseEntity<String> validateSchedule(@RequestBody Schedule schedule) {
+    public ResponseEntity<?> validateSchedule(@RequestBody Schedule schedule) {
         if (schedule.getStartTime() == null || schedule.getEndTime() == null) {
             return ResponseEntity.badRequest().body("Start time and end time are required");
         }
@@ -121,9 +120,6 @@ public class ScheduleController {
         }
         if (schedule.getDay() == null || schedule.getDay().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Day is required");
-        }
-        if (schedule.getCourseSectionId() == null) {
-            return ResponseEntity.badRequest().body("Course Section ID is required");
         }
         return ResponseEntity.ok("Schedule data is valid");
     }

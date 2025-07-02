@@ -40,4 +40,7 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     
     // Find by schedule room
     List<CourseSection> findByScheduleRoom(String room);
+
+    // Find section by schedule ID (one-to-one)
+    CourseSection findBySchedule_ScheduleID(Long scheduleId);
 }
