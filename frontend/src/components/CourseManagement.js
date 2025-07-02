@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './CourseManagement.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { courseAPI, courseSectionAPI, testConnection, programAPI } from '../services/api';
+import { courseAPI, courseSectionAPI, testConnection, programAPI, scheduleAPI } from '../services/api';
 import axios from 'axios';
 
 const CourseManagement = () => {

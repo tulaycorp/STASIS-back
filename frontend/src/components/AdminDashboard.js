@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { facultyAPI, programAPI, studentAPI, curriculumAPI, courseSectionAPI, courseAPI } from '../services/api';
+import { 
+  facultyAPI, 
+  programAPI, 
+  studentAPI, 
+  curriculumAPI, 
+  courseSectionAPI, 
+  courseAPI,
+  scheduleAPI 
+} from '../services/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -425,7 +433,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchSchedules = async () => {
       try {
-        const response = await courseSectionAPI.getAllSections();
+        // Use scheduleAPI instead of courseSectionAPI
+        const response = await scheduleAPI.getAllSchedules();
         setScheduleList(response.data);
       } catch (err) {
         setScheduleList([]);
@@ -460,26 +469,35 @@ const AdminDashboard = () => {
       const selectedCourse = courseOptions.find(c => c.value === scheduleForm.course);
       const selectedFaculty = instructorOptions.find(f => f.value === parseInt(scheduleForm.instructor));
 
-      // Prepare section data for API
-      const sectionData = {
-        sectionName: scheduleForm.sectionName,
-        semester: scheduleForm.semester,
-        year: scheduleForm.year,
+      // First, create a schedule
+      const scheduleData = {
         startTime: scheduleForm.startTime,
         endTime: scheduleForm.endTime,
         day: scheduleForm.day,
         status: scheduleForm.status,
-        room: scheduleForm.room,
+        room: scheduleForm.room
+      };
+
+      // Create the schedule first
+      const scheduleResponse = await scheduleAPI.createSchedule(scheduleData);
+      const savedSchedule = scheduleResponse.data;
+
+      // Then create or update the section with the new schedule
+      const sectionData = {
+        sectionName: scheduleForm.sectionName,
+        semester: scheduleForm.semester || 'Current',
+        year: scheduleForm.year,
         course: { id: selectedCourse?.id },
-        faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
+        faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null,
+        schedule: { scheduleID: savedSchedule.scheduleID }
       };
 
       await courseSectionAPI.createSection(sectionData);
       showToast('Schedule added successfully!');
       closeAddScheduleModal();
 
-      // --- Fetch and update the schedule list so the new schedule is included ---
-      const response = await courseSectionAPI.getAllSections();
+      // Refresh schedule list
+      const response = await scheduleAPI.getAllSchedules();
       setScheduleList(response.data);
 
     } catch (error) {
@@ -773,6 +791,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Student Modal */}
       {showAddStudentModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -851,7 +870,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Add Faculty Modal */}
+      {/* Faculty Modal */}
       {showAddFacultyModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -951,81 +970,81 @@ const AdminDashboard = () => {
       )}
 
       {/* Course Modal */}
-    {showAddCourseModal && (
-      <div className="modal-overlay">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h2 className="modal-title">Add New Course</h2>
-          </div>
-          <div className="modal-body">
-            <div className="modal-grid">
-              <div className="form-group">
-                <label className="form-label">Course Code *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Enter Course Code (e.g., CS101)"
-                  value={courseForm.courseCode}
-                  onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Course Description *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Enter Course Description"
-                  value={courseForm.courseDescription}
-                  onChange={(e) => handleCourseFormChange('courseDescription', e.target.value)}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Credits *</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  placeholder="Enter number of credits"
-                  min="1"
-                  max="6"
-                  value={courseForm.credits}
-                  onChange={(e) => handleCourseFormChange('credits', e.target.value)}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Program *</label>
-                <select
-                  className="form-input"
-                  value={courseForm.program}
-                  onChange={(e) => handleCourseFormChange('program', e.target.value)}
-                >
-                  <option value="">Select Program</option>
-                  {programsList.map((program) => (
-                    <option key={program.programID} value={program.programName}>{program.programName}</option>
-                  ))}
-                </select>
+      {showAddCourseModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Add New Course</h2>
+            </div>
+            <div className="modal-body">
+              <div className="modal-grid">
+                <div className="form-group">
+                  <label className="form-label">Course Code *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Course Code (e.g., CS101)"
+                    value={courseForm.courseCode}
+                    onChange={(e) => handleCourseFormChange('courseCode', e.target.value)}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Course Description *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter Course Description"
+                    value={courseForm.courseDescription}
+                    onChange={(e) => handleCourseFormChange('courseDescription', e.target.value)}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Credits *</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Enter number of credits"
+                    min="1"
+                    max="6"
+                    value={courseForm.credits}
+                    onChange={(e) => handleCourseFormChange('credits', e.target.value)}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Program *</label>
+                  <select
+                    className="form-input"
+                    value={courseForm.program}
+                    onChange={(e) => handleCourseFormChange('program', e.target.value)}
+                  >
+                    <option value="">Select Program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programName}>{program.programName}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={closeModal}>
-              Cancel
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleAddCourse}
-            >
-              Add Course
-            </button>
+            
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeModal}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleAddCourse}
+              >
+                Add Course
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-      {/* Add Schedule Modal */}
+      {/* Schedule Modal */}
       {showAddScheduleModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -1152,7 +1171,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Toast state and helper */}
+      {/* Toast container */}
       <div id="toast-container">
         {toasts.map((toast) => (
           <div key={toast.id} className={`toast ${toast.type}`}>{toast.message}</div>

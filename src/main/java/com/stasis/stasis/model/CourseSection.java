@@ -1,4 +1,5 @@
 package com.stasis.stasis.model;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -6,12 +7,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.CascadeType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-
-import java.time.LocalTime;
 
 @Entity
 @Data
@@ -35,17 +36,12 @@ public class CourseSection {
     @ManyToOne
     private Faculty faculty;
 
-    private String sectionName; // New field for section name (e.g., "A", "B", "CS101-A")
+    private String sectionName; 
     private String semester;
     private int year;
     
-    // Schedule fields - broken down for better structure
-    private LocalTime startTime;
-    private LocalTime endTime;
-    private String day; // e.g., "MWF", "TTH", "MONDAY", etc.
-    private String status; // e.g., "ACTIVE", "CANCELLED", "FULL", etc.
-    //End Schedule fields
-
-    
-    private String room;
+    // Replace schedule fields with a relationship to Schedule
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "schedule_id")
+    private Schedule schedule;
 }

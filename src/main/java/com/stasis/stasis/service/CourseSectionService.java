@@ -1,6 +1,7 @@
 package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.CourseSection;
+import com.stasis.stasis.model.Schedule;
 import com.stasis.stasis.repository.CourseSectionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,9 @@ public class CourseSectionService {
 
     @Autowired
     private CourseSectionRepository courseSectionRepository;
+    
+    @Autowired
+    private ScheduleService scheduleService;
 
     public List<CourseSection> getAllSections() {
         return courseSectionRepository.findAll();
@@ -23,6 +27,10 @@ public class CourseSectionService {
     }
 
     public CourseSection createSection(CourseSection section) {
+        if (section.getSchedule() != null) {
+            Schedule savedSchedule = scheduleService.createSchedule(section.getSchedule());
+            section.setSchedule(savedSchedule);
+        }
         return courseSectionRepository.save(section);
     }
 
@@ -34,11 +42,26 @@ public class CourseSectionService {
                 section.setSectionName(updatedSection.getSectionName());
                 section.setSemester(updatedSection.getSemester());
                 section.setYear(updatedSection.getYear());
-                section.setStartTime(updatedSection.getStartTime());
-                section.setEndTime(updatedSection.getEndTime());
-                section.setDay(updatedSection.getDay());
-                section.setStatus(updatedSection.getStatus());
-                section.setRoom(updatedSection.getRoom());
+                section.setProgram(updatedSection.getProgram());
+                
+                // Update the schedule
+                if (updatedSection.getSchedule() != null) {
+                    if (section.getSchedule() != null) {
+                        // Update existing schedule
+                        Schedule schedule = section.getSchedule();
+                        schedule.setStartTime(updatedSection.getSchedule().getStartTime());
+                        schedule.setEndTime(updatedSection.getSchedule().getEndTime());
+                        schedule.setDay(updatedSection.getSchedule().getDay());
+                        schedule.setStatus(updatedSection.getSchedule().getStatus());
+                        schedule.setRoom(updatedSection.getSchedule().getRoom());
+                        scheduleService.createSchedule(schedule);
+                    } else {
+                        // Create new schedule
+                        Schedule newSchedule = scheduleService.createSchedule(updatedSection.getSchedule());
+                        section.setSchedule(newSchedule);
+                    }
+                }
+                
                 return courseSectionRepository.save(section);
             })
             .orElseThrow(() -> new RuntimeException("Section not found with ID " + id));
@@ -48,31 +71,25 @@ public class CourseSectionService {
         courseSectionRepository.deleteById(id);
     }
 
-    // Additional service methods for the new fields
-    public List<CourseSection> getSectionsByStatus(String status) {
-        return courseSectionRepository.findByStatus(status);
-    }
-
-    public List<CourseSection> getSectionsByDay(String day) {
-        return courseSectionRepository.findByDay(day);
-    }
-
     public List<CourseSection> getSectionsBySectionName(String sectionName) {
         return courseSectionRepository.findBySectionName(sectionName);
     }
 
     public List<CourseSection> getActiveSections() {
-        return courseSectionRepository.findByStatus("ACTIVE");
+        return courseSectionRepository.findByScheduleStatus("ACTIVE");
     }
 
-   public List<CourseSection> getSectionsByProgram(Long programId) {
-    return courseSectionRepository.findByProgramProgramID(programId);
-}
+    public List<CourseSection> getSectionsByProgram(Long programId) {
+        return courseSectionRepository.findByProgramProgramID(programId);
+    }
 
     public CourseSection updateSectionStatus(Long id, String status) {
         return courseSectionRepository.findById(id)
             .map(section -> {
-                section.setStatus(status);
+                if (section.getSchedule() != null) {
+                    section.getSchedule().setStatus(status);
+                    scheduleService.createSchedule(section.getSchedule());
+                }
                 return courseSectionRepository.save(section);
             })
             .orElseThrow(() -> new RuntimeException("Section not found with ID " + id));

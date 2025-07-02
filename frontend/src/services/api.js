@@ -747,4 +747,64 @@ export const semesterEnrollmentAPI = {
   },
 };
 
+// Schedule API endpoints
+export const scheduleAPI = {
+  // Get all schedules
+  getAllSchedules: () => {
+    console.log('Calling getAllSchedules API...');
+    return api.get('/schedules');
+  },
+  
+  // Get schedule by ID
+  getScheduleById: (id) => {
+    console.log('Calling getScheduleById API for ID:', id);
+    return api.get(`/schedules/${id}`);
+  },
+  
+  // Create new schedule
+  createSchedule: (scheduleData) => {
+    console.log('Calling createSchedule API with data:', scheduleData);
+    return api.post('/schedules', scheduleData);
+  },
+  
+  // Update schedule
+  updateSchedule: (id, scheduleData) => {
+    console.log('Calling updateSchedule API for ID:', id, 'with data:', scheduleData);
+    return api.put(`/schedules/${id}`, scheduleData);
+  },
+  
+  // Delete schedule
+  deleteSchedule: (id) => {
+    console.log('Calling deleteSchedule API for ID:', id);
+    return api.delete(`/schedules/${id}`);
+  },
+  
+  // Get schedules by status
+  getSchedulesByStatus: (status) => api.get(`/schedules/status/${status}`),
+  
+  // Get schedules by day
+  getSchedulesByDay: (day) => api.get(`/schedules/day/${day}`),
+  
+  // Get schedules by room
+  getSchedulesByRoom: (room) => api.get(`/schedules/room/${room}`),
+  
+  // Find conflicting schedules
+  findConflictingSchedules: (day, startTime, endTime) => {
+    console.log('Calling findConflictingSchedules API...');
+    return api.get(`/schedules/conflicts?day=${encodeURIComponent(day)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+  },
+  
+  // Get schedules by time range
+  getSchedulesByTimeRange: (startTime, endTime) => {
+    console.log('Calling getSchedulesByTimeRange API...');
+    return api.get(`/schedules/time-range?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`);
+  },
+  
+  // Validate schedule
+  validateSchedule: (scheduleData) => api.post('/schedules/validate', scheduleData),
+  
+  // Update schedule status
+  updateScheduleStatus: (id, status) => api.put(`/schedules/${id}/status?status=${encodeURIComponent(status)}`)
+};
+
 export default api;
