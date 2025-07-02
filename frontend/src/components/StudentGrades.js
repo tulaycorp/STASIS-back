@@ -3,73 +3,113 @@ import { useNavigate } from 'react-router-dom';
 import styles from './StudentGrades.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
-import { enrolledCourseAPI } from '../services/api'; // Make sure this exists and is correct
+import { enrolledCourseAPI, semesterEnrollmentAPI } from '../services/api';
 
 const StudentGrades = () => {
-  const { getUserInfo } = useStudentData();
-  const userInfo = getUserInfo();
+  const { getUserInfo, studentData } = useStudentData(); // Add studentData here
   const navigate = useNavigate();
-  const studentId = userInfo?.studentId;
-
-  const semesters = [];
-
+  
   // STATE VARIABLES
-  const [selectedSemester, setSelectedSemester] = useState(semesters[0]);
+  const [semesters, setSemesters] = useState([]);
+  const [selectedSemester, setSelectedSemester] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [gradesList, setGradesList] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch grades from backend
+  // Fetch student enrollments and grades from backend
   useEffect(() => {
-    if (!studentId) return;
+    // Get student ID directly from studentData
+    const studentId = studentData?.id;
+    console.log('Current student ID:', studentId);
+    
+    if (!studentId) {
+      if (!loading) {
+        console.log('No student ID available yet, waiting for data...');
+      }
+      return;
+    }
+    
     setLoading(true);
-    enrolledCourseAPI.getEnrolledCoursesByStudent
-      ? enrolledCourseAPI.getEnrolledCoursesByStudent(studentId)
-          .then(res => {
-            // Transform backend data to match the expected structure
-            const backendGrades = (res.data || []).map(ec => ({
-              id: ec.section?.course?.courseCode || ec.enrolledCourseID || '',
-              course: ec.section?.course?.courseDescription || '',
-              section: ec.section?.sectionName || '',
-              instructor: ec.section?.faculty
-                ? `${ec.section.faculty.firstName} ${ec.section.faculty.lastName}`
-                : '',
-              creditUnits: ec.section?.course?.credits || 0,
-              midtermGrade: ec.grade?.midtermGrade ?? null,
-              finalGrade: ec.grade?.finalGrade ?? null,
-              overallGrade: ec.grade?.gradeValue ?? null,
-              letterGrade: ec.grade?.letterGrade ?? '',
-              remarks: ec.grade?.remarks ??
-                (ec.grade?.gradeValue != null
-                  ? (ec.grade.gradeValue >= 60 ? 'Passed' : 'Failed')
-                  : 'In Progress'),
-              semester: ec.semesterEnrollment?.semester || '',
-              status: ec.status || '',
-            }));
-            setGradesList(backendGrades);
-          })
-          .catch(() => setGradesList([]))
-          .finally(() => setLoading(false))
-      : setGradesList([]); // fallback if API not defined
-  }, [studentId]);
+    
+    // Fetch all enrolled courses for this student
+    console.log(`Fetching enrolled courses for student ID: ${studentId}`);
+    enrolledCourseAPI.getEnrolledCoursesByStudent(studentId)
+      .then(res => {
+        console.log('Student enrolled courses data:', res.data);
+        
+        // Transform backend data to match the expected structure
+        const backendGrades = (res.data || []).map(ec => ({
+          id: ec.section?.course?.courseCode || ec.enrolledCourseID || '',
+          course: ec.section?.course?.courseDescription || '',
+          section: ec.section?.sectionName || '',
+          instructor: ec.section?.faculty
+            ? `${ec.section.faculty.firstName} ${ec.section.faculty.lastName}`
+            : '',
+          creditUnits: ec.section?.course?.credits || 0,
+          midtermGrade: ec.grade?.midtermGrade ?? null,
+          finalGrade: ec.grade?.finalGrade ?? null,
+          overallGrade: ec.grade?.overallGrade ?? null,
+          letterGrade: ec.grade?.letterGrade ?? '',
+          remarks: ec.grade?.remark ?? 
+            (ec.grade?.overallGrade != null
+              ? (ec.grade.overallGrade >= 60 ? 'Passed' : 'Failed')
+              : 'In Progress'),
+          semester: `${ec.semesterEnrollment?.semester || ''} ${ec.semesterEnrollment?.academicYear || ''}`,
+          academicYear: ec.semesterEnrollment?.academicYear || '',
+          semesterOnly: ec.semesterEnrollment?.semester || '',
+          status: ec.status || '',
+          enrollmentID: ec.enrolledCourseID,
+          semesterEnrollmentID: ec.semesterEnrollment?.semesterEnrollmentID
+        }));
+        
+        console.log('Transformed grades data:', backendGrades);
+        setGradesList(backendGrades);
+        
+        // Extract unique semesters from the enrollments
+        const uniqueSemesters = [...new Set(backendGrades.map(g => g.semester))].filter(Boolean);
+        console.log('Unique semesters:', uniqueSemesters);
+        setSemesters(uniqueSemesters);
+        
+        // Select the most recent semester by default
+        if (uniqueSemesters.length > 0) {
+          setSelectedSemester(uniqueSemesters[0]);
+        }
+        
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching student grades:', err);
+        setError('Failed to load your grades. Please try again later.');
+        setLoading(false);
+        setGradesList([]);
+      });
+  }, [studentData, loading]); // Add studentData as dependency instead of studentId
 
   const getAcademicYear = (semester) => {
     if (!semester) return 'N/A';
-    const year = semester.split('-')[0];
-    const semesterType = semester.split('-')[1];
-    if (semesterType === '1st Semester') {
-      return `${year}-${parseInt(year) + 1}`;
-    } else {
-      return `${parseInt(year) - 1}-${year}`;
+    
+    // Extract academic year from semester string if possible
+    const parts = semester.trim().split(' ');
+    if (parts.length >= 2) {
+      return parts[parts.length - 1]; // Last part should be academic year
     }
+    
+    return 'N/A';
   };
 
   const formatSemesterDisplay = (semester) => {
-    const [year, sem] = semester.split('-');
+    if (!semester) return { year: 'N/A', semester: 'N/A', academicYear: 'N/A' };
+    
+    // Parse "1st Semester 2023-2024" format
+    const parts = semester.split(' ');
+    const semesterPart = parts.length >= 2 ? `${parts[0]} ${parts[1]}` : semester;
+    const yearPart = parts.length >= 3 ? parts[parts.length - 1] : '';
+    
     return {
-      year: year,
-      semester: sem,
-      academicYear: getAcademicYear(semester)
+      year: yearPart,
+      semester: semesterPart,
+      academicYear: yearPart
     };
   };
 
@@ -78,16 +118,30 @@ const StudentGrades = () => {
                          (grade.section || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (grade.instructor || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (grade.id || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSemester = grade.semester === selectedSemester;
+    const matchesSemester = grade.semester === selectedSemester || !selectedSemester;
     return matchesSearch && matchesSemester;
   });
 
-  const completedCourses = gradesList.filter(g => g.status === 'Completed');
+  // Calculate academic metrics
+  const completedCourses = gradesList.filter(g => g.status === 'COMPLETED' || g.overallGrade != null);
+
+  // For a 1-5 scale where 1 is best (100%) and 5 is worst (0%)
   const totalGradePoints = completedCourses.reduce((sum, grade) => {
-    return sum + ((grade.overallGrade || 0) * (grade.creditUnits || 0));
+    // Only include courses with valid overall grades
+    if (grade.overallGrade !== null && grade.overallGrade !== undefined) {
+      // Lower is better in this system, so we don't need to invert
+      return sum + (grade.overallGrade * grade.creditUnits);
+    }
+    return sum;
   }, 0);
-  const totalCreditUnits = completedCourses.reduce((sum, grade) => sum + (grade.creditUnits || 0), 0);
-  const currentGPA = totalCreditUnits > 0 ? (totalGradePoints / totalCreditUnits / 100 * 4).toFixed(2) : '0.00';
+
+  const totalCreditUnits = completedCourses.reduce((sum, grade) => 
+    sum + (grade.creditUnits || 0), 0);
+
+  // Calculate GPA directly without dividing by 25
+  const currentGPA = totalCreditUnits > 0 
+    ? (totalGradePoints / totalCreditUnits).toFixed(2) 
+    : '0.00';
   const totalUnitsEarned = completedCourses.reduce((sum, grade) => sum + (grade.creditUnits || 0), 0);
   const totalUnitsEnrolled = gradesList.reduce((sum, grade) => sum + (grade.creditUnits || 0), 0);
   const enrollmentStatus = totalUnitsEnrolled >= 18 ? 'Regular' : 'Irregular';
@@ -116,35 +170,41 @@ const StudentGrades = () => {
           <div className={styles.pageHeader}>
             <h1 className={styles.pageTitle}>My Grades</h1>
             <div className={styles.semesterIndicator}>
-              {selectedSemester}
+              {selectedSemester || 'No semesters available'}
             </div>
           </div>
 
           <div className={styles.studentContentWrapper}>
             <div className={styles.studentNavSection}>
               <div className={styles.studentNavHeader}>
-                <h2 className={styles.studentNavTitle}>Past Semesters</h2>
+                <h2 className={styles.studentNavTitle}>Academic Periods</h2>
                 <div className={styles.semesterCurrentInfo}>
                   Academic Year: {getAcademicYear(selectedSemester)}
                 </div>
               </div>
               <div className={styles.studentNavList}>
-                {semesters.map((semester) => {
-                  const semesterInfo = formatSemesterDisplay(semester);
-                  return (
-                    <div
-                      key={semester}
-                      className={`${styles.studentNavItem} ${selectedSemester === semester ? styles.studentNavItemActive : ''}`}
-                      onClick={() => handleSemesterSelect(semester)}
-                    >
-                      <span className={styles.studentNavIcon}>📅</span>
-                      <div className={styles.semesterInfo}>
-                        <div className={styles.semesterMain}>{semesterInfo.semester}</div>
-                        <div className={styles.semesterYear}>{semesterInfo.year}</div>
+                {semesters.length > 0 ? (
+                  semesters.map((semester) => {
+                    const semesterInfo = formatSemesterDisplay(semester);
+                    return (
+                      <div
+                        key={semester}
+                        className={`${styles.studentNavItem} ${selectedSemester === semester ? styles.studentNavItemActive : ''}`}
+                        onClick={() => handleSemesterSelect(semester)}
+                      >
+                        <span className={styles.studentNavIcon}>📅</span>
+                        <div className={styles.semesterInfo}>
+                          <div className={styles.semesterMain}>{semesterInfo.semester}</div>
+                          <div className={styles.semesterYear}>{semesterInfo.year}</div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className={styles.noSemestersMessage}>
+                    {loading ? 'Loading semesters...' : 'No semesters available'}
+                  </div>
+                )}
               </div>
               <div className={styles.studentNavActions}>
                 <button className={styles.studentBtnAddSection} onClick={showArchiveSemester}>
@@ -154,7 +214,7 @@ const StudentGrades = () => {
               <div className={styles.studentNavInfo}>
                 <div className={styles.studentNavInfoItem}>
                   <div className={styles.studentNavInfoLabel}>Selected Semester</div>
-                  <div className={styles.studentNavInfoValue}>{selectedSemester}</div>
+                  <div className={styles.studentNavInfoValue}>{selectedSemester || 'None'}</div>
                 </div>
                 <div className={styles.studentNavInfoItem}>
                   <div className={styles.studentNavInfoLabel}>Courses Found</div>
@@ -202,7 +262,15 @@ const StudentGrades = () => {
 
               <div className={styles.tableContainer}>
                 {loading ? (
-                  <div className={styles.loading}>Loading grades...</div>
+                  <div className={styles.loading}>Loading your grades...</div>
+                ) : error ? (
+                  <div className={styles.errorMessage}>{error}</div>
+                ) : filteredGrades.length === 0 ? (
+                  <div className={styles.noGradesMessage}>
+                    {semesters.length === 0 
+                      ? "No enrollment records found." 
+                      : "No courses found for the selected semester."}
+                  </div>
                 ) : (
                   <table className={styles.gradesTable}>
                     <thead>
@@ -219,7 +287,7 @@ const StudentGrades = () => {
                     </thead>
                     <tbody>
                       {filteredGrades.map((grade) => (
-                        <tr key={grade.id}>
+                        <tr key={grade.enrollmentID || grade.id}>
                           <td className={styles.courseCode}>{grade.id}</td>
                           <td>
                             <div className={styles.courseInfo}>
@@ -229,12 +297,27 @@ const StudentGrades = () => {
                           </td>
                           <td className={styles.instructorName}>{grade.instructor}</td>
                           <td className={styles.creditUnits}>{grade.creditUnits}</td>
-                          <td className={styles.gradeScore}>{grade.midtermGrade ?? '-'}</td>
-                          <td className={styles.gradeScore}>{grade.finalGrade ?? '-'}</td>
-                          <td className={styles.gradeScore}>{grade.overallGrade != null ? Number(grade.overallGrade).toFixed(1) : '-'}</td>
+                          <td className={styles.gradeScore}>
+                            {grade.midtermGrade !== null ? Number(grade.midtermGrade).toFixed(2) : '-'}
+                          </td>
+                          <td className={styles.gradeScore}>
+                            {grade.finalGrade !== null ? Number(grade.finalGrade).toFixed(2) : '-'}
+                          </td>
+                          <td className={styles.gradeScore}>
+                            {grade.overallGrade !== null ? Number(grade.overallGrade).toFixed(2) : '-'}
+                          </td>
                           <td>
-                            <span className={`${styles.remarksBadge} ${grade.remarks === 'Passed' ? styles.remarksPassed : grade.remarks === 'Failed' ? styles.remarksFailed : styles.remarksProgress}`}>
-                              {grade.remarks}
+                            <span className={`${styles.remarksBadge} ${
+                              grade.remarks === 'Passed' || grade.remarks === 'PASS' 
+                                ? styles.remarksPassed 
+                                : grade.remarks === 'Failed' || grade.remarks === 'FAIL' 
+                                  ? styles.remarksFailed 
+                                  : styles.remarksProgress
+                            }`}>
+                              {grade.remarks === 'PASS' ? 'Passed' : 
+                               grade.remarks === 'FAIL' ? 'Failed' : 
+                               grade.remarks === 'INCOMPLETE' ? 'In Progress' : 
+                               grade.remarks}
                             </span>
                           </td>
                         </tr>
@@ -246,12 +329,7 @@ const StudentGrades = () => {
 
               <div className={styles.tableFooter}>
                 <div className={styles.tableInfo}>
-                  Showing {filteredGrades.length} courses for this semester
-                </div>
-                <div className={styles.pagination}>
-                  <button className={`${styles.pageBtn} ${styles.disabled}`}>Previous</button>
-                  <button className={`${styles.pageBtn} ${styles.active}`}>1</button>
-                  <button className={styles.pageBtn}>Next</button>
+                  Showing {filteredGrades.length} courses {selectedSemester ? `for ${selectedSemester}` : ''}
                 </div>
               </div>
             </div>
