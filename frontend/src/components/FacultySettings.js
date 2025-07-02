@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './FacultySettings.module.css';
 import Sidebar from './FacultySidebar';
 import { useFacultyData } from '../hooks/useFacultyData';
 
 const FacultySettings = () => {
-  const navigate = useNavigate();
   const { facultyData, setFacultyInfo, getUserInfo } = useFacultyData();
   const [activeSection, setActiveSection] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -32,26 +30,6 @@ const FacultySettings = () => {
     loginNotifications: true,
     sessionTimeout: '30'
   });
-
-  // Navigation
-  const showSection = (section) => {
-    switch(section){
-      case 'FacultyDashboard':
-        navigate('/faculty-dashboard');
-        break;
-      case 'FacultySchedule':
-        navigate('/faculty-schedule');
-        break;
-        case 'FacultyGrades':
-          navigate('/faculty-grades');
-        break;
-      case 'FacultySettings':
-        navigate('/faculty-settings');
-        break;
-      default:
-        // No action for unknown sections
-    }
-  };
 
   // Handle form changes
   const handleProfileChange = (field, value) => {
@@ -408,29 +386,7 @@ const FacultySettings = () => {
 
   return (
     <div className="settings-container">
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-            ]
-          }
-        ]}
-      />
-      
+      <Sidebar userInfo={getUserInfo()} />
       <div className="settings-main-content">
         <div className="settings-header">
           <h1 className="settings-title">Settings</h1>

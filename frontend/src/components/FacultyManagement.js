@@ -7,6 +7,7 @@ import { facultyAPI, programAPI } from '../services/api';
 
 const FacultyManagement = () => {
   const { getUserInfo } = useAdminData();
+  const navigate = useNavigate();
   const [facultyList, setFacultyList] = useState([]);
   const [programsList, setProgramsList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -297,69 +298,11 @@ const FacultyManagement = () => {
     }
   };
 
-  // Navigation
-  const navigate = useNavigate();
-  const showSection = (section) => {
-    switch(section){
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Curriculum':
-        navigate('/curriculum-management');
-        break;
-      case 'Students':
-        navigate('/student-management');
-        break;      
-      case 'Schedule':
-        navigate('/schedule-management');
-        break;
-      case 'Faculty':
-        navigate('/faculty-management');
-        break;
-      case 'Courses':
-        navigate('/course-management');
-        break;
-      case 'Settings':
-        navigate('/settings');
-        break;
-      case 'AdminTools':
-        navigate('/admin-tools');
-      break;
-      default:
-        // No action for unknown sections
-    }
-  };
-
   // Show loading state
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -375,32 +318,7 @@ const FacultyManagement = () => {
   if (error) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -427,33 +345,8 @@ const FacultyManagement = () => {
           </div>
         ))}
       </div>
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'Students', label: 'Students', icon: '👥' },
-              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'Schedule', label: 'Schedule', icon: '📅' },
-              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-              { id: 'Courses', label: 'Courses', icon: '📖' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️'},
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-            ]
-          }
-        ]}
-      />
 
+      <Sidebar userInfo={getUserInfo()} />
       <div className="main-content">
         <div className="content-wrapper">
           <div className="breadcrumb">
@@ -584,11 +477,13 @@ const FacultyManagement = () => {
         </div>
       </div>
 
-      {showAddFacultyModal && (
+      {(showAddFacultyModal || showEditFacultyModal) && (
         <div className="modal-overlay">
           <div className="modal-container">
             <div className="modal-header">
-              <h2 className="modal-title">Add New Faculty</h2>
+              <h2 className="modal-title">
+                {showEditFacultyModal ? 'Edit Faculty' : 'Add New Faculty'}
+              </h2>
             </div>
             
             <div className="modal-content">
@@ -683,129 +578,15 @@ const FacultyManagement = () => {
             <div className="modal-footer">
               <button 
                 className="btn btn-secondary"
-                onClick={closeAddFacultyModal}
+                onClick={showEditFacultyModal ? closeEditFacultyModal : closeAddFacultyModal}
               >
                 Cancel
               </button>
               <button 
                 className="btn btn-primary"
-                onClick={handleAddFaculty}
+                onClick={showEditFacultyModal ? handleEditFaculty : handleAddFaculty}
               >
-                Add Faculty
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showEditFacultyModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <div className="modal-header">
-              <h2 className="modal-title">Edit Faculty</h2>
-            </div>
-            
-            <div className="modal-content">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">First Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter First Name"
-                    value={facultyForm.firstName}
-                    onChange={(e) => handleFacultyFormChange('firstName', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Last Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Enter Last Name"
-                    value={facultyForm.lastName}
-                    onChange={(e) => handleFacultyFormChange('lastName', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Email *</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="Enter Email Address"
-                    value={facultyForm.email}
-                    onChange={(e) => handleFacultyFormChange('email', e.target.value)}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Program</label>
-                  <select
-                    className="form-input"
-                    value={facultyForm.programId}
-                    onChange={(e) => handleFacultyFormChange('programId', e.target.value)}
-                  >
-                    <option value="">Select Program</option>
-                    {programsList && programsList.length > 0 ? (
-                      programsList.map((program) => (
-                        <option key={`edit-${program.programID}`} value={program.programID}>
-                          {program.programName}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>No programs available</option>
-                    )}
-                  </select>
-                  {programsList.length === 0 && (
-                    <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
-                      No programs loaded. Please refresh the page.
-                    </small>
-                  )}
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Position</label>
-                  <select
-                    className="form-input"
-                    value={facultyForm.position}
-                    onChange={(e) => handleFacultyFormChange('position', e.target.value)}
-                  >
-                    <option value="">Select position</option>
-                    {positionOptions.map((pos) => (
-                      <option key={pos} value={pos}>{pos}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select
-                    className="form-input"
-                    value={facultyForm.status}
-                    onChange={(e) => handleFacultyFormChange('status', e.target.value)}
-                  >
-                    {statusOptions.map((status) => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button 
-                className="btn btn-secondary"
-                onClick={closeEditFacultyModal}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary"
-                onClick={handleEditFaculty}
-              >
-                Update Faculty
+                {showEditFacultyModal ? 'Update Faculty' : 'Add Faculty'}
               </button>
             </div>
           </div>

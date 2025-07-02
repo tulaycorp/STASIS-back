@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './StudentSettings.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 
 const StudentSettings = () => {
   const { getUserInfo } = useStudentData();
-  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -32,32 +30,6 @@ const StudentSettings = () => {
     loginNotifications: true,
     sessionTimeout: '30'
   });
-
-  // Navigation
-  const showSection = (section) => {
-    switch(section){
-      case 'StudentDashboard':
-        navigate('/student-dashboard');
-        break;
-      case 'StudentSchedule':
-        navigate('/student-schedule');
-        break;
-      case 'Enrollment':
-        navigate('/enrollment');
-        break;
-      case 'StudentCurriculum':
-        navigate('/student-curriculum');
-        break;
-      case 'StudentGrades':
-        navigate('/student-grades');
-        break;
-      case 'StudentSettings':
-        navigate('/student-settings');
-        break;
-      default:
-        // No action for unknown sections
-    }
-  };
 
   // Handle form changes
   const handleProfileChange = (field, value) => {
@@ -407,31 +379,8 @@ const StudentSettings = () => {
   return (
     <div className="settings-container">
       {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'StudentDashboard', label: 'StudentDashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
-              { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
-              { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'StudentGrades', label: 'Grades', icon: '📈' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
-            ]
-          }
-        ]}
-      />
-      
+      <Sidebar userInfo={getUserInfo()} />
+
       <div className="settings-main-content">
         <div className="settings-header">
           <h1 className="settings-title">Settings</h1>

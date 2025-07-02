@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './AdminDashboard.css';
+import './FacultyDashboard.module.css';
 import Sidebar from './FacultySidebar';
 import { useFacultyData } from '../hooks/useFacultyData';
+import { courseSectionAPI } from '../services/api'; 
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
@@ -11,10 +12,35 @@ const FacultyDashboard = () => {
     recentActivities: []
   });
 
+  const [scheduleData, setScheduleData] = useState([]); 
+
   const today = new Date();
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [selectedDate, setSelectedDate] = useState(today.getDate());
+
+  // Fetch schedule data for faculty
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      try {
+        const userInfo = getUserInfo();
+        if (!userInfo?.id) return;
+        const res = await courseSectionAPI.getSectionsByFaculty(userInfo.id);
+        // Map API data to your schedule item format if needed
+        const mapped = (res.data || []).map(section => ({
+          id: section.id,
+          time: section.time || 'TBA',
+          subject: section.courseName || section.subject || 'Unknown',
+          room: section.room || section.roomName || 'TBA',
+          type: section.type || 'blue', // You may want to map this based on section data
+        }));
+        setScheduleData(mapped);
+      } catch (err) {
+        setScheduleData([]);
+      }
+    };
+    fetchSchedule();
+  }, [getUserInfo]);
 
   // Generate calendar days for the selected month/year
   const generateCalendarDays = () => {
@@ -67,77 +93,11 @@ const FacultyDashboard = () => {
     setSelectedDate(1);
   };
 
-  // Schedule data
-  const scheduleData = [
-    {
-      id: 1,
-      time: "8:00 AM",
-      subject: "Mathematics",
-      room: "Room 101",
-      type: "blue"
-    },
-    {
-      id: 2,
-      time: "10:00 AM",
-      subject: "Physics",
-      room: "Lab 201",
-      type: "green"
-    },
-    {
-      id: 3,
-      time: "2:00 PM",
-      subject: "Chemistry",
-      room: "Lab 301",
-      type: "blue"
-    }
-  ];
-
-  // Navigation
-  const showSection = (section) => {
-    switch(section){
-      case 'FacultyDashboard':
-        navigate('/faculty-dashboard');
-        break;
-      case 'FacultySchedule':
-        navigate('/faculty-schedule');
-        break;
-        case 'FacultyGrades':
-          navigate('/faculty-grades');
-        break;
-      case 'FacultySettings':
-        navigate('/faculty-settings');
-        break;
-      default:
-        // No action for unknown sections
-    }
-  };
-
   const calendarDays = generateCalendarDays();
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'FacultySchedule', label: 'Schedule', icon: '📅' },
-              { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-            ]
-          }
-        ]}
-      />
+      <Sidebar userInfo={getUserInfo()} />
 
       {/* Main Content */}
       <div className="main-content">
@@ -223,16 +183,26 @@ const FacultyDashboard = () => {
                 <h2 className="dashboard-schedule-title">Upcoming Schedule</h2>
               </div>
               <div className="dashboard-schedule-content">
-                {scheduleData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className={`dashboard-schedule-item ${item.type === 'blue' ? 'dashboard-schedule-item-blue' : item.type === 'green' ? 'dashboard-schedule-item-green' : ''}`}
-                  >
-                    <div className="dashboard-schedule-time">{item.time}</div>
-                    <div className="dashboard-schedule-subject">{item.subject}</div>
-                    <div className="dashboard-schedule-room">{item.room}</div>
+                {scheduleData.length === 0 ? (
+                  <div style={{ color: '#6c757d', textAlign: 'center', padding: '30px 0' }}>
+                    No upcoming schedule found.
                   </div>
-                ))}
+                ) : (
+                  scheduleData.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className={`dashboard-schedule-item ${item.type === 'blue' ? 'dashboard-schedule-item-blue' : item.type === 'green' ? 'dashboard-schedule-item-green' : ''}`}
+                    >
+                      <span className="dashboard-schedule-icon">
+                        {item.type === 'blue' && <i className="fas fa-book"></i>}
+                        {item.type === 'green' && <i className="fas fa-flask"></i>}
+                      </span>
+                      <div className="dashboard-schedule-time">{item.time}</div>
+                      <div className="dashboard-schedule-subject">{item.subject}</div>
+                      <div className="dashboard-schedule-room">{item.room}</div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

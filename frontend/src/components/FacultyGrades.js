@@ -461,25 +461,6 @@ const FacultyGrades = () => {
     }
   };
 
-  const showSection = (section) => {
-    switch(section){
-      case 'FacultyDashboard': 
-        navigate('/faculty-dashboard'); 
-        break;
-      case 'FacultySchedule': 
-        navigate('/faculty-schedule'); 
-        break;
-      case 'FacultyGrades': 
-        navigate('/faculty-grades'); 
-        break;
-      case 'FacultySettings': 
-        navigate('/faculty-settings'); 
-        break;
-      default: 
-        break;
-    }
-  };
-
   const filteredStudents = selectedCourse
     ? selectedCourse.students.filter(student => {
         const searchTermLower = studentSearchTerm.toLowerCase();
@@ -487,36 +468,11 @@ const FacultyGrades = () => {
                String(student.id).toLowerCase().includes(searchTermLower);
       })
     : [];
-  
-  const sidebarProps = { 
-    onNavigate: showSection, 
-    userInfo: getUserInfo(), 
-    sections: [ 
-      { 
-        items: [
-          { id: 'FacultyDashboard', label: 'Dashboard', icon: '📊' }
-        ] 
-      }, 
-      { 
-        label: 'Management', 
-        items: [
-          { id: 'FacultySchedule', label: 'Schedule', icon: '📅' }, 
-          { id: 'FacultyGrades', label: 'Grades', icon: '📈' }
-        ] 
-      }, 
-      { 
-        label: 'System', 
-        items: [
-          { id: 'FacultySettings', label: 'Settings', icon: '⚙️'}
-        ] 
-      }
-    ] 
-  };
 
   if (loading) {
     return (
       <div className={styles.dashboardContainer}>
-        <Sidebar {...sidebarProps} />
+        <Sidebar userInfo={getUserInfo()}/>
         <div className={styles.mainContent}>
           <div className={styles.contentWrapper}>
             <h1 className={styles.pageTitle}>Loading...</h1>
@@ -529,7 +485,7 @@ const FacultyGrades = () => {
   if (error) {
     return (
       <div className={styles.dashboardContainer}>
-        <Sidebar {...sidebarProps} />
+        <Sidebar userInfo={getUserInfo()}/>
         <div className={styles.mainContent}>
           <div className={styles.contentWrapper}>
             <h1 className={styles.pageTitle}>Error</h1>
@@ -542,7 +498,7 @@ const FacultyGrades = () => {
 
   return (
     <div className={styles.dashboardContainer}>
-      <Sidebar {...sidebarProps} />
+      <Sidebar userInfo={getUserInfo()}/>
       <div className={styles.mainContent}>
         <div className={styles.contentWrapper}>
           <div className={styles.breadcrumb}>

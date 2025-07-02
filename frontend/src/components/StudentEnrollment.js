@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Enrollment.module.css';
+import './StudentEnrollment.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 import { 
@@ -15,6 +15,8 @@ const Enrollment = () => {
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { getUserInfo } = useStudentData();
+  const navigate = useNavigate();
   
   // Student and curriculum data
   const { studentData, loading: studentLoading, error: studentError } = useStudentData();
@@ -35,8 +37,6 @@ const Enrollment = () => {
   // New state for bulk enrollment
   const [selectedCourses, setSelectedCourses] = useState({}); // courseId -> sectionId mapping
   const [selectedSections, setSelectedSections] = useState({}); // courseId -> section object mapping
-
-  const navigate = useNavigate();
 
   // Fetch curriculum and enrollment data
   useEffect(() => {
@@ -346,64 +346,10 @@ const Enrollment = () => {
     return sum + credits;
   }, 0);
 
-  // Navigation
-  const showSection = (section) => {
-    switch(section){
-      case 'Dashboard':
-        navigate('/student-dashboard');
-        break;
-      case 'StudentSchedule':
-        navigate('/student-schedule');
-        break;
-      case 'Enrollment':
-        navigate('/enrollment');
-        break;
-      case 'StudentCurriculum':
-        navigate('/student-curriculum');
-        break;
-      case 'StudentGrades':
-        navigate('/student-grades');
-        break;
-      case 'StudentSettings':
-        navigate('/student-settings');
-        break;
-      default:
-        break;
-    }
-  };
-
-  const sidebarSections = [
-    {
-      items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-    },
-    {
-      label: 'Management',
-      items: [
-        { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
-        { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
-        { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
-        { id: 'StudentGrades', label: 'Grades', icon: '📈' }
-      ]
-    },
-    {
-      label: 'System',
-      items: [
-        { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
-      ]
-    }
-  ];
-
   if (loading || studentLoading) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={{ 
-            name: studentData ? `${studentData.firstName} ${studentData.lastName}` : "Loading...", 
-            role: "Student" 
-          }}
-          sections={sidebarSections}
-        />
+        <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="loading-container">
             <div className="loading-spinner"></div>
@@ -417,11 +363,7 @@ const Enrollment = () => {
   if (error || studentError) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={{ name: "Student", role: "Student" }}
-          sections={sidebarSections}
-        />
+        <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="error-container">
             <h2>Error Loading Enrollment Data</h2>
@@ -438,14 +380,7 @@ const Enrollment = () => {
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={{ 
-          name: `${studentData?.firstName} ${studentData?.lastName}`, 
-          role: "Student"
-        }}
-        sections={sidebarSections}
-      />
+      <Sidebar userInfo={getUserInfo()} />
 
       {/* Main Content */}
       <div className="main-content">

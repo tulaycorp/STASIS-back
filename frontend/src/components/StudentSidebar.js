@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './StudentSidebar.module.css';
 
 // Utility function to get active page from current URL
@@ -24,8 +25,33 @@ const getActivePageFromURL = () => {
 };
 
 const StudentSidebar = ({ onNavigate, userInfo }) => {
-  // Automatically determine active page from URL instead of using prop
+  const navigate = useNavigate();
   const activePage = getActivePageFromURL();
+  
+  const showSection = (section) => {
+    switch(section){
+      case 'StudentDashboard':
+        navigate('/student-dashboard');
+        break;
+      case 'StudentSchedule':
+        navigate('/student-schedule');
+        break;
+      case 'Enrollment':
+        navigate('/enrollment');
+        break;
+      case 'StudentCurriculum':
+        navigate('/student-curriculum');
+        break;
+      case 'StudentGrades':
+        navigate('/student-grades');
+        break;
+      case 'StudentSettings':
+        navigate('/student-settings');
+        break;
+      default:
+        // No action for unknown sections
+    }
+  };
   
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -48,7 +74,7 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
           <div className="nav-items">
             <div
               className={`nav-item${activePage === 'StudentDashboard' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentDashboard')}
+              onClick={() => showSection('StudentDashboard')}
             >
               📊 Dashboard
             </div>
@@ -59,25 +85,25 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
           <div className="nav-items">
             <div
               className={`nav-item${activePage === 'StudentSchedule' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentSchedule')}
+              onClick={() => showSection('StudentSchedule')}
             >
               📅 Schedule
             </div>
             <div
               className={`nav-item${activePage === 'Enrollment' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('Enrollment')}
+              onClick={() => showSection('Enrollment')}
             >
               📝 Enrollment
             </div>
             <div
               className={`nav-item${activePage === 'StudentGrades' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentGrades')}
+              onClick={() => showSection('StudentGrades')}
             >
               📈 Grades
             </div>
             <div
               className={`nav-item${activePage === 'StudentCurriculum' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentCurriculum')}
+              onClick={() => showSection('StudentCurriculum')}
             >
               📚 Curriculum
             </div>
@@ -88,7 +114,7 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
           <div className="nav-items">
             <div
               className={`nav-item${activePage === 'StudentSettings' ? ' active-page' : ''}`}
-              onClick={() => onNavigate('StudentSettings')}
+              onClick={() => showSection('StudentSettings')}
             >
               ⚙️ Settings
             </div>

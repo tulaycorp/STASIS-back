@@ -7,6 +7,7 @@ import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnecti
 
 const CurriculumManagement = () => {
   const { getUserInfo } = useAdminData();
+    const navigate = useNavigate();
   
   // State management
   const [curriculumData, setCurriculumData] = useState([]);
@@ -598,70 +599,11 @@ const CurriculumManagement = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Navigation
-  const navigate = useNavigate();
-  
-  const showSection = (section) => {
-    switch(section){
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Students':
-        navigate('/student-management');
-        break;
-      case 'Curriculum':
-        navigate('/curriculum-management');
-        break;
-      case 'Schedule':
-        navigate('/schedule-management');
-        break;
-      case 'Faculty':
-        navigate('/faculty-management');
-        break;
-      case 'Courses':
-        navigate('/course-management');
-        break;
-      case 'Settings':
-        navigate('/settings');
-        break;
-      case 'AdminTools':
-        navigate('/admin-tools');
-        break;
-      default:
-        // No action for unknown sections
-    }
-  };
-
   // Show loading state
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -678,32 +620,7 @@ const CurriculumManagement = () => {
   if (error) {
     return (
       <div className="dashboard-container">
-        <Sidebar 
-          onNavigate={showSection}
-          userInfo={getUserInfo()}
-          sections={[
-            {
-              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-            },
-            {
-              label: 'Management',
-              items: [
-                { id: 'Students', label: 'Students', icon: '👥' },
-                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'Schedule', label: 'Schedule', icon: '📅' },
-                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-                { id: 'Courses', label: 'Courses', icon: '📖' }
-              ]
-            },
-            {
-              label: 'System',
-              items: [
-                { id: 'Settings', label: 'Settings', icon: '⚙️'},
-                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-              ]
-            }
-          ]}
-        />
+        <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -749,32 +666,7 @@ const CurriculumManagement = () => {
         ))}
       </div>
       {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'Students', label: 'Students', icon: '👥' },
-              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'Schedule', label: 'Schedule', icon: '📅' },
-              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
-              { id: 'Courses', label: 'Courses', icon: '📖' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'Settings', label: 'Settings', icon: '⚙️'},
-              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
-            ]
-          }
-        ]}
-      />
+      <Sidebar userInfo={getUserInfo()}/>
 
       {/* Main Content */}
       <div className="main-content">
