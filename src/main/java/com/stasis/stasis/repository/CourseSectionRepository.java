@@ -6,17 +6,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalTime;
 import java.util.List;
 
 @Repository
 public interface CourseSectionRepository extends JpaRepository<CourseSection, Long> {
-    
-    // Find by status
-    List<CourseSection> findByStatus(String status);
-    
-    // Find by day
-    List<CourseSection> findByDay(String day);
     
     // Find by section name
     List<CourseSection> findBySectionName(String sectionName);
@@ -32,24 +25,19 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
            "JOIN FETCH cs.course c " +
            "JOIN FETCH cs.program p " +
            "JOIN FETCH cs.faculty f " +
+           "LEFT JOIN FETCH cs.schedule s " +
            "WHERE cs.faculty.facultyID = :facultyId")
     List<CourseSection> findByFaculty_FacultyID(@Param("facultyId") Long facultyId);
     
-    // Find by room
-    List<CourseSection> findByRoom(String room);
-
     // Find by program ID
     List<CourseSection> findByProgramProgramID(Long programId);
     
-    // Find sections with time conflicts
-    @Query("SELECT cs FROM CourseSection cs WHERE cs.day = :day AND cs.status = 'ACTIVE' AND " +
-           "((cs.startTime <= :endTime AND cs.endTime >= :startTime))")
-    List<CourseSection> findConflictingSections(@Param("day") String day, 
-                                               @Param("startTime") LocalTime startTime, 
-                                               @Param("endTime") LocalTime endTime);
+    // Find by schedule status
+    List<CourseSection> findByScheduleStatus(String status);
     
-    // Find sections by time range
-    @Query("SELECT cs FROM CourseSection cs WHERE cs.startTime >= :startTime AND cs.endTime <= :endTime")
-    List<CourseSection> findSectionsByTimeRange(@Param("startTime") LocalTime startTime, 
-                                               @Param("endTime") LocalTime endTime);
+    // Find by schedule day
+    List<CourseSection> findByScheduleDay(String day);
+    
+    // Find by schedule room
+    List<CourseSection> findByScheduleRoom(String room);
 }

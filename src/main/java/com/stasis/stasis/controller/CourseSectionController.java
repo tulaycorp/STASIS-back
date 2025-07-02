@@ -2,6 +2,7 @@ package com.stasis.stasis.controller;
 
 import com.stasis.stasis.model.CourseSection;
 import com.stasis.stasis.service.CourseSectionService;
+import com.stasis.stasis.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,9 @@ public class CourseSectionController {
 
     @Autowired
     private CourseSectionService courseSectionService;
+    
+    @Autowired
+    private ScheduleService scheduleService;
 
     @GetMapping
     public List<CourseSection> getAllSections() {
@@ -52,13 +56,7 @@ public class CourseSectionController {
     // New endpoints for enhanced functionality
     @GetMapping("/status/{status}")
     public ResponseEntity<List<CourseSection>> getSectionsByStatus(@PathVariable String status) {
-        List<CourseSection> sections = courseSectionService.getSectionsByStatus(status);
-        return ResponseEntity.ok(sections);
-    }
-
-    @GetMapping("/day/{day}")
-    public ResponseEntity<List<CourseSection>> getSectionsByDay(@PathVariable String day) {
-        List<CourseSection> sections = courseSectionService.getSectionsByDay(day);
+        List<CourseSection> sections = courseSectionService.getActiveSections();
         return ResponseEntity.ok(sections);
     }
 
@@ -100,23 +98,25 @@ public class CourseSectionController {
         }
     }
 
-
-
     // Validation endpoint
     @PostMapping("/validate")
     public ResponseEntity<String> validateSection(@RequestBody CourseSection section) {
         if (section.getSectionName() == null || section.getSectionName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Section name is required");
         }
-        if (section.getStartTime() == null || section.getEndTime() == null) {
-            return ResponseEntity.badRequest().body("Start time and end time are required");
+        
+        if (section.getSchedule() != null) {
+            if (section.getSchedule().getStartTime() == null || section.getSchedule().getEndTime() == null) {
+                return ResponseEntity.badRequest().body("Start time and end time are required");
+            }
+            if (section.getSchedule().getStartTime().isAfter(section.getSchedule().getEndTime())) {
+                return ResponseEntity.badRequest().body("Start time must be before end time");
+            }
+            if (section.getSchedule().getDay() == null || section.getSchedule().getDay().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Day is required");
+            }
         }
-        if (section.getStartTime().isAfter(section.getEndTime())) {
-            return ResponseEntity.badRequest().body("Start time must be before end time");
-        }
-        if (section.getDay() == null || section.getDay().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Day is required");
-        }
+        
         return ResponseEntity.ok("Section data is valid");
 
     

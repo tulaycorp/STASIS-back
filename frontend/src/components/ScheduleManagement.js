@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from './Sidebar';
 import { useAdminData } from '../hooks/useAdminData';
-import { courseSectionAPI, courseAPI, facultyAPI, programAPI, testConnection } from '../services/api';
+import { courseSectionAPI, courseAPI, facultyAPI, programAPI, testConnection, scheduleAPI } from '../services/api';
 
 const ScheduleManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -76,7 +76,7 @@ const ScheduleManagement = () => {
 
       // Load all data in parallel
       const [schedulesResponse, coursesResponse, instructorsResponse, programsResponse, sectionsResponse] = await Promise.all([
-        courseSectionAPI.getAllSections(),
+        scheduleAPI.getAllSchedules(), // Use the new scheduleAPI instead of courseSectionAPI
         courseAPI.getAllCourses(),
         facultyAPI.getAllFaculty(),
         programAPI.getAllPrograms(),
@@ -84,21 +84,29 @@ const ScheduleManagement = () => {
       ]);
 
       // Transform and set schedule data
-      const transformedSchedules = schedulesResponse.data.map(section => ({
-        id: section.sectionID,
-        courseName: section.course?.courseDescription || 'Unknown Course',
-        courseId: section.course?.courseCode || 'N/A',
-        section: section.sectionName,
-        instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
-        room: section.room || 'TBA',
-        day: section.day || 'TBA',
-        timeFrom: section.startTime || '00:00',
-        timeTo: section.endTime || '00:00',
-        status: section.status || 'ACTIVE',
-        semester: section.semester || 'Current',
-        year: section.year || new Date().getFullYear(),
-        program: section.course?.program?.programName
-      }));
+      const transformedSchedules = schedulesResponse.data.map(schedule => {
+        // Find the associated section for this schedule using course_section_id
+        const section = sectionsResponse.data.find(s => s.sectionID === schedule.courseSectionId);
+        
+        return {
+          id: schedule.scheduleID,
+          courseName: section?.course?.courseDescription || schedule.courseName || 'Unknown Course',
+          courseId: section?.course?.courseCode || schedule.courseCode || 'N/A',
+          section: section?.sectionName || schedule.sectionName || 'N/A',
+          instructor: section?.faculty ? 
+            `${section.faculty.firstName} ${section.faculty.lastName}` : 
+            schedule.instructor || 'TBA',
+          room: schedule.room || 'TBA',
+          day: schedule.day || 'TBA',
+          timeFrom: schedule.startTime || '00:00',
+          timeTo: schedule.endTime || '00:00',
+          status: schedule.status || 'ACTIVE',
+          semester: section?.semester || 'Current',
+          year: section?.year || new Date().getFullYear(),
+          program: section?.course?.program?.programName,
+          sectionID: section?.sectionID || schedule.courseSectionId
+        };
+      });
       
       setScheduleList(transformedSchedules);
       
@@ -121,7 +129,7 @@ const ScheduleManagement = () => {
       setSectionsList(sectionsResponse.data);
 
       // Load status options
-      const uniqueStatuses = [...new Set(schedulesResponse.data.map(section => section.status).filter(Boolean))];
+      const uniqueStatuses = [...new Set(schedulesResponse.data.map(schedule => schedule.status).filter(Boolean))];
       setStatusOptions(uniqueStatuses.length > 0 ? uniqueStatuses.sort() : ['ACTIVE', 'CANCELLED', 'COMPLETED', 'FULL']);
 
     } catch (err) {
@@ -149,22 +157,39 @@ const ScheduleManagement = () => {
   // Reload schedules after operations
   const reloadSchedules = async () => {
     try {
-      const response = await courseSectionAPI.getAllSections();
-      const transformedData = response.data.map(section => ({
-        id: section.sectionID,
-        courseName: section.course?.courseDescription || 'Unknown Course',
-        courseId: section.course?.courseCode || 'N/A',
-        section: section.sectionName,
-        instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
-        room: section.room || 'TBA',
-        day: section.day || 'TBA',
-        timeFrom: section.startTime || '00:00',
-        timeTo: section.endTime || '00:00',
-        status: section.status || 'ACTIVE',
-        semester: section.semester || 'Current',
-        year: section.year || new Date().getFullYear(),
-        program: section.course?.program?.programName
-      }));
+      const [schedulesResponse, sectionsResponse] = await Promise.all([
+        scheduleAPI.getAllSchedules(),
+        courseSectionAPI.getAllSections()
+      ]);
+      
+      const transformedData = schedulesResponse.data.map(schedule => {
+        // Find the associated section based on the course_section_id in the schedule
+        const section = sectionsResponse.data.find(s => s.sectionID === schedule.courseSectionId);
+        
+        // For debugging
+        console.log('Schedule data:', schedule);
+        console.log('Found section:', section);
+        
+        return {
+          id: schedule.scheduleID,
+          courseName: section?.course?.courseDescription || schedule.courseName || 'Unknown Course',
+          courseId: section?.course?.courseCode || schedule.courseCode || 'N/A',  // Notice we check schedule.courseCode directly
+          section: section?.sectionName || schedule.sectionName || 'N/A',
+          instructor: section?.faculty ? 
+            `${section.faculty.firstName} ${section.faculty.lastName}` : 
+            schedule.instructor || 'TBA',
+          room: schedule.room || 'TBA',
+          day: schedule.day || 'TBA',
+          timeFrom: schedule.startTime || '00:00',
+          timeTo: schedule.endTime || '00:00',
+          status: schedule.status || 'ACTIVE',
+          semester: section?.semester || 'Current',
+          year: section?.year || new Date().getFullYear(),
+          program: section?.course?.program?.programName,
+          sectionID: section?.sectionID || schedule.courseSectionId
+        };
+      });
+      
       setScheduleList(transformedData);
     } catch (err) {
       console.error('Error reloading schedules:', err);
@@ -198,45 +223,75 @@ const ScheduleManagement = () => {
         return;
       }
 
-      // Validate section data
-      const validationData = {
-        sectionName: scheduleForm.sectionName,
-        startTime: scheduleForm.startTime,
-        endTime: scheduleForm.endTime,
-        day: scheduleForm.day
-      };
-
-      await courseSectionAPI.validateSection(validationData);
-
       // Find course and faculty objects
       const selectedCourse = courseOptions.find(c => c.value === scheduleForm.course);
       const selectedFaculty = instructorOptions.find(f => f.value === parseInt(scheduleForm.instructor));
+      
+      // IMPORTANT: Find the existing section by name
+      const existingSection = sectionsList.find(s => s.sectionName === scheduleForm.sectionName);
+      
+      if (!existingSection) {
+        showToast('Selected section does not exist. Please select a valid section.', 'error');
+        return;
+      }
 
-      // Prepare section data for API
-      const sectionData = {
-        sectionName: scheduleForm.sectionName,
-        semester: scheduleForm.semester || 'Current',
-        year: scheduleForm.year,
+      // Log the section we're using to help debug
+      console.log('Using existing section:', existingSection);
+      
+      // First, update the section to include faculty if needed
+      if (selectedFaculty && (!existingSection.faculty || existingSection.faculty.facultyID !== selectedFaculty.value)) {
+        const sectionUpdateData = {
+          ...existingSection,
+          faculty: { facultyID: selectedFaculty.value }
+        };
+        
+        console.log('Updating section with faculty:', sectionUpdateData);
+        await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
+      }
+
+      // Create a schedule with reference to the existing section
+      const scheduleData = {
         startTime: scheduleForm.startTime,
         endTime: scheduleForm.endTime,
         day: scheduleForm.day,
         status: scheduleForm.status,
         room: scheduleForm.room,
-        course: { id: selectedCourse?.id },
-        faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
+        courseSectionId: existingSection.sectionID // Reference the existing section
       };
 
-      await courseSectionAPI.createSection(sectionData);
+      console.log('Sending schedule data with section ID:', scheduleData);
+      
+      // Create the schedule with reference to the existing section
+      const scheduleResponse = await scheduleAPI.createSchedule(scheduleData);
+      console.log('Schedule creation response:', scheduleResponse);
+      console.log('Created schedule course details:', {
+        courseCode: scheduleResponse.data.courseCode,
+        courseName: scheduleResponse.data.courseName,
+        sectionName: scheduleResponse.data.sectionName
+      });
+      
       showToast('Schedule added successfully!', 'success');
       closeAddScheduleModal();
       reloadSchedules();
     } catch (error) {
       console.error('Error adding schedule:', error);
-      if (error.response?.status === 400) {
-        showToast(error.response.data || 'Invalid schedule data provided!', 'error');
-      } else {
-        showToast('Failed to add schedule. Please try again.', 'error');
+      if (error.response?.data) {
+        console.error('Server error details:', error.response.data);
       }
+      
+      let errorMessage = 'Failed to add schedule. Please try again.';
+      
+      if (error.response) {
+        if (error.response.status === 500) {
+          errorMessage = 'Server error occurred. Please check the backend logs for details.';
+        } else if (error.response.status === 400) {
+          errorMessage = error.response.data || 'Invalid schedule data provided!';
+        } else if (error.response.status === 409) {
+          errorMessage = 'Schedule conflict: This time slot may already be booked.';
+        }
+      }
+      
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -271,27 +326,38 @@ const ScheduleManagement = () => {
       const selectedCourse = courseOptions.find(c => c.value === scheduleForm.course);
       const selectedFaculty = instructorOptions.find(f => f.value === parseInt(scheduleForm.instructor));
 
-      const sectionData = {
-        sectionID: editingSchedule.id,
-        sectionName: scheduleForm.sectionName,
-        semester: scheduleForm.semester,
-        year: scheduleForm.year,
+      // Update the schedule first
+      const scheduleData = {
         startTime: scheduleForm.startTime,
         endTime: scheduleForm.endTime,
         day: scheduleForm.day,
         status: scheduleForm.status,
-        room: scheduleForm.room,
-        course: selectedCourse ? { id: selectedCourse.id } : null,
-        faculty: selectedFaculty ? { facultyID: selectedFaculty.value } : null
+        room: scheduleForm.room
       };
 
-      await courseSectionAPI.updateSection(editingSchedule.id, sectionData);
+      console.log('Calling updateSchedule API for ID:', editingSchedule.id, 'with data:', scheduleData);
+      await scheduleAPI.updateSchedule(editingSchedule.id, scheduleData);
+      
+      // Success! No need to update the section separately - the schedule is already
+      // linked to the correct section and we've updated its details
+      
       showToast('Schedule updated successfully!', 'success');
       closeEditScheduleModal();
       reloadSchedules();
     } catch (error) {
       console.error('Error updating schedule:', error);
-      showToast('Failed to update schedule. Please try again.', 'error');
+      let errorMessage = 'Failed to update schedule. Please try again.';
+      
+      if (error.response) {
+        console.error('API error response:', error.response.data);
+        if (error.response.status === 404) {
+          errorMessage = 'The requested resource was not found.';
+        } else if (error.response.status === 400) {
+          errorMessage = error.response.data || 'Invalid data provided.';
+        }
+      }
+      
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -299,7 +365,8 @@ const ScheduleManagement = () => {
   const handleDeleteSchedule = async (scheduleId) => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
       try {
-        await courseSectionAPI.deleteSection(scheduleId);
+        // Use scheduleAPI instead of courseSectionAPI
+        await scheduleAPI.deleteSchedule(scheduleId);
         showToast('Schedule deleted successfully!', 'success');
         reloadSchedules();
       } catch (error) {
@@ -312,7 +379,8 @@ const ScheduleManagement = () => {
   // Update status
   const handleUpdateStatus = async (scheduleId, newStatus) => {
     try {
-      await courseSectionAPI.updateSectionStatus(scheduleId, newStatus);
+      // Use scheduleAPI instead of courseSectionAPI
+      await scheduleAPI.updateScheduleStatus(scheduleId, newStatus);
       showToast('Status updated successfully!', 'success');
       reloadSchedules();
     } catch (error) {
