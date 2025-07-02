@@ -74,7 +74,7 @@ function App() {
         
         <Route path="/faculty-settings" element={<FacultySettings />} />
 
-        <Route path="/enrollment" element={<Enrollment />} />
+        <Route path="/enrollment" element={<StudentEnrollment />} />
 
         {/* Add other routes for dashboards etc. later */}
         {/* Example: <Route path="/dashboard" element={<Dashboard />} /> */}
