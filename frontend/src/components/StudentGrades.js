@@ -8,6 +8,7 @@ import { enrolledCourseAPI } from '../services/api'; // Make sure this exists an
 const StudentGrades = () => {
   const { getUserInfo } = useStudentData();
   const userInfo = getUserInfo();
+  const navigate = useNavigate();
   const studentId = userInfo?.studentId;
 
   const semesters = [];
@@ -99,48 +100,10 @@ const StudentGrades = () => {
     alert("Archive functionality would be implemented here.");
   };
 
-  const navigate = useNavigate();
-  const showSection = (section) => {
-    switch(section){
-      case 'StudentDashboard': 
-        navigate('/student-dashboard'); 
-      break;
-      case 'StudentSchedule': 
-        navigate('/student-schedule'); 
-      break;
-      case 'Enrollment': 
-        navigate('/enrollment');
-      break;
-      case 'StudentCurriculum': 
-        navigate('/student-curriculum'); 
-      break;
-      case 'StudentGrades': 
-        navigate('/student-grades'); 
-      break;
-      case 'StudentSettings': 
-        navigate('/student-settings'); 
-      break;
-      default: // No action
-    }
-  };
-
   return (
     <div className={styles.dashboardContainer}>
       {/* Existing Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-            { items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }] },
-            { label: 'Management', items: [
-                { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
-                { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
-                { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
-                { id: 'StudentGrades', label: 'Grades', icon: '📈' }
-            ]},
-            { label: 'System', items: [{ id: 'StudentSettings', label: 'Settings', icon: '⚙️'}]}
-        ]}
-      />
+      <Sidebar userInfo={getUserInfo()} />
 
       <div className={styles.mainContent}>
         <div className={styles.contentWrapper}>

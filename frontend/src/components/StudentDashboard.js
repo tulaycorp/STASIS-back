@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 
 const StudentDashboard = () => {
-  const navigate = useNavigate();
   const { getStudentName, getUserInfo } = useStudentData();
   const [dashboardData, setStudentDashboardData] = useState({
     recentActivities: []
@@ -199,61 +197,12 @@ const StudentDashboard = () => {
     "Master of Business Administration"
   ];
 
-  // Navigation
-  const showSection = (section) => {
-    switch(section){
-      case 'StudentDashboard':
-        navigate('/student-dashboard');
-        break;
-      case 'StudentSchedule':
-        navigate('/student-schedule');
-        break;
-      case 'Enrollment':
-        navigate('/enrollment');
-        break;
-      case 'StudentCurriculum':
-        navigate('/student-curriculum');
-        break;
-      case 'StudentGrades':
-        navigate('/student-grades');
-        break;
-      case 'StudentSettings':
-        navigate('/student-settings');
-        break;
-      default:
-        // No action for unknown sections
-    }
-  };
-
   const calendarDays = generateCalendarDays();
 
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <Sidebar 
-        onNavigate={showSection}
-        userInfo={getUserInfo()}
-        sections={[
-          {
-            items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]
-          },
-          {
-            label: 'Management',
-            items: [
-              { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
-              { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
-              { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
-              { id: 'StudentGrades', label: 'Grades', icon: '📈' }
-            ]
-          },
-          {
-            label: 'System',
-            items: [
-              { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
-            ]
-          }
-        ]}
-      />
+      <Sidebar userInfo={getUserInfo()} />
 
       {/* Main Content */}
       <div className="main-content">

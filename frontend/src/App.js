@@ -21,7 +21,7 @@ import FacultyDashboard from './components/FacultyDashboard';
 import FacultySchedule from './components/FacultySchedule';
 import FacultyGrades from './components/FacultyGrades';
 import FacultySettings from './components/FacultySettings';
-import Enrollment from './components/Enrollment';
+import StudentEnrollment from './components/StudentEnrollment';
 import './index.css'; // Global styles
 
 function App() {
