@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from '../Sidebar';
-// Change these imports to use absolute paths
-import { useAdminData } from '../../hooks/useAdminData'; 
+import { useAdminData } from '../../hooks/useAdminData';
 import { courseSectionAPI, courseAPI, facultyAPI, programAPI, testConnection, scheduleAPI } from '../../services/api';
 
 const ScheduleManagement = () => {
@@ -268,7 +267,20 @@ const ScheduleManagement = () => {
         return;
       }
 
-      // Update the section to include selected course and faculty if they have changed
+      // First create the schedule
+      const scheduleData = {
+        startTime: scheduleForm.startTime,
+        endTime: scheduleForm.endTime,
+        day: scheduleForm.day,
+        status: scheduleForm.status,
+        room: scheduleForm.room
+      };
+
+      // Create the schedule and associate it with the section
+      const scheduleResponse = await scheduleAPI.createSchedule(scheduleData, existingSection.sectionID);
+      console.log('Schedule creation response:', scheduleResponse);
+      
+      // Now separately update the section with course/faculty if needed
       let sectionNeedsUpdate = false;
       const sectionUpdateData = { ...existingSection };
 
@@ -283,25 +295,10 @@ const ScheduleManagement = () => {
       }
 
       if (sectionNeedsUpdate) {
+        // Important: Don't modify the schedules when updating other section properties
         console.log('Updating section with course/faculty:', sectionUpdateData);
         await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
       }
-
-      // Create a schedule with reference to the existing section - no checks preventing multiple schedules
-      const scheduleData = {
-        startTime: scheduleForm.startTime,
-        endTime: scheduleForm.endTime,
-        day: scheduleForm.day,
-        status: scheduleForm.status,
-        room: scheduleForm.room,
-        courseSectionId: existingSection.sectionID
-      };
-
-      console.log('Sending schedule data with section ID:', scheduleData);
-      
-      // Create the schedule
-      const scheduleResponse = await scheduleAPI.createSchedule(scheduleData, existingSection.sectionID);
-      console.log('Schedule creation response:', scheduleResponse);
       
       showToast('Schedule added successfully!', 'success');
       closeAddScheduleModal();
