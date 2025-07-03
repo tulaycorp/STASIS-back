@@ -684,7 +684,7 @@ const CurriculumManagement = () => {
           </div>
 
           {/* Header */}
-          <div className="header">
+          <div className="headerr">
             <div>
               <h1 className="page-title">Curriculum Management</h1>
             </div>
