@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './FacultyGrades.module.css';
-import Sidebar from './FacultySidebar';
-import { useFacultyData } from '../hooks/useFacultyData';
+import Sidebar from '../FacultySidebar';
+import { useFacultyData } from '../../hooks/useFacultyData';
 import { 
   courseSectionAPI, 
   enrolledCourseAPI
-} from '../services/api';
+} from '../../services/api';
 
 const FacultyGrades = () => {
   const { getUserInfo, facultyData } = useFacultyData();
@@ -26,6 +26,9 @@ const FacultyGrades = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saveLoading, setSaveLoading] = useState({});
+
+  // Toast state
+  const [toast, setToast] = useState(null);
 
   // Add loading state management to prevent duplicate calls
   const [isInitializing, setIsInitializing] = useState(false);
@@ -333,6 +336,11 @@ const FacultyGrades = () => {
     }
   };
 
+  // Add this helper function near the top, after your useState hooks
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleProgramSelect = (programName) => {
     setSelectedProgram(programName);
@@ -449,10 +457,10 @@ const FacultyGrades = () => {
       setStudentsGrades({});
       
       console.log('=== ENCODING COMPLETE ===');
-      alert('All grades have been successfully encoded!');
+      showToast('All grades have been successfully encoded!', 'success');
     } catch (err) {
       console.error('Error encoding grades:', err);
-      alert('Failed to encode some grades. Please try again.');
+      showToast('Failed to encode some grades. Please try again.', 'error');
     } finally {
       setSaveLoading(prev => ({
         ...prev,

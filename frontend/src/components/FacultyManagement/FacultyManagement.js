@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultyManagement.css';
-import Sidebar from './Sidebar';
-import { useAdminData } from '../hooks/useAdminData';
-import { facultyAPI, programAPI } from '../services/api';
+import Sidebar from '../Sidebar';
+import { useAdminData } from '../../hooks/useAdminData';
+import { facultyAPI, programAPI } from '../../services/api';
 
 const FacultyManagement = () => {
   const { getUserInfo } = useAdminData();

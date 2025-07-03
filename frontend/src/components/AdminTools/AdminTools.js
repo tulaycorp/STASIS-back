@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './AdminTools.css';
-import Sidebar from './Sidebar';
-import { useAdminData } from '../hooks/useAdminData';
-import { userAPI } from '../services/api';
+import Sidebar from '../Sidebar';
+import { useAdminData } from '../../hooks/useAdminData';
+import { userAPI } from '../../services/api';
 
 const AdminTools = () => {
   const { getUserInfo } = useAdminData();

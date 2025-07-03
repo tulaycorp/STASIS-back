@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultyDashboard.module.css';
-import Sidebar from './FacultySidebar';
-import { useFacultyData } from '../hooks/useFacultyData';
-import { courseSectionAPI } from '../services/api'; 
+import Sidebar from '../FacultySidebar';
+import { useFacultyData } from '../../hooks/useFacultyData';
+import { courseSectionAPI } from '../../services/api'; 
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();

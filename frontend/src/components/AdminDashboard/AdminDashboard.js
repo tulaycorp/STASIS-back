@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminDashboard.css';
-import Sidebar from './Sidebar';
-import { useAdminData } from '../hooks/useAdminData';
+import Sidebar from '../Sidebar';
+import { useAdminData } from '../../hooks/useAdminData';
 import { 
   facultyAPI, 
   programAPI, 
@@ -11,7 +11,7 @@ import {
   courseSectionAPI, 
   courseAPI,
   scheduleAPI 
-} from '../services/api';
+} from '../../services/api';
 
 const AdminDashboard = () => {
   const { getAdminName, getUserInfo } = useAdminData();
