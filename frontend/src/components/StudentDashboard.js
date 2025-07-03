@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './AdminDashboard.css';
+import './StudentDashboard.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 
