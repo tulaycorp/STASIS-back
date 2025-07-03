@@ -16,7 +16,6 @@ import StudentDashboard from './components/StudentDashboard';
 import StudentSchedule from './components/StudentSchedule';
 import StudentSettings from './components/StudentSettings';
 import StudentGrades from './components/StudentGrades';
-import StudentCurriculum from './components/StudentCurriculum';
 import FacultyDashboard from './components/FacultyDashboard/FacultyDashboard';
 import FacultySchedule from './components/FacultySchedule/FacultySchedule';
 import FacultyGrades from './components/FacultyGrades/FacultyGrades';
@@ -62,8 +61,6 @@ function App() {
         <Route path="/student-settings" element={<StudentSettings />} />
 
         <Route path="/student-grades" element={<StudentGrades />} />
-
-        <Route path="/student-curriculum" element={<StudentCurriculum />} />
 
         <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
 

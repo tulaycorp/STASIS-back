@@ -19,8 +19,6 @@ const getActivePageFromURL = () => {
   } else if (path === '/student-settings') {
     return 'StudentSettings';
   }
-  
-  // Return empty string if no match so nothing is highlighted
   return '';
 };
 
@@ -38,9 +36,6 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
         break;
       case 'Enrollment':
         navigate('/enrollment');
-        break;
-      case 'StudentCurriculum':
-        navigate('/student-curriculum');
         break;
       case 'StudentGrades':
         navigate('/student-grades');
@@ -90,22 +85,16 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
               📅 Schedule
             </div>
             <div
-              className={`nav-item${activePage === 'Enrollment' ? ' active-page' : ''}`}
-              onClick={() => showSection('Enrollment')}
-            >
-              📝 Enrollment
-            </div>
-            <div
               className={`nav-item${activePage === 'StudentGrades' ? ' active-page' : ''}`}
               onClick={() => showSection('StudentGrades')}
             >
               📈 Grades
             </div>
             <div
-              className={`nav-item${activePage === 'StudentCurriculum' ? ' active-page' : ''}`}
-              onClick={() => showSection('StudentCurriculum')}
+              className={`nav-item${activePage === 'Enrollment' ? ' active-page' : ''}`}
+              onClick={() => showSection('Enrollment')}
             >
-              📚 Curriculum
+              📝 Enrollment
             </div>
           </div>
         </div>
