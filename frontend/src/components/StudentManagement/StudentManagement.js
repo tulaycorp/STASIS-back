@@ -557,6 +557,34 @@ const StudentManagement = () => {
     }
   };
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Adjust as needed
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    setCurrentPage(page);
+  };
+
+  const previousPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const nextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  // Reset to first page when search/program/section changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedProgram, selectedSection]);
+
   // Show loading state
   if (loading) {
     return (
@@ -772,7 +800,7 @@ const StudentManagement = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredStudents.map((student) => (
+                      {paginatedStudents.map((student) => (
                         <tr key={student.id}>
                           <td className="student-id">{student.username || 'N/A'}</td>
                           <td className="student-name">
@@ -814,6 +842,35 @@ const StudentManagement = () => {
                   {filteredStudents.length === 0 && (
                     <div className="no-students">
                       <p>No students found matching your criteria.</p>
+                    </div>
+                  )}
+
+                  {/* Pagination Controls - only show if there is data */}
+                  {filteredStudents.length > 0 && (
+                    <div className="pagination">
+                      <div className="pagination-info">
+                        Showing {startIndex + 1} to {Math.min(endIndex, filteredStudents.length)} of {filteredStudents.length} entries
+                      </div>
+                      <div className="pagination-controls">
+                        <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
+                          Previous
+                        </button>
+                        {[...Array(Math.min(3, totalPages))].map((_, index) => {
+                          const pageNum = index + 1;
+                          return (
+                            <button
+                              key={pageNum}
+                              className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                              onClick={() => goToPage(pageNum)}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                        <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
+                          Next
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

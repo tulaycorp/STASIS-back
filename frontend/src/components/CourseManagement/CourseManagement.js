@@ -78,6 +78,32 @@ const CourseManagement = () => {
     return matchesSearch && matchesProgram;
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // You can adjust this as needed
+
+  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    setCurrentPage(page);
+  };
+
+  const previousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   // Load courses from API on component mount
   useEffect(() => {
     testConnectionAndLoadCourses();
@@ -458,7 +484,7 @@ const CourseManagement = () => {
           <span className="breadcrumb-current">Course Management</span>
         </div>
         
-        <div className="dashboard-header">
+        <div className="course-header">
           <h1 className="dashboard-welcome-title">Course Management</h1>
           {selectedProgram && (
             <div className="program-indicator">{selectedProgram}</div>
@@ -534,7 +560,7 @@ const CourseManagement = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCourses.map((course) => (
+                    {paginatedCourses.map((course) => (
                       <tr key={course.id}>
                         <td className="course-code">{course.courseCode}</td>
                         <td className="course-description">{course.courseDescription}</td>
@@ -560,13 +586,64 @@ const CourseManagement = () => {
                     ))}
                   </tbody>
                 </table>
-                
+
+                {filteredCourses.length > 0 && (
+                  <div className="pagination">
+                    <div className="pagination-info">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredCourses.length)} of {filteredCourses.length} entries
+                    </div>
+                    <div className="pagination-controls">
+                      <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
+                        Previous
+                      </button>
+                      {[...Array(Math.min(3, totalPages))].map((_, index) => {
+                        const pageNum = index + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                            onClick={() => goToPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {filteredCourses.length === 0 && (
                   <div className="no-courses">
                     <p>No courses found matching your criteria.</p>
                   </div>
                 )}
               </div>
+
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="pagination-controls">
+                  <button 
+                    className="pagination-button" 
+                    onClick={previousPage}
+                    disabled={currentPage === 1}
+                  >
+                    &laquo; Previous
+                  </button>
+                  <span className="pagination-info">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button 
+                    className="pagination-button" 
+                    onClick={nextPage}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next &raquo;
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

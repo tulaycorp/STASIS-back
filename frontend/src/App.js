@@ -5,11 +5,11 @@ import LoginPage from './components/LoginPage';
 import StudentLoginForm from './components/StudentLoginForm';
 import FacultyLoginForm from './components/FacultyLoginForm';
 import AdminDashboard from './components/AdminDashboard/AdminDashboard';
-import CurriculumManagement from './components/CurriculumManagement';
+import CurriculumManagement from './components/CurriculumManagement/CurriculumManagement';
 import StudentManagement from './components/StudentManagement/StudentManagement';
 import FacultyManagement from './components/FacultyManagement/FacultyManagement';
 import CourseManagement from './components/CourseManagement/CourseManagement';
-import ScheduleManagement from './components/ScheduleManagement';
+import ScheduleManagement from './components/ScheduleManagement/ScheduleManagement';
 import Settings from './components/Settings';
 import AdminTools from './components/AdminTools/AdminTools';
 import StudentDashboard from './components/StudentDashboard';
@@ -18,9 +18,9 @@ import StudentSettings from './components/StudentSettings';
 import StudentGrades from './components/StudentGrades';
 import StudentCurriculum from './components/StudentCurriculum';
 import FacultyDashboard from './components/FacultyDashboard/FacultyDashboard';
-import FacultySchedule from './components/FacultySchedule';
+import FacultySchedule from './components/FacultySchedule/FacultySchedule';
 import FacultyGrades from './components/FacultyGrades/FacultyGrades';
-import FacultySettings from './components/FacultySettings';
+import FacultySettings from './components/FacultySettings/FacultySettings';
 import StudentEnrollment from './components/StudentEnrollment';
 import './index.css'; // Global styles
 

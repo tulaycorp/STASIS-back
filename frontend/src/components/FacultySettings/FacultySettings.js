@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './FacultySettings.module.css';
-import Sidebar from './FacultySidebar';
-import { useFacultyData } from '../hooks/useFacultyData';
+import Sidebar from '../FacultySidebar';
+import { useFacultyData } from '../../hooks/useFacultyData';
 
 const FacultySettings = () => {
   const { facultyData, setFacultyInfo, getUserInfo } = useFacultyData();

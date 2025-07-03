@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './FacultySchedule.module.css';
-import Sidebar from './FacultySidebar';
-import { useFacultyData } from '../hooks/useFacultyData';
-import { courseSectionAPI, testConnection } from '../services/api';
+import Sidebar from '../FacultySidebar';
+import { useFacultyData } from '../../hooks/useFacultyData';
+import { courseSectionAPI, testConnection } from '../../services/api';
 
 const FacultySchedule = () => {
   const { getUserInfo, facultyData } = useFacultyData();

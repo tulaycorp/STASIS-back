@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CurriculumManagement.css';
-import Sidebar from './Sidebar';
-import { useAdminData } from '../hooks/useAdminData';
-import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnection } from '../services/api';
+import Sidebar from '../Sidebar';
+import { useAdminData } from '../../hooks/useAdminData';
+import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnection } from '../../services/api';
 
 const CurriculumManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -886,31 +886,34 @@ const CurriculumManagement = () => {
                     </div>
                   )}
 
-                  <div className="pagination">
-                    <div className="pagination-info">
-                      Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
+                  {/* Pagination only if there is data */}
+                  {filteredData.length > 0 && (
+                    <div className="pagination">
+                      <div className="pagination-info">
+                        Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} entries
+                      </div>
+                      <div className="pagination-controls">
+                        <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
+                          Previous
+                        </button>
+                        {[...Array(Math.min(3, totalPages))].map((_, index) => {
+                          const pageNum = index + 1;
+                          return (
+                            <button
+                              key={pageNum}
+                              className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                              onClick={() => goToPage(pageNum)}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                        <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
+                          Next
+                        </button>
+                      </div>
                     </div>
-                    <div className="pagination-controls">
-                      <button className="page-btn" onClick={previousPage} disabled={currentPage === 1}>
-                        Previous
-                      </button>
-                      {[...Array(Math.min(3, totalPages))].map((_, index) => {
-                        const pageNum = index + 1;
-                        return (
-                          <button
-                            key={pageNum}
-                            className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
-                            onClick={() => goToPage(pageNum)}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                      <button className="page-btn" onClick={nextPage} disabled={currentPage === totalPages}>
-                        Next
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
