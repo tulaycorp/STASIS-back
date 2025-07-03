@@ -98,11 +98,11 @@ const Sidebar = ({ userInfo }) => {
         <div className="nav-section">
           <div className="nav-label">Management</div>
           <div className="nav-items">
-            <div
-              className={`nav-item${activePage === 'Students' ? ' active-page' : ''}`}
-              onClick={() => handleNavigate('Students')}
+             <div
+              className={`nav-item${activePage === 'Courses' ? ' active-page' : ''}`}
+              onClick={() => handleNavigate('Courses')}
             >
-              👥 Students
+              📖 Courses
             </div>
             <div
               className={`nav-item${activePage === 'Curriculum' ? ' active-page' : ''}`}
@@ -111,22 +111,22 @@ const Sidebar = ({ userInfo }) => {
               📚 Curriculum
             </div>
             <div
-              className={`nav-item${activePage === 'Schedule' ? ' active-page' : ''}`}
-              onClick={() => handleNavigate('Schedule')}
-            >
-              📅 Schedule
-            </div>
-            <div
               className={`nav-item${activePage === 'Faculty' ? ' active-page' : ''}`}
               onClick={() => handleNavigate('Faculty')}
             >
               👨‍🏫 Faculty
             </div>
             <div
-              className={`nav-item${activePage === 'Courses' ? ' active-page' : ''}`}
-              onClick={() => handleNavigate('Courses')}
+              className={`nav-item${activePage === 'Students' ? ' active-page' : ''}`}
+              onClick={() => handleNavigate('Students')}
             >
-              📖 Courses
+              👥 Students
+            </div>
+            <div
+              className={`nav-item${activePage === 'Schedule' ? ' active-page' : ''}`}
+              onClick={() => handleNavigate('Schedule')}
+            >
+              📅 Schedule
             </div>
           </div>
         </div>
