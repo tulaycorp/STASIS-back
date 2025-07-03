@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ScheduleManagement.css';
 import Sidebar from '../Sidebar';
-import { useAdminData } from '../../hooks/useAdminData';
+// Change these imports to use absolute paths
+import { useAdminData } from '../../hooks/useAdminData'; 
 import { courseSectionAPI, courseAPI, facultyAPI, programAPI, testConnection, scheduleAPI } from '../../services/api';
 
 const ScheduleManagement = () => {
   const { getUserInfo } = useAdminData();
-  const navigate = useNavigate();
   // State management
   const [scheduleList, setScheduleList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,10 +83,32 @@ const ScheduleManagement = () => {
         courseSectionAPI.getAllSections()
       ]);
 
-      // Build schedules list from sections (each section owns one schedule)
+      // Build schedules list - modified to support multiple schedules per section
       const transformedSchedules = [];
       sectionsResponse.data.forEach(section => {
-        if (section.schedule) {
+        // Handle case where section has multiple schedules (array)
+        if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+          section.schedules.forEach(schedule => {
+            transformedSchedules.push({
+              id: schedule.scheduleID,
+              courseName: section.course?.courseDescription || 'Unknown Course',
+              courseId: section.course?.courseCode || 'N/A',
+              section: section.sectionName || 'N/A',
+              instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
+              room: schedule.room || 'TBA',
+              day: schedule.day || 'TBA',
+              timeFrom: schedule.startTime || '00:00',
+              timeTo: schedule.endTime || '00:00',
+              status: schedule.status || 'ACTIVE',
+              semester: section.semester || 'Current',
+              year: section.year || new Date().getFullYear(),
+              program: section.program?.programName || 'N/A',
+              sectionID: section.sectionID
+            });
+          });
+        } 
+        // Backward compatibility - handle case where section has a single schedule object
+        else if (section.schedule) {
           transformedSchedules.push({
             id: section.schedule.scheduleID,
             courseName: section.course?.courseDescription || 'Unknown Course',
@@ -159,7 +181,29 @@ const ScheduleManagement = () => {
 
       const transformedData = [];
       sectionsResponse.data.forEach(section => {
-        if (section.schedule) {
+        // Handle multiple schedules per section
+        if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+          section.schedules.forEach(schedule => {
+            transformedData.push({
+              id: schedule.scheduleID,
+              courseName: section.course?.courseDescription || 'Unknown Course',
+              courseId: section.course?.courseCode || 'N/A',
+              section: section.sectionName || 'N/A',
+              instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
+              room: schedule.room || 'TBA',
+              day: schedule.day || 'TBA',
+              timeFrom: schedule.startTime || '00:00',
+              timeTo: schedule.endTime || '00:00',
+              status: schedule.status || 'ACTIVE',
+              semester: section.semester || 'Current',
+              year: section.year || new Date().getFullYear(),
+              program: section.program?.programName || 'N/A',
+              sectionID: section.sectionID
+            });
+          });
+        } 
+        // Handle legacy single schedule format
+        else if (section.schedule) {
           transformedData.push({
             id: section.schedule.scheduleID,
             courseName: section.course?.courseDescription || 'Unknown Course',
@@ -216,7 +260,7 @@ const ScheduleManagement = () => {
       const selectedCourse = courseOptions.find(c => c.value === scheduleForm.course);
       const selectedFaculty = instructorOptions.find(f => f.value === parseInt(scheduleForm.instructor));
       
-      // IMPORTANT: Find the existing section by name
+      // Find the existing section by name
       const existingSection = sectionsList.find(s => s.sectionName === scheduleForm.sectionName);
       
       if (!existingSection) {
@@ -224,9 +268,6 @@ const ScheduleManagement = () => {
         return;
       }
 
-      // Log the section we're using to help debug
-      console.log('Using existing section:', existingSection);
-      
       // Update the section to include selected course and faculty if they have changed
       let sectionNeedsUpdate = false;
       const sectionUpdateData = { ...existingSection };
@@ -246,26 +287,21 @@ const ScheduleManagement = () => {
         await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
       }
 
-      // Create a schedule with reference to the existing section
+      // Create a schedule with reference to the existing section - no checks preventing multiple schedules
       const scheduleData = {
         startTime: scheduleForm.startTime,
         endTime: scheduleForm.endTime,
         day: scheduleForm.day,
         status: scheduleForm.status,
         room: scheduleForm.room,
-        courseSectionId: existingSection.sectionID // Reference the existing section
+        courseSectionId: existingSection.sectionID
       };
 
       console.log('Sending schedule data with section ID:', scheduleData);
       
-      // Create the schedule with reference to the existing section
+      // Create the schedule
       const scheduleResponse = await scheduleAPI.createSchedule(scheduleData, existingSection.sectionID);
       console.log('Schedule creation response:', scheduleResponse);
-      console.log('Created schedule course details:', {
-        courseCode: scheduleResponse.data.courseCode,
-        courseName: scheduleResponse.data.courseName,
-        sectionName: scheduleResponse.data.sectionName
-      });
       
       showToast('Schedule added successfully!', 'success');
       closeAddScheduleModal();
@@ -520,41 +556,72 @@ const ScheduleManagement = () => {
     return matchesSearch && matchesFilter && matchesSection;
   });
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Adjust as needed
+  // Calculate dynamic statistics
+  const totalSchedules = scheduleList.length;
+  const activeSchedules = scheduleList.filter(s => s.status === 'ACTIVE').length;
+  const completedSchedules = scheduleList.filter(s => s.status === 'COMPLETED').length;
+  const cancelledSchedules = scheduleList.filter(s => s.status === 'CANCELLED').length;
 
-  const totalPages = Math.ceil(filteredSchedules.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedSchedules = filteredSchedules.slice(startIndex, endIndex);
-
-  const goToPage = (page) => {
-    setCurrentPage(page);
-  };
-
-  const previousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  // Navigation
+  const navigate = useNavigate();
+  const showSection = (section) => {
+    switch(section){
+      case 'Dashboard':
+        navigate('/admin-dashboard');
+        break;
+      case 'Students':
+        navigate('/student-management');
+        break;
+      case 'Faculty':
+        navigate('/faculty-management');
+        break;
+      case 'Curriculum':
+        navigate('/curriculum-management');
+        break;
+      case 'Courses':        
+        navigate('/course-management');
+        break;
+      case 'Settings':
+        navigate('/settings');
+        break;
+      case 'AdminTools':
+        navigate('/admin-tools');
+        break;
+      default:
+        // No action for unknown sections
     }
   };
-
-  const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  // Reset to page 1 when filters/search change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filter, selectedSection]);
 
   // Loading state
   if (loading) {
     return (
       <div className="dashboard-container">
-        <Sidebar userInfo={getUserInfo()} />
+        <Sidebar 
+          onNavigate={showSection}
+          userInfo={getUserInfo()}
+          sections={[
+            {
+              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️'},
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+              ]
+            }
+          ]}
+        />
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -570,7 +637,32 @@ const ScheduleManagement = () => {
   if (error) {
     return (
       <div className="dashboard-container">
-        <Sidebar userInfo={getUserInfo()} />
+        <Sidebar 
+          onNavigate={showSection}
+          userInfo={getUserInfo()}
+          sections={[
+            {
+              items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'Students', label: 'Students', icon: '👥' },
+                { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'Schedule', label: 'Schedule', icon: '📅' },
+                { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+                { id: 'Courses', label: 'Courses', icon: '📖' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'Settings', label: 'Settings', icon: '⚙️'},
+                { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+              ]
+            }
+          ]}
+        />
         <div className="main-content">
           <div className="content-wrapper">
             <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -598,7 +690,33 @@ const ScheduleManagement = () => {
           </div>
         ))}
       </div>
-      <Sidebar userInfo={getUserInfo()} />
+      <Sidebar 
+        onNavigate={showSection}
+        userInfo={getUserInfo()}
+        sections={[
+          {
+            items: [{ id: 'Dashboard', label: 'Dashboard', icon: '📊' }]
+          },
+          {
+            label: 'Management',
+            items: [
+              { id: 'Students', label: 'Students', icon: '👥' },
+              { id: 'Curriculum', label: 'Curriculum', icon: '📚' },
+              { id: 'Schedule', label: 'Schedule', icon: '📅' },
+              { id: 'Faculty', label: 'Faculty', icon: '👨‍🏫' },
+              { id: 'Courses', label: 'Courses', icon: '📖' }
+            ]
+          },
+          {
+            label: 'System',
+            items: [
+              { id: 'Settings', label: 'Settings', icon: '⚙️'},
+              { id: 'AdminTools', label: 'Admin Tools', icon: '🔧'}
+            ]
+          }
+        ]}
+      />
+
       <div className="main-content">
         <div className="content-wrapper">
           <div className="breadcrumb">
@@ -625,28 +743,28 @@ const ScheduleManagement = () => {
               <div className="stat-icon blue">📅</div>
               <div className="stat-content">
                 <h3>Total Schedules</h3>
-                <div className="stat-value">{scheduleList.length}</div>
+                <div className="stat-value">{totalSchedules}</div>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon purple">✅</div>
               <div className="stat-content">
                 <h3>Active</h3>
-                <div className="stat-value">{scheduleList.filter(s => s.status === 'ACTIVE').length}</div>
+                <div className="stat-value">{activeSchedules}</div>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon green">✔️</div>
               <div className="stat-content">
                 <h3>Completed</h3>
-                <div className="stat-value">{scheduleList.filter(s => s.status === 'COMPLETED').length}</div>
+                <div className="stat-value">{completedSchedules}</div>
               </div>
             </div>
             <div className="stat-card">
               <div className="stat-icon red">❌</div>
               <div className="stat-content">
                 <h3>Cancelled</h3>
-                <div className="stat-value">{scheduleList.filter(s => s.status === 'CANCELLED').length}</div>
+                <div className="stat-value">{cancelledSchedules}</div>
               </div>
             </div>
           </div>
@@ -716,7 +834,7 @@ const ScheduleManagement = () => {
                   {selectedSection !== 'All Sections' && ` - ${selectedSection}`}
                 </h2>
                 <p className="student-section-desc">
-                  {scheduleList.length} schedule{scheduleList.length !== 1 ? 's' : ''} found
+                  {filteredSchedules.length} schedule{filteredSchedules.length !== 1 ? 's' : ''} found
                 </p>
               </div>
 
@@ -759,8 +877,8 @@ const ScheduleManagement = () => {
                 </div>
 
                 {/* Schedule Table */}
-                <div className="schedule-table-container">
-                  <table className="schedule-table">
+                <div className="student-table-container">
+                  <table className="student-table">
                     <thead>
                       <tr>
                         <th>Course ID</th>
@@ -774,107 +892,58 @@ const ScheduleManagement = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedSchedules.length > 0 ? (
-                        paginatedSchedules.map((schedule) => (
-                          <tr key={schedule.id}>
-                            <td className="course-id">{schedule.courseId || 'N/A'}</td>
-                            <td className="course-name">{schedule.courseName || schedule.course || 'N/A'}</td>
-                            <td className="section">{schedule.section}</td>
-                            <td className="instructor">{schedule.instructor}</td>
-                            <td className="room">{schedule.room}</td>
-                            <td className="day-time">
-                              <div className="schedule-name">{schedule.day}</div>
-                              <div className="schedule-email">{schedule.timeFrom} - {schedule.timeTo}</div>
-                            </td>
-                            <td className="status">
-                              <span className={`status-badge status-${schedule.status.toLowerCase()}`}>
-                                {schedule.status}
-                              </span>
-                            </td>
-                            <td className="actions">
-                              <div className="action-buttons">
-                                <button
-                                  className="btn-action btn-edit"
-                                  onClick={() => showEditScheduleForm(schedule)}
-                                  title="Edit Schedule"
-                                >
-                                </button>
-                                <button
-                                  className="btn-action btn-delete"
-                                  onClick={() => handleDeleteSchedule(schedule.id)}
-                                  title="Delete Schedule"
-                                >
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+                      {filteredSchedules.length > 0 ? (
+                        filteredSchedules.map((schedule, index, scheduleArray) => {
+                          // Check if this is a duplicate section from the previous row
+                          const isDuplicateSection = index > 0 && schedule.section === scheduleArray[index-1].section;
+                          
+                          return (
+                            <tr key={schedule.id} className={isDuplicateSection ? 'duplicate-section-row' : ''}>
+                              <td className="course-id">{schedule.courseId || 'N/A'}</td>
+                              <td className="course-name">{schedule.courseName || schedule.course || 'N/A'}</td>
+                              <td className="section">
+                                {schedule.section}
+                                {isDuplicateSection && <span className="badge multiple-badge" title="Multiple schedules for this section">+</span>}
+                              </td>
+                              <td className="instructor">{schedule.instructor}</td>
+                              <td className="room">{schedule.room}</td>
+                              <td className="day-time">
+                                <div className="student-name">{schedule.day}</div>
+                                <div className="student-email">{schedule.timeFrom} - {schedule.timeTo}</div>
+                              </td>
+                              <td className="status">
+                                <span className={`status-badge status-${schedule.status.toLowerCase()}`}>
+                                  {schedule.status}
+                                </span>
+                              </td>
+                              <td className="actions">
+                                <div className="action-buttons">
+                                  <button
+                                    className="btn-action btn-edit"
+                                    onClick={() => showEditScheduleForm(schedule)}
+                                    title="Edit Schedule"
+                                  >
+                                  </button>
+                                  <button
+                                    className="btn-action btn-delete"
+                                    onClick={() => handleDeleteSchedule(schedule.id)}
+                                    title="Delete Schedule"
+                                  >
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
-                          <td colSpan="8" className="no-schedule">
+                          <td colSpan="8" className="no-students">
                             No schedules found matching the current filters.
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
-
-                  {/* Pagination Controls - only show if there is data */}
-                  {filteredSchedules.length > 0 && (
-                    <div className="pagination">
-                      <div className="pagination-info">
-                        Showing {startIndex + 1} to {Math.min(endIndex, filteredSchedules.length)} of {filteredSchedules.length} entries
-                      </div>
-                      <div className="pagination-controls">
-                        <button
-                          className="page-btn"
-                          onClick={previousPage}
-                          disabled={currentPage === 1}
-                        >
-                          &laquo; Previous
-                        </button>
-                        {[...Array(totalPages)].map((_, index) => {
-                          const pageNum = index + 1;
-                          // Only show up to 3 page buttons, centered around currentPage if possible
-                          if (
-                            totalPages <= 3 ||
-                            (pageNum === 1) ||
-                            (pageNum === totalPages) ||
-                            (Math.abs(pageNum - currentPage) <= 1)
-                          ) {
-                            return (
-                              <button
-                                key={pageNum}
-                                className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
-                                onClick={() => goToPage(pageNum)}
-                              >
-                                {pageNum}
-                              </button>
-                            );
-                          }
-                          // Show ellipsis for skipped pages
-                          if (
-                            (pageNum === currentPage - 2 && currentPage > 3) ||
-                            (pageNum === currentPage + 2 && currentPage < totalPages - 2)
-                          ) {
-                            return (
-                              <span key={`ellipsis-${pageNum}`} className="page-btn" style={{ pointerEvents: 'none' }}>
-                                ...
-                              </span>
-                            );
-                          }
-                          return null;
-                        })}
-                        <button
-                          className="page-btn"
-                          onClick={nextPage}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next &raquo;
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
