@@ -11,7 +11,16 @@ import {
   studentAPI 
 } from '../services/api';
 
-const Enrollment = () => {
+function StudentEnrollment(props) {
+  const [toast, setToast] = useState(null);
+
+  // Call this function to show a toast
+  const showToast = (message, type = "") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4500); // Hide after 4.5s
+  };
+
+
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -267,10 +276,10 @@ const Enrollment = () => {
       
       setShowEnrollModal(false);
       setSelectedSection(null);
-      alert('Successfully enrolled in the course!');
+      showToast('Successfully enrolled in the course!', 'success');
     } catch (error) {
       console.error('Enrollment error:', error);
-      alert('Failed to enroll in course. Please try again.');
+      showToast('Failed to enroll in course. Please try again.', 'error'); 
     } finally {
       setEnrollmentLoading(false);
     }
@@ -306,10 +315,10 @@ const Enrollment = () => {
       setSelectedCourses({});
       setSelectedSections({});
 
-      alert(`Successfully enrolled in ${selectedCount} course(s)!`);
+      showToast(`Successfully enrolled in ${selectedCount} course(s)!`, 'success'); // replaced alert
     } catch (error) {
       console.error('Bulk enrollment error:', error);
-      alert('Failed to enroll in some courses. Please try again.');
+      showToast('Failed to enroll in some courses. Please try again.', 'error'); // replaced alert
     } finally {
       setEnrollmentLoading(false);
     }
@@ -324,11 +333,10 @@ const Enrollment = () => {
       
       // Remove from enrollments
       setMyEnrollments(prev => prev.filter(e => e.enrolledCourseID !== enrollmentId));
-      
-      alert('Course dropped successfully!');
+      showToast('Course dropped successfully!', 'success');
     } catch (error) {
       console.error('Drop error:', error);
-      alert('Failed to drop course. Please try again.');
+      showToast('Failed to drop course. Please try again.', 'error');
     }
   };
 
@@ -640,7 +648,7 @@ const Enrollment = () => {
                               <div className="time-period">
                                 {formatTime(enrollment.section?.schedule?.startTime)} - {formatTime(enrollment.section?.schedule?.endTime)}
                               </div>
-                              <div className="day-info">{enrollment.section?.schedule?.day || 'TBA'} • {enrollment.section?.schedule?.room || 'TBA'}</div>
+                              <div className="day-info">{enrollment.section?.schedule?.day || 'TBA'}</div>
                             </div>
                           </td>
                           <td className="font-semibold">{enrollment.section?.course?.credits || 0}</td>
@@ -718,8 +726,17 @@ const Enrollment = () => {
           </div>
         </div>
       )}
+
+      {/* Toast Container */}
+      <div id="toast-container">
+        {toast && (
+          <div className={`toast${toast.type ? " " + toast.type : ""}`}>
+            {toast.message}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export default Enrollment;
+export default StudentEnrollment;
