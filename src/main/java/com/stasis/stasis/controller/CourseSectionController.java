@@ -1,6 +1,7 @@
 package com.stasis.stasis.controller;
 
 import com.stasis.stasis.model.CourseSection;
+import com.stasis.stasis.model.Schedule;
 import com.stasis.stasis.service.CourseSectionService;
 import com.stasis.stasis.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,20 +106,51 @@ public class CourseSectionController {
             return ResponseEntity.badRequest().body("Section name is required");
         }
         
-        if (section.getSchedule() != null) {
-            if (section.getSchedule().getStartTime() == null || section.getSchedule().getEndTime() == null) {
-                return ResponseEntity.badRequest().body("Start time and end time are required");
-            }
-            if (section.getSchedule().getStartTime().isAfter(section.getSchedule().getEndTime())) {
-                return ResponseEntity.badRequest().body("Start time must be before end time");
-            }
-            if (section.getSchedule().getDay() == null || section.getSchedule().getDay().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Day is required");
+        if (section.getSchedules() != null && !section.getSchedules().isEmpty()) {
+            for (var schedule : section.getSchedules()) {
+                if (schedule.getStartTime() == null || schedule.getEndTime() == null) {
+                    return ResponseEntity.badRequest().body("Start time and end time are required for all schedules");
+                }
+                if (schedule.getStartTime().isAfter(schedule.getEndTime())) {
+                    return ResponseEntity.badRequest().body("Start time must be before end time for all schedules");
+                }
+                if (schedule.getDay() == null || schedule.getDay().trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body("Day is required for all schedules");
+                }
             }
         }
         
         return ResponseEntity.ok("Section data is valid");
+    }
 
-    
+    // Schedule management endpoints for course sections
+    @GetMapping("/{id}/schedules")
+    public ResponseEntity<List<Schedule>> getSectionSchedules(@PathVariable Long id) {
+        return courseSectionService.getSectionById(id)
+            .map(section -> {
+                List<Schedule> schedules = section.getSchedules() != null ? section.getSchedules() : Collections.emptyList();
+                return ResponseEntity.ok(schedules);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/schedules")
+    public ResponseEntity<Schedule> addScheduleToSection(@PathVariable Long id, @RequestBody Schedule schedule) {
+        try {
+            Schedule savedSchedule = scheduleService.createSchedule(schedule, id);
+            return ResponseEntity.ok(savedSchedule);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/{id}/schedules/{scheduleId}")
+    public ResponseEntity<Void> removeScheduleFromSection(@PathVariable Long id, @PathVariable Long scheduleId) {
+        try {
+            scheduleService.deleteSchedule(scheduleId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

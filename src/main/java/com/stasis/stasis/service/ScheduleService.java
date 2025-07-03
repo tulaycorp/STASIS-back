@@ -40,12 +40,11 @@ public class ScheduleService {
             CourseSection section = courseSectionRepository.findById(courseSectionId)
                 .orElseThrow(() -> new IllegalArgumentException("Course section not found with id: " + courseSectionId));
             
-            // If the section already has a schedule, delete the old one to avoid orphaned records
-            if (section.getSchedule() != null) {
-                scheduleRepository.delete(section.getSchedule());
+            // Add schedule to the section's schedules list
+            if (section.getSchedules() == null) {
+                section.setSchedules(new java.util.ArrayList<>());
             }
-            
-            section.setSchedule(savedSchedule);
+            section.getSchedules().add(savedSchedule);
             courseSectionRepository.save(section);
         }
         
@@ -71,8 +70,8 @@ public class ScheduleService {
     public void deleteSchedule(Long id) {
         // Detach schedule from any course section that references it
         CourseSection section = courseSectionRepository.findBySchedule_ScheduleID(id);
-        if (section != null) {
-            section.setSchedule(null);
+        if (section != null && section.getSchedules() != null) {
+            section.getSchedules().removeIf(schedule -> schedule.getScheduleID().equals(id));
             courseSectionRepository.save(section);
         }
         // Now safe to delete

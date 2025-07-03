@@ -27,21 +27,25 @@ public class CourseSectionService {
     }
 
     public CourseSection createSection(CourseSection section) {
-        Schedule schedule = section.getSchedule();
-        if (schedule != null) {
-            // Save schedule first with null courseSectionId, then update it after section is saved
-            section.setSchedule(null);
+        List<Schedule> schedules = section.getSchedules();
+        if (schedules != null && !schedules.isEmpty()) {
+            // Save section first without schedules, then add schedules
+            section.setSchedules(null);
             CourseSection savedSection = courseSectionRepository.save(section);
             
-            // Now create the schedule with the section's ID
+            // Now create the schedules for this section
             try {
-                Schedule savedSchedule = scheduleService.createSchedule(schedule, savedSection.getSectionID());
-                savedSection.setSchedule(savedSchedule);
+                List<Schedule> savedSchedules = new java.util.ArrayList<>();
+                for (Schedule schedule : schedules) {
+                    Schedule savedSchedule = scheduleService.createSchedule(schedule, savedSection.getSectionID());
+                    savedSchedules.add(savedSchedule);
+                }
+                savedSection.setSchedules(savedSchedules);
                 return courseSectionRepository.save(savedSection);
             } catch (Exception e) {
                 // If schedule creation fails, delete the section to maintain consistency
                 courseSectionRepository.delete(savedSection);
-                throw new RuntimeException("Failed to create schedule: " + e.getMessage());
+                throw new RuntimeException("Failed to create schedules: " + e.getMessage());
             }
         }
         return courseSectionRepository.save(section);
@@ -57,30 +61,28 @@ public class CourseSectionService {
                 section.setYear(updatedSection.getYear());
                 section.setProgram(updatedSection.getProgram());
                 
-                // Update the schedule
-                if (updatedSection.getSchedule() != null) {
-                    if (section.getSchedule() != null) {
-                        // Update existing schedule preserving its ID instead of creating a new one
-                        Schedule schedule = section.getSchedule();
-                        schedule.setStartTime(updatedSection.getSchedule().getStartTime());
-                        schedule.setEndTime(updatedSection.getSchedule().getEndTime());
-                        schedule.setDay(updatedSection.getSchedule().getDay());
-                        schedule.setStatus(updatedSection.getSchedule().getStatus());
-                        schedule.setRoom(updatedSection.getSchedule().getRoom());
-                        // Persist the changes without generating a new schedule record
-                        scheduleService.updateSchedule(schedule.getScheduleID(), schedule);
-                    } else {
-                        // Create new schedule linked to this section
-                        Schedule newSchedule = scheduleService.createSchedule(
-                            updatedSection.getSchedule(), 
-                            section.getSectionID()
-                        );
-                        section.setSchedule(newSchedule);
+                // Update the schedules
+                if (updatedSection.getSchedules() != null) {
+                    // Delete existing schedules
+                    if (section.getSchedules() != null) {
+                        for (Schedule schedule : section.getSchedules()) {
+                            scheduleService.deleteSchedule(schedule.getScheduleID());
+                        }
                     }
-                } else if (section.getSchedule() != null) {
-                    // If schedule was removed
-                    scheduleService.deleteSchedule(section.getSchedule().getScheduleID());
-                    section.setSchedule(null);
+                    
+                    // Create new schedules
+                    List<Schedule> newSchedules = new java.util.ArrayList<>();
+                    for (Schedule schedule : updatedSection.getSchedules()) {
+                        Schedule savedSchedule = scheduleService.createSchedule(schedule, section.getSectionID());
+                        newSchedules.add(savedSchedule);
+                    }
+                    section.setSchedules(newSchedules);
+                } else if (section.getSchedules() != null) {
+                    // If schedules were removed, delete existing ones
+                    for (Schedule schedule : section.getSchedules()) {
+                        scheduleService.deleteSchedule(schedule.getScheduleID());
+                    }
+                    section.setSchedules(null);
                 }
                 
                 return courseSectionRepository.save(section);
@@ -107,11 +109,12 @@ public class CourseSectionService {
     public CourseSection updateSectionStatus(Long id, String status) {
         return courseSectionRepository.findById(id)
             .map(section -> {
-                if (section.getSchedule() != null) {
-                    Schedule schedule = section.getSchedule();
-                    schedule.setStatus(status);
-                    // Persist status update without creating duplicate schedule
-                    scheduleService.updateScheduleStatus(schedule.getScheduleID(), status);
+                if (section.getSchedules() != null && !section.getSchedules().isEmpty()) {
+                    for (Schedule schedule : section.getSchedules()) {
+                        schedule.setStatus(status);
+                        // Persist status update without creating duplicate schedule
+                        scheduleService.updateScheduleStatus(schedule.getScheduleID(), status);
+                    }
                 }
                 return courseSectionRepository.save(section);
             })

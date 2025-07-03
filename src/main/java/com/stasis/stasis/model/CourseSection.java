@@ -7,8 +7,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
+import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -41,7 +42,7 @@ public class CourseSection {
     private int year;
     
     // Replace schedule fields with a relationship to Schedule
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "schedule_id")
-    private Schedule schedule;
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "course_section_id")
+    private List<Schedule> schedules;
 }

@@ -25,22 +25,34 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
            "JOIN FETCH cs.course c " +
            "JOIN FETCH cs.program p " +
            "JOIN FETCH cs.faculty f " +
-           "LEFT JOIN FETCH cs.schedule s " +
+           "LEFT JOIN FETCH cs.schedules s " +
            "WHERE cs.faculty.facultyID = :facultyId")
     List<CourseSection> findByFaculty_FacultyID(@Param("facultyId") Long facultyId);
     
     // Find by program ID
     List<CourseSection> findByProgramProgramID(Long programId);
     
-    // Find by schedule status
-    List<CourseSection> findByScheduleStatus(String status);
+    // Find by schedule status - updated for one-to-many
+    @Query("SELECT DISTINCT cs FROM CourseSection cs " +
+           "JOIN cs.schedules s " +
+           "WHERE s.status = :status")
+    List<CourseSection> findByScheduleStatus(@Param("status") String status);
     
-    // Find by schedule day
-    List<CourseSection> findByScheduleDay(String day);
+    // Find by schedule day - updated for one-to-many
+    @Query("SELECT DISTINCT cs FROM CourseSection cs " +
+           "JOIN cs.schedules s " +
+           "WHERE s.day = :day")
+    List<CourseSection> findByScheduleDay(@Param("day") String day);
     
-    // Find by schedule room
-    List<CourseSection> findByScheduleRoom(String room);
+    // Find by schedule room - updated for one-to-many
+    @Query("SELECT DISTINCT cs FROM CourseSection cs " +
+           "JOIN cs.schedules s " +
+           "WHERE s.room = :room")
+    List<CourseSection> findByScheduleRoom(@Param("room") String room);
 
-    // Find section by schedule ID (one-to-one)
-    CourseSection findBySchedule_ScheduleID(Long scheduleId);
+    // Find section by schedule ID - updated for one-to-many
+    @Query("SELECT cs FROM CourseSection cs " +
+           "JOIN cs.schedules s " +
+           "WHERE s.scheduleID = :scheduleId")
+    CourseSection findBySchedule_ScheduleID(@Param("scheduleId") Long scheduleId);
 }

@@ -25,5 +25,5 @@ public class Schedule {
     private String status;
     private String room;
     
-    // No reference to CourseSection to avoid circular reference
+    // Foreign key will be managed by CourseSection
 }
