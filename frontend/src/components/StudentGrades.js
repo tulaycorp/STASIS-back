@@ -30,6 +30,11 @@ const StudentGrades = () => {
       return;
     }
     
+    // Add a check to prevent repeated API calls
+    if (gradesList.length > 0 && !loading) {
+      return; // Data already loaded, no need to fetch again
+    }
+    
     setLoading(true);
     
     // Fetch all enrolled courses for this student
@@ -84,7 +89,7 @@ const StudentGrades = () => {
         setLoading(false);
         setGradesList([]);
       });
-  }, [studentData, loading]); // Add studentData as dependency instead of studentId
+  }, [studentData, gradesList.length]); // Remove loading, add gradesList.length
 
   const getAcademicYear = (semester) => {
     if (!semester) return 'N/A';
