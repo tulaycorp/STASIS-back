@@ -54,16 +54,27 @@ public class CourseSectionService {
     public CourseSection updateSection(Long id, CourseSection updatedSection) {
         return courseSectionRepository.findById(id)
             .map(section -> {
-                // Remove course assignment from section level since courses are now managed per schedule
-                section.setFaculty(updatedSection.getFaculty());
-                section.setSectionName(updatedSection.getSectionName());
-                section.setSemester(updatedSection.getSemester());
-                section.setYear(updatedSection.getYear());
-                section.setProgram(updatedSection.getProgram());
+                // Update basic section properties
+                if (updatedSection.getFaculty() != null) {
+                    section.setFaculty(updatedSection.getFaculty());
+                }
+                if (updatedSection.getSectionName() != null) {
+                    section.setSectionName(updatedSection.getSectionName());
+                }
+                if (updatedSection.getSemester() != null) {
+                    section.setSemester(updatedSection.getSemester());
+                }
+                if (updatedSection.getYear() != 0) {
+                    section.setYear(updatedSection.getYear());
+                }
+                if (updatedSection.getProgram() != null) {
+                    section.setProgram(updatedSection.getProgram());
+                }
                 
-                // Update the schedules
-                if (updatedSection.getSchedules() != null) {
-                    // Delete existing schedules
+                // Only update schedules if explicitly provided and non-empty
+                // This prevents accidental deletion of schedules when just updating faculty
+                if (updatedSection.getSchedules() != null && !updatedSection.getSchedules().isEmpty()) {
+                    // Delete existing schedules only when we have new ones to replace them
                     if (section.getSchedules() != null) {
                         for (Schedule schedule : section.getSchedules()) {
                             scheduleService.deleteSchedule(schedule.getScheduleID());
@@ -77,17 +88,12 @@ public class CourseSectionService {
                         newSchedules.add(savedSchedule);
                     }
                     section.setSchedules(newSchedules);
-                } else if (section.getSchedules() != null) {
-                    // If schedules were removed, delete existing ones
-                    for (Schedule schedule : section.getSchedules()) {
-                        scheduleService.deleteSchedule(schedule.getScheduleID());
-                    }
-                    section.setSchedules(null);
                 }
+                // If schedules is null or empty, don't modify existing schedules
                 
                 return courseSectionRepository.save(section);
             })
-            .orElseThrow(() -> new RuntimeException("Section not found with ID " + id));
+            .orElseThrow(() -> new RuntimeException("Section not found with id: " + id));
     }
 
     public void deleteSection(Long id) {

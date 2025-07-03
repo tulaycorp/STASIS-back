@@ -346,12 +346,28 @@ const ScheduleManagement = () => {
       
       // Update section faculty if needed (but don't overwrite course assignments)
       if (selectedFaculty && (!existingSection.faculty || existingSection.faculty.facultyID !== selectedFaculty.value)) {
+        console.log('Faculty assignment needed - current:', existingSection.faculty?.facultyID, 'new:', selectedFaculty.value);
+        
+        // Create a minimal section update that only changes faculty, avoiding schedule deletion
         const sectionUpdateData = { 
-          ...existingSection,
-          faculty: { facultyID: selectedFaculty.value }
+          sectionID: existingSection.sectionID,
+          sectionName: existingSection.sectionName,
+          semester: existingSection.semester,
+          year: existingSection.year,
+          program: existingSection.program,
+          faculty: { facultyID: selectedFaculty.value },
+          schedules: null // Don't update schedules to avoid deletion
         };
-        console.log('Updating section faculty:', sectionUpdateData);
-        await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
+        console.log('Updating section faculty only:', sectionUpdateData);
+        
+        try {
+          await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
+          console.log('Section faculty updated successfully');
+        } catch (sectionError) {
+          console.error('Failed to update section faculty:', sectionError);
+          // Don't fail the entire operation if faculty update fails
+          showToast('Schedule created successfully, but faculty assignment failed. Please update manually.', 'warning');
+        }
       }
       
       showToast('Schedule added successfully!', 'success');
@@ -453,12 +469,28 @@ const ScheduleManagement = () => {
       // After updating the schedule, update section faculty if needed
       const existingSection = sectionsList.find(s => s.sectionID === editingSchedule.sectionID);
       if (existingSection && selectedFaculty && (!existingSection.faculty || existingSection.faculty.facultyID !== selectedFaculty.value)) {
+        console.log('Faculty assignment needed for edit - current:', existingSection.faculty?.facultyID, 'new:', selectedFaculty.value);
+        
+        // Create a minimal section update that only changes faculty, avoiding schedule deletion
         const sectionUpdateData = { 
-          ...existingSection,
-          faculty: { facultyID: selectedFaculty.value }
+          sectionID: existingSection.sectionID,
+          sectionName: existingSection.sectionName,
+          semester: existingSection.semester,
+          year: existingSection.year,
+          program: existingSection.program,
+          faculty: { facultyID: selectedFaculty.value },
+          schedules: null // Don't update schedules to avoid deletion
         };
-        console.log('Updating section faculty:', sectionUpdateData);
-        await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
+        console.log('Updating section faculty only:', sectionUpdateData);
+        
+        try {
+          await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
+          console.log('Section faculty updated successfully');
+        } catch (sectionError) {
+          console.error('Failed to update section faculty:', sectionError);
+          // Don't fail the entire operation if faculty update fails
+          showToast('Schedule updated successfully, but faculty assignment failed. Please update manually.', 'warning');
+        }
       }
       
       showToast('Schedule updated successfully!', 'success');

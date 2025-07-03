@@ -676,6 +676,12 @@ body {
   color: #721c24;
 }
 
+.toast.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
