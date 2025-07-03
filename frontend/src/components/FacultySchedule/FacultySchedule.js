@@ -43,7 +43,6 @@ const FacultySchedule = () => {
       setLoading(true);
       setError(null);
       
-      // Get faculty data directly from the hook
       const facultyId = facultyData?.facultyID || facultyData?.facultyId;
       if (!facultyData || !facultyId) {
         console.warn('Faculty information not available, cannot fetch schedule.');
@@ -54,54 +53,63 @@ const FacultySchedule = () => {
       }
 
       console.log('Fetching schedule for faculty ID:', facultyId);
-      console.log('Faculty data:', facultyData);
-
-      // First, let's try to get all sections to debug
-      try {
-        const allSectionsResponse = await courseSectionAPI.getAllSections();
-        console.log('All sections in database:', allSectionsResponse.data);
-        
-        // Filter sections that have faculty assigned
-        const sectionsWithFaculty = allSectionsResponse.data.filter(section => section.faculty);
-        console.log('Sections with faculty assigned:', sectionsWithFaculty);
-        
-        // Check if any section has our faculty
-        const ourSections = sectionsWithFaculty.filter(section => 
-          section.faculty && section.faculty.facultyID === facultyId
-        );
-        console.log('Sections assigned to our faculty:', ourSections);
-      } catch (debugErr) {
-        console.error('Debug query failed:', debugErr);
-      }
-
+      
       // Fetch sections assigned to this faculty
       const response = await courseSectionAPI.getSectionsByFaculty(facultyId);
-      
       console.log('API Response for faculty sections:', response);
       
       if (response && response.data) {
-        // Handle both direct array response and wrapped response
         const sectionsData = Array.isArray(response.data) ? response.data : 
                            (response.data.data || response.data.sections || []);
         
         console.log('Sections data for faculty:', sectionsData);
         
-        // Transform the API data to match our component's expected format
-        const transformedSchedule = sectionsData.map(section => ({
-          id: section.sectionID || section.id,
-          courseCode: section.course?.courseCode || 'N/A',
-          courseName: section.course?.courseDescription || section.courseName || 'Unknown Course',
-          section: section.sectionName || `${section.course?.courseCode || 'UNKNOWN'}-${section.sectionName || 'A'}`,
-          instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : `${facultyData.firstName} ${facultyData.lastName}` || 'Unknown Instructor',
-          room: section.schedule?.room || 'TBA',
-          day: section.schedule?.day || 'TBA',
-          timeFrom: section.schedule?.startTime || '00:00',
-          timeTo: section.schedule?.endTime || '00:00',
-          status: section.schedule?.status || 'ACTIVE',
-          semester: section.semester || 'Current',
-          year: section.year || new Date().getFullYear(),
-          program: section.course?.program || 'N/A'
-        }));
+        // Initialize empty array for all schedule entries
+        const transformedSchedule = [];
+        
+        // Process each section
+        sectionsData.forEach(section => {
+          // Handle case where section has multiple schedules (array)
+          if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+            section.schedules.forEach(schedule => {
+              transformedSchedule.push({
+                id: schedule.scheduleID,
+                courseCode: schedule.course?.courseCode || section.course?.courseCode || 'N/A',
+                courseName: schedule.course?.courseDescription || section.course?.courseDescription || 'Unknown Course',
+                section: section.sectionName || 'N/A',
+                instructor: `${facultyData.firstName} ${facultyData.lastName}` || 'Unknown Instructor',
+                room: schedule.room || 'TBA',
+                day: schedule.day || 'TBA',
+                timeFrom: schedule.startTime || '00:00',
+                timeTo: schedule.endTime || '00:00',
+                status: schedule.status || 'ACTIVE',
+                semester: section.semester || 'Current',
+                year: section.year || new Date().getFullYear(),
+                program: schedule.course?.program?.programName || section.program?.programName || 'N/A',
+                scheduleHasCourse: !!schedule.course
+              });
+            });
+          } 
+          // Backward compatibility - handle case where section has a single schedule object
+          else if (section.schedule) {
+            transformedSchedule.push({
+              id: section.schedule.scheduleID,
+              courseCode: section.course?.courseCode || 'N/A',
+              courseName: section.course?.courseDescription || 'Unknown Course',
+              section: section.sectionName || 'N/A',
+              instructor: `${facultyData.firstName} ${facultyData.lastName}` || 'Unknown Instructor',
+              room: section.schedule.room || 'TBA',
+              day: section.schedule.day || 'TBA',
+              timeFrom: section.schedule.startTime || '00:00',
+              timeTo: section.schedule.endTime || '00:00',
+              status: section.schedule.status || 'ACTIVE',
+              semester: section.semester || 'Current',
+              year: section.year || new Date().getFullYear(),
+              program: section.program?.programName || 'N/A',
+              scheduleHasCourse: false
+            });
+          }
+        });
         
         console.log('Transformed schedule:', transformedSchedule);
         setScheduleList(transformedSchedule);
@@ -137,15 +145,24 @@ const FacultySchedule = () => {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     return s.day === today;
   }).length;
-  const uniqueCourses = [...new Set(scheduleList.map(s => s.courseName))].length;
+
+  // Get unique courses based on course code to ensure accurate count
+  const uniqueCourses = new Set(scheduleList
+    .filter(s => s.courseCode && s.courseCode !== 'N/A')
+    .map(s => s.courseCode)).size;
+
+  // Get unique sections
+  const uniqueSections = new Set(scheduleList.map(s => s.section)).size;
 
   // Filter schedules based on search, day, and status
   const filteredSchedules = scheduleList.filter(schedule => {
-    const matchesSearch = schedule.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.section.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.program.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      (schedule.courseName && schedule.courseName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (schedule.courseCode && schedule.courseCode.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (schedule.section && schedule.section.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (schedule.room && schedule.room.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (schedule.program && schedule.program.toLowerCase().includes(searchTerm.toLowerCase()));
+  
     const matchesDay = selectedDay === 'All Days' || schedule.day === selectedDay;
     return matchesSearch && matchesDay;
   });
@@ -224,8 +241,8 @@ const FacultySchedule = () => {
               <div className="stat-value">{todaySchedules}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Program</div>
-              <div className="stat-value">{facultyData?.program || 'N/A'}</div>
+              <div className="stat-label">Unique Sections</div>
+              <div className="stat-value">{uniqueSections}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Unique Courses</div>
@@ -278,30 +295,47 @@ const FacultySchedule = () => {
                     <th>Program</th>
                     <th>Room</th>
                     <th>Day & Time</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSchedules.length > 0 ? (
-                    filteredSchedules.map((schedule) => (
-                      <tr key={schedule.id}>
-                        <td className="course-code">{schedule.courseCode}</td>
-                        <td className="course-name">{schedule.courseName}</td>
-                        <td className="section-name">{schedule.section}</td>
-                        <td className="program-name">{schedule.program}</td>
-                        <td>{schedule.room}</td>
-                        <td>
-                          <div className="time-info">
-                            <div className="time-period">
-                              {formatTime(schedule.timeFrom)} - {formatTime(schedule.timeTo)}
+                    filteredSchedules.map((schedule, index, scheduleArray) => {
+                      // Check if this is a duplicate section from the previous row
+                      const isDuplicateSection = index > 0 && schedule.section === scheduleArray[index-1].section;
+                      
+                      return (
+                        <tr key={schedule.id} className={isDuplicateSection ? 'duplicate-section-row' : ''}>
+                          <td className="course-code">
+                            {schedule.courseCode}
+                            {schedule.scheduleHasCourse && <span className="badge course-badge" title="Course assigned to this schedule">📚</span>}
+                          </td>
+                          <td className="course-name">{schedule.courseName}</td>
+                          <td className="section-name">
+                            {schedule.section}
+                            {isDuplicateSection && <span className="badge multiple-badge" title="Multiple schedules for this section">+</span>}
+                          </td>
+                          <td className="program-name">{schedule.program}</td>
+                          <td>{schedule.room}</td>
+                          <td>
+                            <div className="time-info">
+                              <div className="time-period">
+                                {formatTime(schedule.timeFrom)} - {formatTime(schedule.timeTo)}
+                              </div>
+                              <div className="day-info">{schedule.day}</div>
                             </div>
-                            <div className="day-info">{schedule.day}</div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="status">
+                            <span className={`status-badge status-${schedule.status.toLowerCase()}`}>
+                              {schedule.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="6" className="no-data">
+                      <td colSpan="7" className="no-data">
                         {searchTerm || selectedDay !== 'All Days'
                           ? 'No schedules match your search criteria' 
                           : 'No schedules assigned yet'}

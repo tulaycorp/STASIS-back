@@ -1,15 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentEnrollment.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 import { 
-  curriculumAPI, 
-  curriculumDetailAPI, 
+  enrolledCourseAPI, 
+  courseAPI, 
   courseSectionAPI, 
-  enrolledCourseAPI,
-  studentAPI 
+  curriculumAPI, 
+  semesterEnrollmentAPI,
+  scheduleAPI,  // NEW: Added schedule API for enhanced course-schedule management
+  studentAPI,  // Added for student data fetching
+  curriculumDetailAPI  // Added for curriculum detail fetching
 } from '../services/api';
+
+/**
+ * Enhanced StudentEnrollment Component
+ * 
+ * This component has been updated to support the new Course-Schedule Management System:
+ * - Supports multiple courses per section through individual schedule assignments
+ * - Handles one-to-one course-schedule relationships
+ * - Displays course assignments per schedule with visual indicators
+ * - Enhanced enrollment process for schedule-course assignments
+ * - Backward compatibility with existing direct course assignments
+ * 
+ * Key Features:
+ * - 📚 Badge: Indicates course-schedule assignments
+ * - + Badge: Indicates sections with multiple schedules
+ * - Enhanced schedule selection with course-specific filtering
+ * - Improved enrollment modal with detailed schedule information
+ * - Updated "My Enrollments" display showing course-schedule relationships
+ */
 
 function StudentEnrollment(props) {
   const [toast, setToast] = useState(null);
@@ -103,8 +124,85 @@ function StudentEnrollment(props) {
 
         // Fetch available sections
         const sectionsResponse = await courseSectionAPI.getAllSections();
-        setAvailableSections(sectionsResponse.data);
-        console.log('Sections fetched:', sectionsResponse.data);
+        console.log('Raw sections response:', sectionsResponse.data);
+        
+        // Transform sections to handle multiple schedules per section
+        const sectionScheduleMap = new Map();
+        const transformedSections = [];
+        
+        sectionsResponse.data.forEach(section => {
+          // Handle case where section has multiple schedules (array)
+          if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+            section.schedules.forEach(schedule => {
+              const sectionKey = section.sectionID;
+              
+              // Track if this section has multiple schedules
+              if (!sectionScheduleMap.has(sectionKey)) {
+                sectionScheduleMap.set(sectionKey, 0);
+              }
+              sectionScheduleMap.set(sectionKey, sectionScheduleMap.get(sectionKey) + 1);
+              
+              transformedSections.push({
+                ...section,
+                schedule: schedule,
+                scheduleId: schedule.scheduleID,
+                room: schedule.room,
+                day: schedule.day,
+                startTime: schedule.startTime,
+                endTime: schedule.endTime,
+                scheduleStatus: schedule.status,
+                // For course information, prioritize schedule.course, then section.course
+                course: schedule.course || section.course,
+                hasDirectCourse: !!schedule.course,
+                hasMultipleSchedules: false // Will be updated below
+              });
+            });
+          } 
+          // Backward compatibility - handle case where section has a single schedule object
+          else if (section.schedule) {
+            const sectionKey = section.sectionID;
+            sectionScheduleMap.set(sectionKey, 1);
+            
+            transformedSections.push({
+              ...section,
+              scheduleId: section.schedule.scheduleID,
+              room: section.schedule.room,
+              day: section.schedule.day,
+              startTime: section.schedule.startTime,
+              endTime: section.schedule.endTime,
+              scheduleStatus: section.schedule.status,
+              hasDirectCourse: false,
+              hasMultipleSchedules: false
+            });
+          }
+          // Handle sections without schedules
+          else {
+            const sectionKey = section.sectionID;
+            sectionScheduleMap.set(sectionKey, 0);
+            
+            transformedSections.push({
+              ...section,
+              schedule: null,
+              scheduleId: null,
+              room: 'TBA',
+              day: 'TBA',
+              startTime: null,
+              endTime: null,
+              scheduleStatus: 'INACTIVE',
+              hasDirectCourse: false,
+              hasMultipleSchedules: false
+            });
+          }
+        });
+        
+        // Update hasMultipleSchedules flag
+        transformedSections.forEach(section => {
+          section.hasMultipleSchedules = sectionScheduleMap.get(section.sectionID) > 1;
+        });
+        
+        setAvailableSections(transformedSections);
+        console.log('Transformed sections:', transformedSections);
+        console.log('Section schedule counts:', Array.from(sectionScheduleMap.entries()));
 
         // Fetch student's current enrollments
         try {
@@ -114,19 +212,37 @@ function StudentEnrollment(props) {
           console.log('Enrollments data:', enrollmentsResponse.data);
           console.log('Number of enrollments:', enrollmentsResponse.data?.length || 0);
           
-          // Log each enrollment for debugging
-          if (enrollmentsResponse.data && enrollmentsResponse.data.length > 0) {
-            enrollmentsResponse.data.forEach((enrollment, index) => {
-              console.log(`Enrollment ${index + 1}:`, {
-                id: enrollment.enrolledCourseID,
-                status: enrollment.status,
-                section: enrollment.section,
-                semesterEnrollment: enrollment.semesterEnrollment
-              });
+          // Transform enrollment data to handle new structure
+          const transformedEnrollments = (enrollmentsResponse.data || []).map(enrollment => {
+            // Log each enrollment for debugging
+            console.log('Processing enrollment:', {
+              id: enrollment.enrolledCourseID,
+              status: enrollment.status,
+              section: enrollment.section,
+              semesterEnrollment: enrollment.semesterEnrollment
             });
-          }
+            
+            // Enhance section data with schedule information
+            if (enrollment.section) {
+              const sectionId = enrollment.section.sectionID;
+              const matchingTransformedSections = transformedSections.filter(s => s.sectionID === sectionId);
+              
+              if (matchingTransformedSections.length > 0) {
+                // Use the first matching section for display, but mark if there are multiple
+                const primarySection = matchingTransformedSections[0];
+                
+                enrollment.section = {
+                  ...enrollment.section,
+                  ...primarySection,
+                  hasMultipleSchedules: matchingTransformedSections.length > 1
+                };
+              }
+            }
+            
+            return enrollment;
+          });
           
-          setMyEnrollments(enrollmentsResponse.data || []);
+          setMyEnrollments(transformedEnrollments);
         } catch (enrollmentError) {
           console.error('Failed to fetch enrollments:', enrollmentError);
           console.error('Error details:', {
@@ -174,16 +290,48 @@ function StudentEnrollment(props) {
           curriculumDetail.semester === Number(selectedSemester);
         
         // Check if student is not already enrolled in this course
-        const notCurrentlyEnrolled = !myEnrollments.some(e => 
-          e.section?.course?.id === curriculumDetail.courseId && e.status === 'Enrolled'
-        );
+        // Compare course IDs more comprehensively
+        const notCurrentlyEnrolled = !myEnrollments.some(e => {
+          const enrolledCourseId = e.section?.course?.id || e.section?.course?.courseID;
+          const currentCourseId = curriculumDetail.courseId;
+          
+          // Convert to strings for comparison
+          const enrolledIdStr = String(enrolledCourseId);
+          const currentIdStr = String(currentCourseId);
+          
+          const isMatching = enrolledIdStr === currentIdStr && e.status === 'Enrolled';
+          
+          console.log('Enrollment match check:', {
+            currentCourseId,
+            enrolledCourseId,
+            enrolledIdStr,
+            currentIdStr,
+            status: e.status,
+            isMatching,
+            enrollmentId: e.enrolledCourseID,
+            sectionDetails: {
+              sectionId: e.section?.sectionID,
+              sectionName: e.section?.sectionName,
+              courseData: e.section?.course
+            }
+          });
+          
+          return isMatching;
+        });
 
         console.log('Course filter check:', {
           courseId: curriculumDetail.courseId,
           courseName: curriculumDetail.courseName,
           semester: curriculumDetail.semester,
           semesterCondition,
-          notCurrentlyEnrolled
+          notCurrentlyEnrolled,
+          enrolledCourses: myEnrollments.map(e => ({
+            enrollmentId: e.enrolledCourseID,
+            id: e.section?.course?.id || e.section?.course?.courseID,
+            status: e.status,
+            sectionId: e.section?.sectionID,
+            fullSection: e.section
+          }))
         });
 
         return semesterCondition && notCurrentlyEnrolled;
@@ -191,9 +339,9 @@ function StudentEnrollment(props) {
 
       console.log('Eligible courses after filtering:', eligibleCourses);
 
-      // Add available sections to each course (sections are optional)
+      // Add available sections to each course - updated for new schedule-course structure
       return eligibleCourses.map(curriculumDetail => {
-        // Find matching sections for this course
+        // Find matching sections for this course through schedule-course assignments
         const courseSections = availableSections.filter(section => {
           // Debug the structure of each section to understand what we're working with
           console.log(`Checking section ${section.sectionID || section.id} for course ${curriculumDetail.courseId}:`, {
@@ -201,25 +349,54 @@ function StudentEnrollment(props) {
             directCourseId: section.courseId,
             course_id: section.course_id,
             course: section.course,
+            schedules: section.schedules,
             status: section.status,
-            scheduleStatus: section.schedule?.status
+            scheduleStatus: section.scheduleStatus,
+            hasDirectCourse: section.hasDirectCourse
           });
           
           // Convert IDs to strings for comparison to avoid type mismatches
-          const courseIdStr = String(curriculumDetail.courseId);
+          const courseIdStr = String(curriculumDetail.courseId);                                        // NEW: Check if section has schedules with course assignments
+          if (section.schedules && section.schedules.length > 0) {
+            const hasMatchingSchedule = section.schedules.some(schedule => {
+              if (schedule.course) {
+                const scheduleMatches = String(schedule.course.id) === courseIdStr || 
+                                     String(schedule.course.courseID) === courseIdStr;
+                const scheduleId = schedule.id || schedule.scheduleID || schedule.scheduleId;
+                console.log(`Schedule ${scheduleId || 'undefined'} course match check: ${scheduleMatches}`);
+                return scheduleMatches;
+              }
+              return false;
+            });
+            
+            if (hasMatchingSchedule) {
+              console.log('Schedule-course relationship match');
+              return true;
+            }
+          }
           
-          // Check if section has course object with matching ID
+          // BACKWARD COMPATIBILITY: For sections with direct course assignments (old structure)
+          if (section.hasDirectCourse && section.course) {
+            const matches = String(section.course.id) === courseIdStr || String(section.course.courseID) === courseIdStr;
+            console.log(`Direct course match check: ${matches}`);
+            return matches;
+          }
+          
+          // For sections with course through section relationship (backward compatibility)
           if (section.course && (String(section.course.id) === courseIdStr || String(section.course.courseID) === courseIdStr)) {
+            console.log('Section course relationship match');
             return true;
           }
           
           // Check if section has courseId field directly
           if (section.courseId && String(section.courseId) === courseIdStr) {
+            console.log('Direct courseId match');
             return true;
           }
           
           // Check if section has course_id field
           if (section.course_id && String(section.course_id) === courseIdStr) {
+            console.log('course_id field match');
             return true;
           }
           
@@ -239,17 +416,20 @@ function StudentEnrollment(props) {
       // Don't filter out courses without sections - show all curriculum courses
     };
 
-  // Filter courses based on search
-  const filteredCourses = getAvailableCoursesForEnrollment().filter(course => {
-    if (!searchTerm) return true;
-    
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      course.courseCode?.toLowerCase().includes(searchLower) ||
-      course.courseName?.toLowerCase().includes(searchLower) ||
-      course.description?.toLowerCase().includes(searchLower)
-    );
-  });
+  // Filter courses based on search - memoize to avoid constant recalculation
+  const filteredCourses = useMemo(() => {
+    const availableCourses = getAvailableCoursesForEnrollment();
+    return availableCourses.filter(course => {
+      if (!searchTerm) return true;
+      
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        course.courseCode?.toLowerCase().includes(searchLower) ||
+        course.courseName?.toLowerCase().includes(searchLower) ||
+        course.description?.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [studentData, curriculumCourses, availableSections, myEnrollments, selectedSemester, searchTerm]);
 
   // Handle enrollment
   const handleEnroll = (section) => {
@@ -263,16 +443,44 @@ function StudentEnrollment(props) {
     try {
       setEnrollmentLoading(true);
 
+      // NEW: Enhanced validation with conflict checking
+      const selectedCourse = Object.keys(selectedSections).find(courseId => 
+        selectedSections[courseId] === selectedSection
+      );
+      
+      if (selectedCourse) {
+        const validationErrors = await validateEnrollment(selectedSection, selectedCourse);
+        if (validationErrors.length > 0) {
+          showToast(`Enrollment validation failed: ${validationErrors.join(', ')}`, 'error');
+          return;
+        }
+      }
+
+      // NEW: Handle schedule-course assignments
       const enrollmentData = {
         studentId: studentData.id,
         courseSectionId: selectedSection.sectionID,
         status: 'Enrolled'
       };
 
+      // Include schedule ID if this is a schedule-course assignment
+      if (selectedSection.selectedSchedule) {
+        enrollmentData.scheduleId = selectedSection.selectedSchedule.id;
+      }
+
       const response = await enrolledCourseAPI.createEnrollment(enrollmentData);
       const newEnrollment = response.data;
 
-      setMyEnrollments(prev => [...prev, newEnrollment]);
+      // Enhance the new enrollment with section data from our transformed sections
+      const enhancedEnrollment = {
+        ...newEnrollment,
+        section: {
+          ...newEnrollment.section,
+          ...selectedSection // Use the selected section data which has all the schedule info
+        }
+      };
+
+      setMyEnrollments(prev => [...prev, enhancedEnrollment]);
       
       setShowEnrollModal(false);
       setSelectedSection(null);
@@ -294,31 +502,134 @@ function StudentEnrollment(props) {
 
     try {
       setEnrollmentLoading(true);
-      const enrollmentPromises = [];
+      const courseEntries = Object.entries(selectedCourses);
+      const newEnrollments = [];
 
-      // Create enrollment for each selected course
-      for (const [courseId, sectionId] of Object.entries(selectedCourses)) {
-        const enrollmentData = {
-          studentId: studentData.id,
-          courseSectionId: parseInt(sectionId),
-          status: 'Enrolled'
-        };
-        enrollmentPromises.push(enrolledCourseAPI.createEnrollment(enrollmentData));
+      console.log('Starting bulk enrollment for courses:', courseEntries);
+      console.log('Selected sections:', selectedSections);
+      console.log('Current enrollments before bulk:', myEnrollments.map(e => ({
+        id: e.enrolledCourseID,
+        courseId: e.section?.course?.id,
+        status: e.status
+      })));
+
+      // Process each enrollment sequentially to avoid race conditions
+      for (const [courseId, selectionValue] of courseEntries) {
+        try {
+          let courseSectionId;
+          let scheduleId = null;
+          
+          // NEW: Handle schedule-course assignments
+          if (selectionValue.includes('-')) {
+            const [sectionId, schedId] = selectionValue.split('-');
+            courseSectionId = parseInt(sectionId);
+            scheduleId = parseInt(schedId);
+          } else {
+            // BACKWARD COMPATIBILITY: Handle direct section selection
+            courseSectionId = parseInt(selectionValue);
+          }
+          
+          // Create enrollment data with enhanced structure
+          const enrollmentData = {
+            studentId: studentData.id,
+            courseSectionId: courseSectionId,
+            scheduleId: scheduleId, // NEW: Include schedule ID for course-schedule assignments
+            status: 'Enrolled'
+          };
+
+          console.log('Creating enrollment for course:', courseId, 'with data:', enrollmentData);
+
+          const response = await enrolledCourseAPI.createEnrollment(enrollmentData);
+          const enrollment = response.data;
+          const selectedSection = selectedSections[courseId];
+
+          console.log('Raw enrollment from API:', enrollment);
+          console.log('Selected section for course', courseId, ':', selectedSection);
+
+          console.log('Enrollment created successfully:', {
+            enrollmentId: enrollment.enrolledCourseID,
+            courseId,
+            courseSectionId,
+            scheduleId,
+            selectedSection: selectedSection ? {
+              sectionID: selectedSection.sectionID,
+              sectionName: selectedSection.sectionName,
+              courseId: selectedSection.course?.id,
+              hasScheduleInfo: !!selectedSection.selectedSchedule
+            } : null
+          });
+
+          // Enhance the enrollment with the selected section data
+          const enhancedEnrollment = {
+            ...enrollment,
+            section: {
+              ...enrollment.section,
+              ...selectedSection, // Use the selected section data which has all the schedule info
+              // Ensure course information is preserved
+              course: selectedSection.course || enrollment.section?.course,
+              // NEW: Include schedule-specific information
+              selectedSchedule: selectedSection.selectedSchedule || null,
+              scheduleId: selectedSection.scheduleId || null
+            }
+          };
+
+          console.log('Enhanced enrollment:', {
+            enrollmentId: enhancedEnrollment.enrolledCourseID,
+            courseId: enhancedEnrollment.section?.course?.id,
+            courseName: enhancedEnrollment.section?.course?.courseName || enhancedEnrollment.section?.course?.courseDescription,
+            scheduleInfo: enhancedEnrollment.section?.selectedSchedule || 'No specific schedule',
+            originalEnrollment: enrollment,
+            selectedSection: selectedSection,
+            enhancedSection: enhancedEnrollment.section
+          });
+
+          newEnrollments.push(enhancedEnrollment);
+        } catch (courseError) {
+          console.error(`Failed to enroll in course ${courseId}:`, courseError);
+          // Don't show individual error toasts here - we'll handle it in the final summary
+        }
       }
 
-      // Wait for all enrollments to complete
-      const responses = await Promise.all(enrollmentPromises);
-      const newEnrollments = responses.map(response => response.data);
+      console.log('All enrollments processed. New enrollments:', newEnrollments.length);
 
-      // Update state
-      setMyEnrollments(prev => [...prev, ...newEnrollments]);
+      // Update state only once with all new enrollments
+      if (newEnrollments.length > 0) {
+        setMyEnrollments(prev => {
+          // Filter out any potential duplicates based on enrolledCourseID
+          const existingIds = new Set(prev.map(e => e.enrolledCourseID));
+          const uniqueNewEnrollments = newEnrollments.filter(e => !existingIds.has(e.enrolledCourseID));
+          
+          const updated = [...prev, ...uniqueNewEnrollments];
+          console.log('Updated enrollments state after bulk enrollment:', updated.map(e => ({
+            id: e.enrolledCourseID,
+            status: e.status,
+            courseId: e.section?.course?.id,
+            courseName: e.section?.course?.courseName || e.section?.course?.courseDescription,
+            sectionId: e.section?.sectionID,
+            fullSection: e.section,
+            rawEnrollment: e
+          })));
+          return updated;
+        });
+      }
+
+      // Clear selections
       setSelectedCourses({});
       setSelectedSections({});
 
-      showToast(`Successfully enrolled in ${selectedCount} course(s)!`, 'success'); // replaced alert
+      // Force a re-render to update the available courses list
+      console.log('Forcing re-render after bulk enrollment');
+
+      if (newEnrollments.length === selectedCount) {
+        showToast(`Successfully enrolled in ${newEnrollments.length} course(s)!`, 'success');
+      } else if (newEnrollments.length > 0) {
+        showToast(`Successfully enrolled in ${newEnrollments.length} out of ${selectedCount} course(s).`, 'warning');
+      } else {
+        showToast('No courses were enrolled. Please try again.', 'error');
+      }
     } catch (error) {
       console.error('Bulk enrollment error:', error);
-      showToast('Failed to enroll in some courses. Please try again.', 'error'); // replaced alert
+      showToast('Failed to enroll in courses. Please try again.', 'error');
     } finally {
       setEnrollmentLoading(false);
     }
@@ -333,6 +644,11 @@ function StudentEnrollment(props) {
       
       // Remove from enrollments
       setMyEnrollments(prev => prev.filter(e => e.enrolledCourseID !== enrollmentId));
+      
+      // Clear any selected courses that might conflict
+      setSelectedCourses({});
+      setSelectedSections({});
+      
       showToast('Course dropped successfully!', 'success');
     } catch (error) {
       console.error('Drop error:', error);
@@ -368,10 +684,93 @@ function StudentEnrollment(props) {
 
   // Statistics calculations
   const totalAvailableCourses = filteredCourses.length;
-  const myTotalCredits = myEnrollments.reduce((sum, enrollment) => {
+  const activeEnrollments = myEnrollments.filter(e => e.status === 'Enrolled');
+  const myTotalCredits = activeEnrollments.reduce((sum, enrollment) => {
     const credits = enrollment.section?.course?.credits || 0;
     return sum + credits;
   }, 0);
+  
+  // Enhanced statistics
+  const enrolledWithDirectCourse = activeEnrollments.filter(e => e.section?.hasDirectCourse).length;
+  const uniqueCoursesEnrolled = new Set(
+    activeEnrollments
+      .map(e => e.section?.course?.id || e.section?.course?.courseID)
+      .filter(id => id !== undefined)
+  ).size;
+  const sectionsWithMultipleSchedules = activeEnrollments.filter(e => e.section?.hasMultipleSchedules).length;
+
+  // Debug: Log current enrollment state
+  console.log('Current enrollment state:', {
+    myEnrollments: myEnrollments.map(e => ({
+      id: e.enrolledCourseID,
+      status: e.status,
+      courseId: e.section?.course?.id || e.section?.course?.courseID,
+      courseName: e.section?.course?.courseName || e.section?.course?.courseDescription
+    })),
+    totalEnrollments: myEnrollments.length,
+    activeEnrollments: activeEnrollments.length
+  });
+
+  // NEW: Schedule conflict checking for enhanced system
+  const checkScheduleConflicts = async (scheduleData) => {
+    try {
+      console.log('Checking schedule conflicts for:', scheduleData);
+      const response = await scheduleAPI.checkConflicts(
+        scheduleData.day,
+        scheduleData.startTime,
+        scheduleData.endTime
+      );
+      
+      if (response.data && response.data.length > 0) {
+        console.log('Schedule conflicts found:', response.data);
+        return response.data;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error checking schedule conflicts:', error);
+      return [];
+    }
+  };
+
+  // NEW: Enhanced enrollment validation with conflict checking
+  const validateEnrollment = async (selectedSection, courseId) => {
+    const validationErrors = [];
+    
+    // Check if section has schedule information
+    if (!selectedSection) {
+      validationErrors.push('No section selected');
+      return validationErrors;
+    }
+    
+    // Get schedule information
+    const scheduleInfo = selectedSection.selectedSchedule || {
+      day: selectedSection.day,
+      startTime: selectedSection.startTime,
+      endTime: selectedSection.endTime
+    };
+    
+    // Check for schedule conflicts if we have schedule information
+    if (scheduleInfo.day && scheduleInfo.startTime && scheduleInfo.endTime) {
+      const conflicts = await checkScheduleConflicts(scheduleInfo);
+      
+      if (conflicts.length > 0) {
+        validationErrors.push(`Schedule conflict detected: ${conflicts.map(c => c.sectionName || 'Unknown section').join(', ')}`);
+      }
+    }
+    
+    // Check for duplicate course enrollment
+    const isAlreadyEnrolled = myEnrollments.some(enrollment => {
+      const enrolledCourseId = enrollment.section?.course?.id || enrollment.section?.course?.courseID;
+      return String(enrolledCourseId) === String(courseId) && enrollment.status === 'Enrolled';
+    });
+    
+    if (isAlreadyEnrolled) {
+      validationErrors.push('You are already enrolled in this course');
+    }
+    
+    return validationErrors;
+  };
 
   if (loading || studentLoading) {
     return (
@@ -440,16 +839,28 @@ function StudentEnrollment(props) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Enrolled Courses</div>
-              <div className="stat-value">{myEnrollments.length}</div>
+              <div className="stat-value">{activeEnrollments.length}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Total Credits</div>
               <div className="stat-value">{myTotalCredits}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Curriculum</div>
-              <div className="stat-value">{studentData?.curriculum?.curriculumName || 'N/A'}</div>
+              <div className="stat-label">Unique Courses</div>
+              <div className="stat-value">{uniqueCoursesEnrolled}</div>
             </div>
+            {enrolledWithDirectCourse > 0 && (
+              <div className="stat-card">
+                <div className="stat-label">Direct Course Assignments</div>
+                <div className="stat-value">{enrolledWithDirectCourse} 📚</div>
+              </div>
+            )}
+            {sectionsWithMultipleSchedules > 0 && (
+              <div className="stat-card">
+                <div className="stat-label">Multi-Schedule Sections</div>
+                <div className="stat-value">{sectionsWithMultipleSchedules} +</div>
+              </div>
+            )}
           </div>
 
           {/* Tab Navigation */}
@@ -464,7 +875,7 @@ function StudentEnrollment(props) {
               className={`page-btn ${selectedTab === 'enrolled' ? 'active' : ''}`}
               onClick={() => setSelectedTab('enrolled')}
             >
-              My Enrollments ({myEnrollments.length})
+              My Enrollments ({activeEnrollments.length})
             </button>
           </div>
 
@@ -520,7 +931,7 @@ function StudentEnrollment(props) {
                       <th>Course Name</th>
                       <th>Year/Semester</th>
                       <th>Credits</th>
-                      <th>Schedule</th>
+                      <th>Available Schedules</th>
                       <th>Select</th>
                     </tr>
                   </thead>
@@ -532,84 +943,245 @@ function StudentEnrollment(props) {
                         </td>
                       </tr>
                     ) : (
-                      filteredCourses.map((course) => (
-                        <tr key={course.curriculumDetailId}>
-                          <td>{course.courseCode}</td>
-                          <td>
-                            <div className="schedule-info">
-                              <div className="schedule-course">{course.courseName}</div>
-                              {course.description && (
-                                <div className="schedule-section">{course.description}</div>
-                              )}
-                            </div>
-                          </td>
-                          <td>Year {course.yearLevel} - Sem {course.semester}</td>
-                          <td className="font-semibold">{course.credits}</td>
-                          <td>
-                              <select
-                                className="form-select"
-                                value={selectedCourses[course.courseId] || ''}
+                      filteredCourses.map((course) => {
+                        const hasDirectCourseSchedules = course.availableSections?.some(s => s.hasDirectCourse);
+                        const hasMultipleSchedules = course.availableSections?.some(s => s.hasMultipleSchedules);
+                        
+                        const rowClasses = [];
+                        if (hasDirectCourseSchedules) rowClasses.push('has-direct-course');
+                        if (hasMultipleSchedules) rowClasses.push('has-multiple-schedules');
+                        
+                        return (
+                          <tr key={course.curriculumDetailId} className={rowClasses.join(' ')}>
+                            <td>
+                              {course.courseCode}
+                              {hasDirectCourseSchedules && <span className="badge course-badge" title="Some schedules have direct course assignment">📚</span>}
+                            </td>
+                            <td>
+                              <div className="schedule-info">
+                                <div className="schedule-course">{course.courseName}</div>
+                                {course.description && (
+                                  <div className="schedule-section">{course.description}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              Year {course.yearLevel} - Sem {course.semester}
+                              {hasMultipleSchedules && <span className="badge multiple-badge" title="Multiple schedules available">+</span>}
+                            </td>
+                            <td className="font-semibold">{course.credits}</td>
+                            <td>
+                                <select
+                                  className="form-select"
+                                  value={selectedCourses[course.courseId] || ''}
+                                  onChange={(e) => {
+                                    const selectionValue = e.target.value;
+                                    if (!selectionValue) {
+                                      // If no selection, remove from both states
+                                      const { [course.courseId]: _, ...restCourses } = selectedCourses;
+                                      const { [course.courseId]: __, ...restSections } = selectedSections;
+                                      setSelectedCourses(restCourses);
+                                      setSelectedSections(restSections);
+                                      return;
+                                    }
+                                    
+                                    // Handle new format: "sectionId-scheduleId" for schedule-course assignments
+                                    if (selectionValue.includes('-')) {
+                                      const [sectionId, scheduleId] = selectionValue.split('-');
+                                      const section = availableSections.find(s => s.sectionID.toString() === sectionId);
+                                      
+                                      if (section && section.schedules) {
+                                        const schedule = section.schedules.find((sch, index) => {
+                                          // Add null checks for schedule ID
+                                          const scheduleIdToCheck = sch.id || sch.scheduleID || sch.scheduleId || `temp-${index}`;
+                                          return scheduleIdToCheck && scheduleIdToCheck.toString() === scheduleId;
+                                        });
+                                        
+                                        if (schedule) {
+                                          // Create enhanced section object with schedule info
+                                          const enhancedSection = {
+                                            ...section,
+                                            selectedSchedule: schedule,
+                                            course: schedule.course,
+                                            startTime: schedule.startTime,
+                                            endTime: schedule.endTime,
+                                            day: schedule.day,
+                                            room: schedule.room,
+                                            scheduleId: schedule.id || schedule.scheduleID || schedule.scheduleId,
+                                            hasDirectCourse: true
+                                          };
+                                          
+                                          setSelectedCourses(prev => ({
+                                            ...prev,
+                                            [course.courseId]: selectionValue
+                                          }));
+                                          setSelectedSections(prev => ({
+                                            ...prev,
+                                            [course.courseId]: enhancedSection
+                                          }));
+                                        }
+                                      }
+                                    } else {
+                                      // Handle backward compatibility: direct section selection
+                                      const section = availableSections.find(s => s.sectionID.toString() === selectionValue);
+                                      if (section) {
+                                        setSelectedCourses(prev => ({
+                                          ...prev,
+                                          [course.courseId]: selectionValue
+                                        }));
+                                        setSelectedSections(prev => ({
+                                          ...prev,
+                                          [course.courseId]: section
+                                        }));
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <option value="">Select Schedule</option>
+                                  {course.availableSections && course.availableSections.length > 0 ? (
+                                    (() => {
+                                      // Collect all schedule options and deduplicate more comprehensively
+                                      const allOptions = [];
+                                      const seenOptions = new Set();
+                                      const scheduleMap = new Map(); // Use Map for better deduplication
+                                      
+                                      course.availableSections
+                                        .filter(section => 
+                                          section.status === 'Active' || 
+                                          section.status === 'ACTIVE' ||
+                                          section.scheduleStatus === 'Active' || 
+                                          section.scheduleStatus === 'ACTIVE'
+                                        )
+                                        .forEach(section => {
+                                          // NEW: Handle sections with multiple schedules for the same course
+                                          if (section.schedules && section.schedules.length > 0) {
+                                            console.log('Processing schedules for section:', section.sectionID, 'schedules:', section.schedules);
+                                            
+                                            // Find schedules that match this course
+                                            const courseSchedules = section.schedules.filter(schedule => {
+                                              if (schedule.course) {
+                                                const scheduleMatches = String(schedule.course.id) === String(course.courseId) || 
+                                                                     String(schedule.course.courseID) === String(course.courseId);
+                                                return scheduleMatches;
+                                              }
+                                              return false;
+                                            });
+                                            
+                                            console.log('Matching schedules for course', course.courseId, ':', courseSchedules);
+                                            
+                                            // Create options for each matching schedule
+                                            courseSchedules.forEach((schedule, index) => {
+                                              const scheduleId = schedule.id || schedule.scheduleID || schedule.scheduleId || `temp-${index}`;
+                                              
+                                              // Create more comprehensive unique key including schedule details
+                                              const scheduleDetails = `${schedule.day}-${schedule.startTime}-${schedule.endTime}-${schedule.room}`;
+                                              const uniqueKey = `${section.sectionID}-${scheduleId}-${scheduleDetails}`;
+                                              
+                                              // Skip duplicates
+                                              if (seenOptions.has(uniqueKey)) {
+                                                console.log('Skipping duplicate schedule:', uniqueKey);
+                                                return;
+                                              }
+                                              
+                                              seenOptions.add(uniqueKey);
+                                              
+                                              const scheduleText = schedule.day && schedule.startTime && schedule.endTime 
+                                                ? `${schedule.day} ${formatTime(schedule.startTime)}-${formatTime(schedule.endTime)}`
+                                                : 'TBA';
+                                              
+                                              const roomText = schedule.room ? ` • Room: ${schedule.room}` : '';
+                                              const instructorText = section.faculty?.firstName && section.faculty?.lastName 
+                                                ? ` • ${section.faculty.firstName} ${section.faculty.lastName}`
+                                                : '';
+                                              
+                                              const courseIndicator = ' 📚';
+                                              
+                                              allOptions.push(
+                                                <option 
+                                                  key={uniqueKey} 
+                                                  value={`${section.sectionID}-${scheduleId}`}
+                                                >
+                                                  {`${section.sectionName} - ${scheduleText}${roomText}${instructorText}${courseIndicator}`}
+                                                </option>
+                                              );
+                                            });
+                                          } else {
+                                            // BACKWARD COMPATIBILITY: Handle sections with direct course assignments
+                                            const scheduleText = section.day && section.startTime && section.endTime 
+                                              ? `${section.day} ${formatTime(section.startTime)}-${formatTime(section.endTime)}`
+                                              : 'TBA';
+                                            
+                                            const roomText = section.room ? ` • Room: ${section.room}` : '';
+                                            const instructorText = section.faculty?.firstName && section.faculty?.lastName 
+                                              ? ` • ${section.faculty.firstName} ${section.faculty.lastName}`
+                                              : '';
+                                            
+                                            const directCourseIndicator = section.hasDirectCourse ? ' 📚' : '';
+                                            
+                                            // Create comprehensive unique key for backward compatibility
+                                            const scheduleDetails = `${section.day}-${section.startTime}-${section.endTime}-${section.room}`;
+                                            const uniqueKey = `${section.sectionID}-${section.scheduleId || 'default'}-${scheduleDetails}`;
+                                            
+                                            if (!seenOptions.has(uniqueKey)) {
+                                              seenOptions.add(uniqueKey);
+                                              allOptions.push(
+                                                <option 
+                                                  key={uniqueKey} 
+                                                  value={section.sectionID}
+                                                >
+                                                  {`${section.sectionName} - ${scheduleText}${roomText}${instructorText}${directCourseIndicator}`}
+                                                </option>
+                                              );
+                                            }
+                                          }
+                                        });
+                                      
+                                      // Additional deduplication pass: remove schedules with identical display text
+                                      const finalOptions = [];
+                                      const seenDisplayTexts = new Set();
+                                      
+                                      allOptions.forEach(option => {
+                                        const displayText = option.props.children;
+                                        if (!seenDisplayTexts.has(displayText)) {
+                                          seenDisplayTexts.add(displayText);
+                                          finalOptions.push(option);
+                                        } else {
+                                          console.log('Removing duplicate display text:', displayText);
+                                        }
+                                      });
+                                      
+                                      return finalOptions.length > 0 ? finalOptions : (
+                                        <option value="" disabled>No active schedules available</option>
+                                      );
+                                    })()
+                                  ) : (
+                                    <option value="" disabled>No active schedules available</option>
+                                  )}
+                                </select>
+                                {course.availableSections && course.availableSections.length === 0 && (
+                                  <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: '4px', color: '#6b7280' }}>
+                                    No schedules available for this course
+                                  </div>
+                                )}
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={!!selectedCourses[course.courseId]}
                                 onChange={(e) => {
-                                  const sectionId = e.target.value;
-                                  if (!sectionId) {
-                                    // If no section is selected, remove from both states
-                                    const { [course.courseId]: _, ...restCourses } = selectedCourses;
-                                    const { [course.courseId]: __, ...restSections } = selectedSections;
-                                    setSelectedCourses(restCourses);
-                                    setSelectedSections(restSections);
-                                    return;
-                                  }
-                                  
-                                  const section = availableSections.find(s => s.sectionID.toString() === sectionId);
-                                  if (section) {
-                                    setSelectedCourses(prev => ({
-                                      ...prev,
-                                      [course.courseId]: sectionId
-                                    }));
-                                    setSelectedSections(prev => ({
-                                      ...prev,
-                                      [course.courseId]: section
-                                    }));
+                                  if (!e.target.checked) {
+                                    const { [course.courseId]: _, ...rest } = selectedCourses;
+                                    const { [course.courseId]: __, ...sectionsRest } = selectedSections;
+                                    setSelectedCourses(rest);
+                                    setSelectedSections(sectionsRest);
                                   }
                                 }}
-                              >
-                                <option value="">Select Schedule</option>
-                                {course.availableSections && course.availableSections.length > 0 ? (
-                                  course.availableSections
-                                    .filter(section => 
-                                      section.status === 'Active' || 
-                                      section.status === 'ACTIVE' ||
-                                      section.schedule?.status === 'Active' || 
-                                      section.schedule?.status === 'ACTIVE'
-                                    )
-                                    .map(section => (
-                                      <option 
-                                        key={section.sectionID} 
-                                        value={section.sectionID}
-                                      >
-                                        {section.sectionName} - {section.schedule?.day || 'TBA'} {formatTime(section.schedule?.startTime)}-{formatTime(section.schedule?.endTime)} {section.schedule?.room ? `• ${section.schedule.room}` : ''}
-                                      </option>
-                                    ))
-                                ) : null}
-                              </select>
-                          </td>
-                          <td>
-                            <input
-                              type="checkbox"
-                              checked={!!selectedCourses[course.courseId]}
-                              onChange={(e) => {
-                                if (!e.target.checked) {
-                                  const { [course.courseId]: _, ...rest } = selectedCourses;
-                                  const { [course.courseId]: __, ...sectionsRest } = selectedSections;
-                                  setSelectedCourses(rest);
-                                  setSelectedSections(sectionsRest);
-                                }
-                              }}
-                              disabled={!course.availableSections?.length || !selectedCourses[course.courseId]}
-                            />
-                          </td>
-                        </tr>
-                      ))
+                                disabled={!course.availableSections?.length || !selectedCourses[course.courseId]}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -634,41 +1206,81 @@ function StudentEnrollment(props) {
                         </td>
                       </tr>
                     ) : (
-                      myEnrollments.map((enrollment) => (
-                        <tr key={enrollment.enrolledCourseID}>
-                          <td>{enrollment.section?.course?.courseCode || 'N/A'}</td>
-                          <td>
-                            <div className="schedule-info">
-                              <div className="schedule-course">{enrollment.section?.course?.courseName || enrollment.section?.course?.courseDescription || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td>{enrollment.section?.sectionName || 'N/A'}</td>
-                          <td>
-                            <div className="time-info">
-                              <div className="time-period">
-                                {formatTime(enrollment.section?.schedule?.startTime)} - {formatTime(enrollment.section?.schedule?.endTime)}
+                      myEnrollments.map((enrollment) => {
+                        const rowClasses = [];
+                        if (enrollment.section?.hasDirectCourse) rowClasses.push('has-direct-course');
+                        if (enrollment.section?.hasMultipleSchedules) rowClasses.push('has-multiple-schedules');
+                        
+                        // NEW: Handle schedule-course assignments
+                        const scheduleInfo = enrollment.section?.selectedSchedule || {
+                          startTime: enrollment.section?.startTime,
+                          endTime: enrollment.section?.endTime,
+                          day: enrollment.section?.day,
+                          room: enrollment.section?.room
+                        };
+                        
+                        return (
+                          <tr key={enrollment.enrolledCourseID} className={rowClasses.join(' ')}>
+                            <td>
+                              {enrollment.section?.course?.courseCode || 'N/A'}
+                              {(enrollment.section?.hasDirectCourse || enrollment.section?.selectedSchedule) && 
+                                <span className="badge course-badge" title="Course assigned to specific schedule">📚</span>}
+                            </td>
+                            <td>
+                              <div className="schedule-info">
+                                <div className="schedule-course">
+                                  {enrollment.section?.course?.courseName || 
+                                   enrollment.section?.course?.courseDescription || 'N/A'}
+                                </div>
+                                {enrollment.section?.selectedSchedule && (
+                                  <div className="schedule-detail" style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                                    Schedule-Course Assignment
+                                  </div>
+                                )}
                               </div>
-                              <div className="day-info">{enrollment.section?.schedule?.day || 'TBA'}</div>
-                            </div>
-                          </td>
-                          <td className="font-semibold">{enrollment.section?.course?.credits || 0}</td>
-                          <td>
-                            <span className="status-badge status-active">
-                              {enrollment.status}
-                            </span>
-                          </td>
-                          <td>
-                            {enrollment.status === 'Enrolled' && (
-                              <button 
-                                className="btn-primary"
-                                onClick={() => handleDrop(enrollment.enrolledCourseID)}
-                              >
-                                Drop
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td>
+                              {enrollment.section?.sectionName || 'N/A'}
+                              {enrollment.section?.hasMultipleSchedules && 
+                                <span className="badge multiple-badge" title="Section has multiple schedules">+</span>}
+                            </td>
+                            <td>
+                              <div className="time-info">
+                                <div className="time-period">
+                                  {formatTime(scheduleInfo.startTime)} - {formatTime(scheduleInfo.endTime)}
+                                </div>
+                                <div className="day-info">{scheduleInfo.day || 'TBA'}</div>
+                                {scheduleInfo.room && (
+                                  <div className="room-info">Room: {scheduleInfo.room}</div>
+                                )}
+                                {enrollment.section?.selectedSchedule && (
+                                  <div className="schedule-id" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                    Schedule ID: {enrollment.section.selectedSchedule.id || 
+                                                 enrollment.section.selectedSchedule.scheduleID || 
+                                                 enrollment.section.selectedSchedule.scheduleId || 'N/A'}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="font-semibold">{enrollment.section?.course?.credits || 0}</td>
+                            <td>
+                              <span className="status-badge status-active">
+                                {enrollment.status}
+                              </span>
+                            </td>
+                            <td>
+                              {enrollment.status === 'Enrolled' && (
+                                <button 
+                                  className="btn-primary"
+                                  onClick={() => handleDrop(enrollment.enrolledCourseID)}
+                                >
+                                  Drop
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -696,13 +1308,37 @@ function StudentEnrollment(props) {
             </div>
             <div className="modal-content">
               <div className="enrollment-details">
-                <p><strong>Course:</strong> {selectedSection.course?.courseCode} - {selectedSection.course?.courseName}</p>
+                <p><strong>Course:</strong> {selectedSection.course?.courseCode} - {selectedSection.course?.courseName || selectedSection.course?.courseDescription}</p>
                 <p><strong>Section:</strong> {selectedSection.sectionName}</p>
                 <p><strong>Instructor:</strong> {selectedSection.faculty?.firstName} {selectedSection.faculty?.lastName}</p>
-                <p><strong>Schedule:</strong> {selectedSection.schedule?.day || 'TBA'}, {formatTime(selectedSection.schedule?.startTime)} - {formatTime(selectedSection.schedule?.endTime)}</p>
-                <p><strong>Room:</strong> {selectedSection.schedule?.room || 'TBA'}</p>
+                
+                {/* Enhanced schedule information */}
+                {selectedSection.selectedSchedule ? (
+                  <>
+                    <p><strong>Schedule:</strong> {selectedSection.selectedSchedule.day || 'TBA'}, {formatTime(selectedSection.selectedSchedule.startTime)} - {formatTime(selectedSection.selectedSchedule.endTime)}</p>
+                    <p><strong>Room:</strong> {selectedSection.selectedSchedule.room || 'TBA'}</p>
+                    <p><strong>Schedule ID:</strong> {selectedSection.selectedSchedule.id || 
+                                                         selectedSection.selectedSchedule.scheduleID || 
+                                                         selectedSection.selectedSchedule.scheduleId || 'N/A'}</p>
+                    <p><strong>Assignment Type:</strong> Course-Schedule Assignment 📚</p>
+                  </>
+                ) : (
+                  <>
+                    <p><strong>Schedule:</strong> {selectedSection.day || selectedSection.schedule?.day || 'TBA'}, {formatTime(selectedSection.startTime || selectedSection.schedule?.startTime)} - {formatTime(selectedSection.endTime || selectedSection.schedule?.endTime)}</p>
+                    <p><strong>Room:</strong> {selectedSection.room || selectedSection.schedule?.room || 'TBA'}</p>
+                    {selectedSection.hasDirectCourse && (
+                      <p><strong>Assignment Type:</strong> Direct Course Assignment 📚</p>
+                    )}
+                  </>
+                )}
+                
                 <p><strong>Credits:</strong> {selectedSection.course?.credits}</p>
                 <p><strong>Capacity:</strong> {selectedSection.enrolledCount || 0}/{selectedSection.capacity}</p>
+                
+                {selectedSection.hasMultipleSchedules && (
+                  <p><strong>Note:</strong> This section has multiple schedules available. +</p>
+                )}
+                
                 <br />
                 <p>Are you sure you want to enroll in this section?</p>
               </div>

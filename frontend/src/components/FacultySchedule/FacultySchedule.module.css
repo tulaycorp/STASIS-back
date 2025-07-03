@@ -155,3 +155,58 @@
 .search-input {
   min-width: 200px;
 }
+
+/* Badge Styles */
+.badge {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+.course-badge {
+  color: #4CAF50;
+}
+
+.multiple-badge {
+  background-color: #f0f0f0;
+  color: #666;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+  font-weight: bold;
+}
+
+.duplicate-section-row {
+  background-color: rgba(240, 248, 255, 0.3);
+}
+
+.status-badge {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-active {
+  background-color: #e6f7e6;
+  color: #28a745;
+}
+
+.status-completed {
+  background-color: #e6e6ff;
+  color: #0275d8;
+}
+
+.status-cancelled {
+  background-color: #ffebee;
+  color: #dc3545;
+}
+
+.status-full {
+  background-color: #fff3cd;
+  color: #ffc107;
+}

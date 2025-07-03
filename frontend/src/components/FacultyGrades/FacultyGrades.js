@@ -5,7 +5,8 @@ import Sidebar from '../FacultySidebar';
 import { useFacultyData } from '../../hooks/useFacultyData';
 import { 
   courseSectionAPI, 
-  enrolledCourseAPI
+  enrolledCourseAPI,
+  scheduleAPI
 } from '../../services/api';
 
 const FacultyGrades = () => {
@@ -75,7 +76,8 @@ const FacultyGrades = () => {
       const newCourseList = filteredProgramCourses.map(grade => ({
         id: grade.id, 
         name: grade.course, 
-        section: grade.section
+        section: grade.section,
+        schedule: grade.schedule || null
       }));
       
       console.log('New course list:', newCourseList);
@@ -84,7 +86,7 @@ const FacultyGrades = () => {
       // Only deselect if the course is not in the filtered list AND we're not in the middle of saving grades
       if (selectedCourseId && 
           !newCourseList.some(c => c.id === selectedCourseId) && 
-          !Object.values(studentsGrades).some(g => g.hasChanges)) {
+          !Object.values(studentsGrades).some(g => g.hasChanges && g.courseId === selectedCourseId)) {
         console.log('Deselecting course because it is not in the filtered list');
         setSelectedCourseId(null);
         setSelectedCourse(null);
@@ -95,7 +97,8 @@ const FacultyGrades = () => {
       const allCourses = gradesList.map(grade => ({
         id: grade.id, 
         name: grade.course, 
-        section: grade.section
+        section: grade.section,
+        schedule: grade.schedule || null
       }));
       console.log('All courses:', allCourses);
       setCourses(allCourses);
@@ -203,6 +206,7 @@ const FacultyGrades = () => {
       }
 
       // Now get student enrollments for each of the faculty's sections
+      // Updated to handle multiple courses per section with schedules
       const sectionMap = new Map();
       
       // Process each section and fetch student enrollments
@@ -210,23 +214,62 @@ const FacultyGrades = () => {
         console.log('=== PROCESSING SECTION ===');
         console.log('Section details:', section);
         console.log('Section ID:', section.sectionID);
-        console.log('Course:', section.course?.courseDescription);
         console.log('Section Name:', section.sectionName);
         console.log('Program:', section.program?.programName);
+        console.log('Schedules:', section.schedules);
         
-        // Create section data with empty students array initially
-        const sectionData = {
-          id: section.sectionID,
-          course: section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
-          section: section.sectionName,
-          creditUnits: section.course?.credits || 3,
-          program: section.program?.programName || 'Unknown Program',
-          status: section.status || 'ACTIVE',
-          instructor: `${section.faculty?.firstName} ${section.faculty?.lastName}`,
-          students: []
-        };
-        
-        console.log('Created section data:', sectionData);
+        // Handle multiple schedules per section (new structure)
+        // Instead of creating separate entries for each schedule, we'll create one entry per unique course
+        if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+          // Group schedules by course to avoid duplication
+          const courseScheduleMap = new Map();
+          
+          section.schedules.forEach((schedule, scheduleIndex) => {
+            const courseKey = schedule.course?.courseCode || schedule.course?.courseDescription || 'Unknown Course';
+            
+            if (!courseScheduleMap.has(courseKey)) {
+              const scheduleId = `${section.sectionID}-${courseKey}`;
+              console.log(`Processing unique course ${courseKey} for section ${section.sectionID}:`, schedule);
+              
+              // Create section data for each unique course
+              const sectionData = {
+                id: scheduleId,
+                course: schedule.course?.courseDescription || schedule.course?.courseCode || section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
+                section: section.sectionName,
+                creditUnits: schedule.course?.credits || section.course?.credits || 3,
+                program: section.program?.programName || 'Unknown Program',
+                status: section.status || 'ACTIVE',
+                instructor: `${section.faculty?.firstName} ${section.faculty?.lastName}`,
+                schedule: {
+                  day: schedule.day,
+                  startTime: schedule.startTime,
+                  endTime: schedule.endTime,
+                  room: schedule.room
+                },
+                students: []
+              };
+              
+              console.log('Created section data for unique course:', sectionData);
+              courseScheduleMap.set(courseKey, sectionData);
+              sectionMap.set(scheduleId, sectionData);
+            }
+          });
+        } else {
+          // Handle sections without schedules (fallback to original structure)
+          const sectionData = {
+            id: section.sectionID,
+            course: section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
+            section: section.sectionName,
+            creditUnits: section.course?.credits || 3,
+            program: section.program?.programName || 'Unknown Program',
+            status: section.status || 'ACTIVE',
+            instructor: `${section.faculty?.firstName} ${section.faculty?.lastName}`,
+            students: []
+          };
+          
+          console.log('Created section data (no schedules):', sectionData);
+          sectionMap.set(section.sectionID, sectionData);
+        }
         
         // Try to fetch students for this section
         try {
@@ -285,9 +328,37 @@ const FacultyGrades = () => {
                 return null;
               }
             }).filter(student => student !== null); // Remove null entries
+            
+            // Deduplicate students by ID to ensure no duplicates
+            const uniqueStudents = [];
+            const seenStudentIds = new Set();
+            
+            for (const student of students) {
+              if (!seenStudentIds.has(student.id)) {
+                seenStudentIds.add(student.id);
+                uniqueStudents.push(student);
+              } else {
+                console.warn(`Duplicate student ID ${student.id} found and removed`);
+              }
+            }
           
-            console.log('Processed students for section:', students);
-            sectionData.students = students;
+            console.log('Processed students for section:', uniqueStudents);
+            console.log(`Original count: ${students.length}, After deduplication: ${uniqueStudents.length}`);
+            
+            // Debug: Log enrollment IDs for each student
+            uniqueStudents.forEach(student => {
+              console.log(`Student ${student.id} (${student.name}) - Enrollment ID: ${student.enrollmentId}`);
+            });
+            
+            // Apply students to section entries for this section
+            // Find all entries that belong to this section and assign students (without duplication)
+            for (const [key, sectionData] of sectionMap.entries()) {
+              if (key.startsWith(section.sectionID.toString())) {
+                // Simply assign students directly - they should be the same for all courses in the same section
+                sectionData.students = uniqueStudents;
+                console.log(`Assigned ${uniqueStudents.length} students to section ${key}`);
+              }
+            }
           } else {
             console.warn('No enrollments found for section:', section.sectionID);
           }
@@ -296,9 +367,6 @@ const FacultyGrades = () => {
           console.error(`Error fetching enrollments for section ${section.sectionID}:`, err);
           // Section will have empty students array
         }
-        
-        // Always add the section to the map (with or without students)
-        sectionMap.set(section.sectionID, sectionData);
       }
 
       const processedGrades = Array.from(sectionMap.values());
@@ -353,9 +421,27 @@ const FacultyGrades = () => {
 
   const handleGradeChange = (studentId, field, value) => {
     const student = selectedCourse.students.find(s => s.id === studentId);
-    if (!student || !student.enrollmentId) return;
+    if (!student) {
+      console.error(`Student with ID ${studentId} not found in selected course`);
+      return;
+    }
+    
+    if (!student.enrollmentId) {
+      console.error(`No enrollment ID found for student ${studentId}:`, student);
+      showToast(`Cannot update grades for student ${studentId}: No enrollment ID found`, 'error');
+      return;
+    }
 
-    const grades = studentsGrades[studentId] || {};
+    console.log(`=== GRADE CHANGE DEBUG ===`);
+    console.log(`Updating ${field} for student ${studentId} (enrollmentId: ${student.enrollmentId}) in course ${selectedCourse.id} to: ${value}`);
+    console.log(`Selected course ID: ${selectedCourse.id}`);
+    console.log(`Selected course name: ${selectedCourse.name || selectedCourse.course}`);
+
+    // Create a unique key for this student in this specific course
+    const studentCourseKey = `${studentId}-${selectedCourse.id}`;
+    console.log(`Student-course key: ${studentCourseKey}`);
+    
+    const grades = studentsGrades[studentCourseKey] || {};
     const updatedGrades = {
       ...grades,
       [field]: field === 'remark' ? value : (parseFloat(value) || null)
@@ -370,31 +456,61 @@ const FacultyGrades = () => {
       newWeightedAverage = (midtermGrade + finalGrade) / 2;
     }
 
+    const gradeData = {
+      ...updatedGrades,
+      weightedAverage: newWeightedAverage,
+      enrollmentId: student.enrollmentId,
+      studentId: studentId,
+      courseId: selectedCourse.id,
+      hasChanges: true // Mark this student's grades as changed
+    };
+
+    console.log(`Storing grade data for key ${studentCourseKey}:`, gradeData);
+
     // Only update local state - no backend save
     setStudentsGrades(prev => ({
       ...prev,
-      [studentId]: {
-        ...updatedGrades,
-        weightedAverage: newWeightedAverage,
-        enrollmentId: student.enrollmentId,
-        hasChanges: true // Mark this student's grades as changed
-      }
+      [studentCourseKey]: gradeData
     }));
   };
 
   // New function to handle encoding/saving all changed grades
   const handleEncodeGrades = async () => {
-    const changedStudents = Object.entries(studentsGrades).filter(([_, grades]) => grades.hasChanges);
+    if (!selectedCourse) {
+      showToast('No course selected', 'error');
+      return;
+    }
+
+    console.log('=== ENCODING GRADES DEBUG ===');
+    console.log('Selected course ID:', selectedCourse.id);
+    console.log('Selected course:', selectedCourse);
+    console.log('All studentsGrades entries:', Object.entries(studentsGrades));
+    
+    // Filter to only get changes for the current selected course with extra validation
+    const changedStudents = Object.entries(studentsGrades).filter(([key, grades]) => {
+      const hasChanges = grades.hasChanges === true;
+      const courseMatches = grades.courseId === selectedCourse.id;
+      const keyMatchesCourse = key.endsWith(`-${selectedCourse.id}`);
+      
+      console.log(`Checking student key: ${key}`);
+      console.log(`  - hasChanges: ${hasChanges}`);
+      console.log(`  - courseMatches: ${courseMatches} (${grades.courseId} === ${selectedCourse.id})`);
+      console.log(`  - keyMatchesCourse: ${keyMatchesCourse}`);
+      
+      return hasChanges && courseMatches && keyMatchesCourse;
+    });
+    
+    console.log('Filtered changed students:', changedStudents);
     
     if (changedStudents.length === 0) {
-      alert('No grades have been changed');
+      showToast('No grades have been changed for this course', 'error');
       return;
     }
 
     console.log('=== ENCODING GRADES ===');
-    console.log('Changed students:', changedStudents);
-    console.log('Current gradesList before update:', gradesList);
-    console.log('Selected course:', selectedCourse);
+    console.log('Changed students for course:', selectedCourse.id);
+    console.log('Changed students count:', changedStudents.length);
+    console.log('Changed students data:', changedStudents);
 
     try {
       setSaveLoading(prev => ({
@@ -402,65 +518,146 @@ const FacultyGrades = () => {
         all: true
       }));
 
+      let successCount = 0;
+      let errorCount = 0;
+
       // Save each student's grades
-      for (const [studentId, grades] of changedStudents) {
-        const updateData = {
-          midtermGrade: grades.midterm,
-          finalGrade: grades.final,
-          overallGrade: grades.weightedAverage,
-          remark: grades.remark || 'INCOMPLETE'
-        };
-
-        console.log(`Updating grades for student ${studentId}:`, updateData);
-        await enrolledCourseAPI.updateGrades(grades.enrollmentId, updateData);
-        console.log(`Successfully updated grades for student ${studentId}`);
-      }
-
-      // Create a deep copy of gradesList to avoid mutation issues
-      const updatedGradesList = JSON.parse(JSON.stringify(gradesList));
-      
-      // Find and update the current course section
-      const currentSectionIndex = updatedGradesList.findIndex(grade => grade.id === selectedCourse.id);
-      
-      if (currentSectionIndex !== -1) {
-        console.log('Found matching grade section, updating students...');
-        const currentSection = updatedGradesList[currentSectionIndex];
-        
-        // Update students with new grades while preserving all students
-        currentSection.students = currentSection.students.map(student => {
-          const updatedGrades = studentsGrades[student.id];
-          if (updatedGrades?.hasChanges) {
-            console.log(`Updating student ${student.id} with new grades:`, updatedGrades);
-            return {
-              ...student,
-              midterm: updatedGrades.midterm ?? student.midterm,
-              final: updatedGrades.final ?? student.final,
-              weightedAverage: updatedGrades.weightedAverage ?? student.weightedAverage,
-              remark: updatedGrades.remark ?? student.remark
-            };
+      for (const [studentCourseKey, grades] of changedStudents) {
+        try {
+          // Additional validation: ensure the student exists in the current course
+          // The key format is "studentId-courseId", where courseId can be a complex string
+          // We need to extract studentId from the beginning and courseId from the rest
+          
+          // Find the first dash to separate studentId from courseId
+          const firstDashIndex = studentCourseKey.indexOf('-');
+          if (firstDashIndex === -1) {
+            console.error(`Invalid key format: ${studentCourseKey}`);
+            errorCount++;
+            continue;
           }
-          return student; // Keep unchanged students exactly as they are
-        });
-        
-        console.log('Updated students count:', currentSection.students.length);
-      }
-      
-      // Update the state with the new gradesList
-      setGradesList(updatedGradesList);
-      
-      // Update the selectedCourse to reflect the changes
-      if (currentSectionIndex !== -1) {
-        setSelectedCourse(updatedGradesList[currentSectionIndex]);
+          
+          const studentIdStr = studentCourseKey.substring(0, firstDashIndex);
+          const courseIdStr = studentCourseKey.substring(firstDashIndex + 1);
+          const studentId = parseInt(studentIdStr);
+          
+          console.log(`Parsing key: ${studentCourseKey}`);
+          console.log(`  - studentId: ${studentId}`);
+          console.log(`  - courseId: ${courseIdStr}`);
+          console.log(`  - selectedCourse.id: ${selectedCourse.id}`);
+          
+          if (courseIdStr !== selectedCourse.id) {
+            console.error(`Course ID mismatch for key ${studentCourseKey}: ${courseIdStr} !== ${selectedCourse.id}`);
+            errorCount++;
+            continue;
+          }
+          
+          const studentInCourse = selectedCourse.students.find(s => s.id === studentId);
+          if (!studentInCourse) {
+            console.error(`Student ${studentId} not found in selected course ${selectedCourse.id}`);
+            errorCount++;
+            continue;
+          }
+          
+          // Validate enrollment ID
+          if (!grades.enrollmentId) {
+            console.error(`No enrollment ID found for student key ${studentCourseKey}`);
+            errorCount++;
+            continue;
+          }
+
+          const updateData = {
+            midtermGrade: grades.midterm,
+            finalGrade: grades.final,
+            overallGrade: grades.weightedAverage,
+            remark: grades.remark || 'INCOMPLETE'
+          };
+
+          console.log(`Updating grades for student key ${studentCourseKey} with enrollment ID ${grades.enrollmentId}:`, updateData);
+          
+          const response = await enrolledCourseAPI.updateGrades(grades.enrollmentId, updateData);
+          console.log(`API response for student key ${studentCourseKey}:`, response);
+          
+          if (response && (response.status === 200 || response.status === 204)) {
+            console.log(`Successfully updated grades for student key ${studentCourseKey}`);
+            successCount++;
+          } else {
+            console.error(`Unexpected response for student key ${studentCourseKey}:`, response);
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`Error updating grades for student key ${studentCourseKey}:`, error);
+          console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+          });
+          errorCount++;
+        }
       }
 
-      // Clear all temporary grades after successful update
-      setStudentsGrades({});
+      console.log(`Encoding complete: ${successCount} successful, ${errorCount} failed`);
+
+      if (successCount > 0) {
+        // Create a deep copy of gradesList to avoid mutation issues
+        const updatedGradesList = JSON.parse(JSON.stringify(gradesList));
+        
+        // Find and update the current course section
+        const currentSectionIndex = updatedGradesList.findIndex(grade => grade.id === selectedCourse.id);
+        
+        if (currentSectionIndex !== -1) {
+          console.log('Found matching grade section, updating students...');
+          const currentSection = updatedGradesList[currentSectionIndex];
+          
+          // Update students with new grades while preserving all students
+          currentSection.students = currentSection.students.map(student => {
+            const studentCourseKey = `${student.id}-${selectedCourse.id}`;
+            const updatedGrades = studentsGrades[studentCourseKey];
+            if (updatedGrades?.hasChanges) {
+              console.log(`Updating student ${student.id} with new grades:`, updatedGrades);
+              return {
+                ...student,
+                midterm: updatedGrades.midterm ?? student.midterm,
+                final: updatedGrades.final ?? student.final,
+                weightedAverage: updatedGrades.weightedAverage ?? student.weightedAverage,
+                remark: updatedGrades.remark ?? student.remark
+              };
+            }
+            return student; // Keep unchanged students exactly as they are
+          });
+          
+          console.log('Updated students count:', currentSection.students.length);
+        }
+        
+        // Update the state with the new gradesList
+        setGradesList(updatedGradesList);
+        
+        // Update the selectedCourse to reflect the changes
+        if (currentSectionIndex !== -1) {
+          setSelectedCourse(updatedGradesList[currentSectionIndex]);
+        }
+
+        // Clear only the temporary grades for this course
+        setStudentsGrades(prev => {
+          const newGrades = { ...prev };
+          changedStudents.forEach(([key]) => {
+            delete newGrades[key];
+          });
+          return newGrades;
+        });
+      }
       
       console.log('=== ENCODING COMPLETE ===');
-      showToast('All grades have been successfully encoded!', 'success');
+      
+      if (errorCount === 0) {
+        showToast(`All ${successCount} grades have been successfully encoded!`, 'success');
+      } else if (successCount > 0) {
+        showToast(`${successCount} grades encoded successfully, ${errorCount} failed. Please check console for details.`, 'error');
+      } else {
+        showToast(`Failed to encode all grades. Please check console for details.`, 'error');
+      }
     } catch (err) {
       console.error('Error encoding grades:', err);
-      showToast('Failed to encode some grades. Please try again.', 'error');
+      showToast('Failed to encode grades. Please try again.', 'error');
     } finally {
       setSaveLoading(prev => ({
         ...prev,
@@ -566,6 +763,12 @@ const FacultyGrades = () => {
                       >
                         <div className={styles.semesterInfo}>
                           <div className={styles.semesterMain}>{course.name}</div>
+                          <div className={styles.semesterSub}>Section: {course.section}</div>
+                          {course.schedule && (
+                            <div className={styles.scheduleInfo}>
+                              {course.schedule.day} {course.schedule.startTime}-{course.schedule.endTime}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))
@@ -583,9 +786,16 @@ const FacultyGrades = () => {
                     {selectedCourse ? selectedCourse.course : 'Select a Course'}
                   </h2>
                   {selectedCourse && (
-                    <span className={styles.headerCourseUnits}>
-                      {selectedCourse.creditUnits} Units
-                    </span>
+                    <div className={styles.headerCourseDetails}>
+                      <span className={styles.headerCourseUnits}>
+                        {selectedCourse.creditUnits} Units
+                      </span>
+                      {selectedCourse.schedule && (
+                        <span className={styles.headerScheduleInfo}>
+                          {selectedCourse.schedule.day} {selectedCourse.schedule.startTime}-{selectedCourse.schedule.endTime} ({selectedCourse.schedule.room})
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className={styles.headerControls}>
@@ -671,13 +881,14 @@ const FacultyGrades = () => {
                       
                       console.log('Showing student rows for:', filteredStudents.length, 'students');
                       return filteredStudents.map((student) => {
-                        const currentGrades = studentsGrades[student.id] || {};
+                        const studentCourseKey = `${student.id}-${selectedCourse.id}`;
+                        const currentGrades = studentsGrades[studentCourseKey] || {};
                         const displayedMidterm = currentGrades.midterm ?? student.midterm;
                         const displayedFinal = currentGrades.final ?? student.final;
                         const displayedWeightedAverage = currentGrades.weightedAverage ?? student.weightedAverage;
                         
                         return (
-                          <tr key={student.id}>
+                          <tr key={`${student.id}-${selectedCourse.id}`}>
                             <td>
                               <div className={styles.cellContent}>
                                 <span className={styles.studentIdLabel}>{student.id}</span>
@@ -700,7 +911,7 @@ const FacultyGrades = () => {
                                   step="0.01" 
                                   value={displayedMidterm ?? ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'midterm', e.target.value)} 
-                                  className={`${styles.gradeInput} ${studentsGrades[student.id]?.hasChanges ? styles.changed : ''}`}
+                                  className={`${styles.gradeInput} ${studentsGrades[studentCourseKey]?.hasChanges ? styles.changed : ''}`}
                                 />
                               </div>
                             </td>
@@ -713,7 +924,7 @@ const FacultyGrades = () => {
                                   step="0.01" 
                                   value={displayedFinal ?? ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'final', e.target.value)} 
-                                  className={`${styles.gradeInput} ${studentsGrades[student.id]?.hasChanges ? styles.changed : ''}`}
+                                  className={`${styles.gradeInput} ${studentsGrades[studentCourseKey]?.hasChanges ? styles.changed : ''}`}
                                 />
                               </div>
                             </td>
@@ -725,9 +936,9 @@ const FacultyGrades = () => {
                             <td>
                               <div className={styles.cellContent}>
                                 <select
-                                  value={studentsGrades[student.id]?.remark || student.remark || 'INCOMPLETE'}
+                                  value={studentsGrades[studentCourseKey]?.remark || student.remark || 'INCOMPLETE'}
                                   onChange={(e) => handleGradeChange(student.id, 'remark', e.target.value)}
-                                  className={`${styles.remarkSelect} ${studentsGrades[student.id]?.hasChanges ? styles.changed : ''}`}
+                                  className={`${styles.remarkSelect} ${studentsGrades[studentCourseKey]?.hasChanges ? styles.changed : ''}`}
                                 >
                                   <option value="INCOMPLETE">INCOMPLETE</option>
                                   <option value="PASS">PASS</option>
@@ -744,21 +955,34 @@ const FacultyGrades = () => {
               </div>
               
               {/* Add Encode Grades button */}
-              {selectedCourse && Object.values(studentsGrades).some(g => g.hasChanges) && (
-                <div className={styles.encodeGradesContainer}>
-                  <button
-                    onClick={handleEncodeGrades}
-                    className={styles.encodeGradesButton}
-                    disabled={saveLoading.all}
-                  >
-                    {saveLoading.all ? 'Encoding...' : 'Encode Grades'}
-                  </button>
-                </div>
-              )}
+              {selectedCourse && (() => {
+                const changedStudentsCount = Object.values(studentsGrades).filter(g => 
+                  g.hasChanges && g.courseId === selectedCourse.id
+                ).length;
+                
+                return changedStudentsCount > 0 ? (
+                  <div className={styles.encodeGradesContainer}>
+                    <button
+                      onClick={handleEncodeGrades}
+                      className={styles.encodeGradesButton}
+                      disabled={saveLoading.all}
+                    >
+                      {saveLoading.all ? 'Encoding...' : `Encode Grades (${changedStudentsCount} student${changedStudentsCount !== 1 ? 's' : ''})`}
+                    </button>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Toast notifications */}
+      {toast && (
+        <div className={`${styles.toast} ${styles[toast.type]}`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 };
