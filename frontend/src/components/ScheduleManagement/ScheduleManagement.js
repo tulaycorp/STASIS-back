@@ -82,7 +82,7 @@ const ScheduleManagement = () => {
         courseSectionAPI.getAllSections()
       ]);
 
-      // Build schedules list - modified to support multiple schedules per section
+      // Build schedules list - modified to support multiple course-schedule assignments per section
       const transformedSchedules = [];
       sectionsResponse.data.forEach(section => {
         // Handle case where section has multiple schedules (array)
@@ -90,8 +90,8 @@ const ScheduleManagement = () => {
           section.schedules.forEach(schedule => {
             transformedSchedules.push({
               id: schedule.scheduleID,
-              courseName: section.course?.courseDescription || 'Unknown Course',
-              courseId: section.course?.courseCode || 'N/A',
+              courseName: schedule.course?.courseDescription || section.course?.courseDescription || 'Unknown Course',
+              courseId: schedule.course?.courseCode || section.course?.courseCode || 'N/A',
               section: section.sectionName || 'N/A',
               instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
               room: schedule.room || 'TBA',
@@ -102,7 +102,8 @@ const ScheduleManagement = () => {
               semester: section.semester || 'Current',
               year: section.year || new Date().getFullYear(),
               program: section.program?.programName || 'N/A',
-              sectionID: section.sectionID
+              sectionID: section.sectionID,
+              scheduleHasCourse: !!schedule.course
             });
           });
         } 
@@ -122,7 +123,8 @@ const ScheduleManagement = () => {
             semester: section.semester || 'Current',
             year: section.year || new Date().getFullYear(),
             program: section.program?.programName || 'N/A',
-            sectionID: section.sectionID
+            sectionID: section.sectionID,
+            scheduleHasCourse: false
           });
         }
       });
@@ -180,13 +182,13 @@ const ScheduleManagement = () => {
 
       const transformedData = [];
       sectionsResponse.data.forEach(section => {
-        // Handle multiple schedules per section
+        // Handle multiple schedules per section with course assignments
         if (Array.isArray(section.schedules) && section.schedules.length > 0) {
           section.schedules.forEach(schedule => {
             transformedData.push({
               id: schedule.scheduleID,
-              courseName: section.course?.courseDescription || 'Unknown Course',
-              courseId: section.course?.courseCode || 'N/A',
+              courseName: schedule.course?.courseDescription || section.course?.courseDescription || 'Unknown Course',
+              courseId: schedule.course?.courseCode || section.course?.courseCode || 'N/A',
               section: section.sectionName || 'N/A',
               instructor: section.faculty ? `${section.faculty.firstName} ${section.faculty.lastName}` : 'TBA',
               room: schedule.room || 'TBA',
@@ -197,7 +199,8 @@ const ScheduleManagement = () => {
               semester: section.semester || 'Current',
               year: section.year || new Date().getFullYear(),
               program: section.program?.programName || 'N/A',
-              sectionID: section.sectionID
+              sectionID: section.sectionID,
+              scheduleHasCourse: !!schedule.course
             });
           });
         } 
@@ -217,7 +220,8 @@ const ScheduleManagement = () => {
             semester: section.semester || 'Current',
             year: section.year || new Date().getFullYear(),
             program: section.program?.programName || 'N/A',
-            sectionID: section.sectionID
+            sectionID: section.sectionID,
+            scheduleHasCourse: false
           });
         }
       });
@@ -245,7 +249,39 @@ const ScheduleManagement = () => {
     }, 4500);
   };
 
-  // Add new schedule
+  // Check for schedule conflicts globally
+  const checkScheduleConflicts = async (scheduleData, excludeScheduleId = null) => {
+    try {
+      const response = await scheduleAPI.checkConflicts(
+        scheduleData.day,
+        scheduleData.startTime,
+        scheduleData.endTime,
+        excludeScheduleId
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error checking schedule conflicts:', error);
+      return [];
+    }
+  };
+
+  // Check if course is already assigned with a different schedule in the same section
+  const checkCourseScheduleConflict = (sectionId, courseId, scheduleData, excludeScheduleId = null) => {
+    const sectionSchedules = scheduleList.filter(s => 
+      s.sectionID === sectionId && 
+      s.courseId === courseId &&
+      s.id !== excludeScheduleId
+    );
+    
+    return sectionSchedules.some(existingSchedule => 
+      existingSchedule.day === scheduleData.day &&
+      ((existingSchedule.timeFrom <= scheduleData.startTime && existingSchedule.timeTo > scheduleData.startTime) ||
+       (existingSchedule.timeFrom < scheduleData.endTime && existingSchedule.timeTo >= scheduleData.endTime) ||
+       (existingSchedule.timeFrom >= scheduleData.startTime && existingSchedule.timeTo <= scheduleData.endTime))
+    );
+  };
+
+  // Add new schedule with course-schedule validation
   const handleAddSchedule = async () => {
     try {
       // Validate required fields
@@ -267,36 +303,54 @@ const ScheduleManagement = () => {
         return;
       }
 
-      // First create the schedule
       const scheduleData = {
         startTime: scheduleForm.startTime,
         endTime: scheduleForm.endTime,
         day: scheduleForm.day,
         status: scheduleForm.status,
-        room: scheduleForm.room
+        room: scheduleForm.room,
+        courseId: selectedCourse.id
       };
 
-      // Create the schedule and associate it with the section
-      const scheduleResponse = await scheduleAPI.createSchedule(scheduleData, existingSection.sectionID);
+      console.log('Selected course:', selectedCourse);
+      console.log('Schedule data being sent:', scheduleData);
+      console.log('Section ID:', existingSection.sectionID);
+
+      // Check for global schedule conflicts
+      const globalConflicts = await checkScheduleConflicts(scheduleData);
+      if (globalConflicts.length > 0) {
+        showToast('Schedule conflict detected: This time slot conflicts with existing schedules in other sections.', 'error');
+        return;
+      }
+
+      // Check if this course already has a different schedule in the same section
+      const courseScheduleConflict = checkCourseScheduleConflict(
+        existingSection.sectionID,
+        selectedCourse.value,
+        scheduleData
+      );
+      
+      if (courseScheduleConflict) {
+        showToast('Course schedule conflict: This course already has a different schedule in this section.', 'error');
+        return;
+      }
+
+      // Create the schedule with course reference
+      console.log('About to call createScheduleWithCourse...');
+      console.log('Schedule data:', scheduleData);
+      console.log('Section ID:', existingSection.sectionID);
+      console.log('Selected course object:', selectedCourse);
+      
+      const scheduleResponse = await scheduleAPI.createScheduleWithCourse(scheduleData, existingSection.sectionID);
       console.log('Schedule creation response:', scheduleResponse);
       
-      // Now separately update the section with course/faculty if needed
-      let sectionNeedsUpdate = false;
-      const sectionUpdateData = { ...existingSection };
-
-      if (selectedCourse && (!existingSection.course || existingSection.course.courseCode !== selectedCourse.value)) {
-        sectionUpdateData.course = { id: selectedCourse.id };
-        sectionNeedsUpdate = true;
-      }
-
+      // Update section faculty if needed (but don't overwrite course assignments)
       if (selectedFaculty && (!existingSection.faculty || existingSection.faculty.facultyID !== selectedFaculty.value)) {
-        sectionUpdateData.faculty = { facultyID: selectedFaculty.value };
-        sectionNeedsUpdate = true;
-      }
-
-      if (sectionNeedsUpdate) {
-        // Important: Don't modify the schedules when updating other section properties
-        console.log('Updating section with course/faculty:', sectionUpdateData);
+        const sectionUpdateData = { 
+          ...existingSection,
+          faculty: { facultyID: selectedFaculty.value }
+        };
+        console.log('Updating section faculty:', sectionUpdateData);
         await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
       }
       
@@ -305,6 +359,14 @@ const ScheduleManagement = () => {
       reloadSchedules();
     } catch (error) {
       console.error('Error adding schedule:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config
+      });
+      
       if (error.response?.data) {
         console.error('Server error details:', error.response.data);
       }
@@ -356,38 +418,47 @@ const ScheduleManagement = () => {
       const selectedCourse = courseOptions.find(c => c.value === scheduleForm.course);
       const selectedFaculty = instructorOptions.find(f => f.value === parseInt(scheduleForm.instructor));
 
-      // Update the schedule first
       const scheduleData = {
         startTime: scheduleForm.startTime,
         endTime: scheduleForm.endTime,
         day: scheduleForm.day,
         status: scheduleForm.status,
-        room: scheduleForm.room
+        room: scheduleForm.room,
+        courseId: selectedCourse.id
       };
 
-      console.log('Calling updateSchedule API for ID:', editingSchedule.id, 'with data:', scheduleData);
-      await scheduleAPI.updateSchedule(editingSchedule.id, scheduleData);
+      // Check for global schedule conflicts (exclude current schedule)
+      const globalConflicts = await checkScheduleConflicts(scheduleData, editingSchedule.id);
+      if (globalConflicts.length > 0) {
+        showToast('Schedule conflict detected: This time slot conflicts with existing schedules.', 'error');
+        return;
+      }
+
+      // Check if this course already has a different schedule in the same section (exclude current)
+      const courseScheduleConflict = checkCourseScheduleConflict(
+        editingSchedule.sectionID,
+        selectedCourse.value,
+        scheduleData,
+        editingSchedule.id
+      );
       
-      // After updating the schedule, make sure the course section reflects any course/faculty changes
+      if (courseScheduleConflict) {
+        showToast('Course schedule conflict: This course already has a different schedule in this section.', 'error');
+        return;
+      }
+
+      console.log('Calling updateSchedule API for ID:', editingSchedule.id, 'with data:', scheduleData);
+      await scheduleAPI.updateScheduleWithCourse(editingSchedule.id, scheduleData);
+      
+      // After updating the schedule, update section faculty if needed
       const existingSection = sectionsList.find(s => s.sectionID === editingSchedule.sectionID);
-      if (existingSection) {
-        let sectionNeedsUpdate = false;
-        const sectionUpdateData = { ...existingSection };
-
-        if (selectedCourse && (!existingSection.course || existingSection.course.courseCode !== selectedCourse.value)) {
-          sectionUpdateData.course = { id: selectedCourse.id };
-          sectionNeedsUpdate = true;
-        }
-
-        if (selectedFaculty && (!existingSection.faculty || existingSection.faculty.facultyID !== selectedFaculty.value)) {
-          sectionUpdateData.faculty = { facultyID: selectedFaculty.value };
-          sectionNeedsUpdate = true;
-        }
-
-        if (sectionNeedsUpdate) {
-          console.log('Updating section with course/faculty:', sectionUpdateData);
-          await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
-        }
+      if (existingSection && selectedFaculty && (!existingSection.faculty || existingSection.faculty.facultyID !== selectedFaculty.value)) {
+        const sectionUpdateData = { 
+          ...existingSection,
+          faculty: { facultyID: selectedFaculty.value }
+        };
+        console.log('Updating section faculty:', sectionUpdateData);
+        await courseSectionAPI.updateSection(existingSection.sectionID, sectionUpdateData);
       }
       
       showToast('Schedule updated successfully!', 'success');
@@ -403,6 +474,8 @@ const ScheduleManagement = () => {
           errorMessage = 'The requested resource was not found.';
         } else if (error.response.status === 400) {
           errorMessage = error.response.data || 'Invalid data provided.';
+        } else if (error.response.status === 409) {
+          errorMessage = 'Schedule conflict detected.';
         }
       }
       
@@ -896,7 +969,10 @@ const ScheduleManagement = () => {
                           
                           return (
                             <tr key={schedule.id} className={isDuplicateSection ? 'duplicate-section-row' : ''}>
-                              <td className="course-id">{schedule.courseId || 'N/A'}</td>
+                              <td className="course-id">
+                                {schedule.courseId || 'N/A'}
+                                {schedule.scheduleHasCourse && <span className="badge course-badge" title="Course assigned to this schedule">📚</span>}
+                              </td>
                               <td className="course-name">{schedule.courseName || schedule.course || 'N/A'}</td>
                               <td className="section">
                                 {schedule.section}

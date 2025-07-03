@@ -26,10 +26,9 @@ public class CourseSection {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long sectionID;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "course_id")
-    private Course course;
-
+    // Remove single course reference since we now support multiple courses per section
+    // Courses are now managed through the Schedule entities
+    
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "program_id")
     private Program program;
@@ -41,7 +40,7 @@ public class CourseSection {
     private String semester;
     private int year;
     
-    // Replace schedule fields with a relationship to Schedule
+    // Multiple schedules, each potentially with different courses
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "course_section_id")
     private List<Schedule> schedules;

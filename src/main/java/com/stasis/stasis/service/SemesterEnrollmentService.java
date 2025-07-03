@@ -2,6 +2,7 @@ package com.stasis.stasis.service;
 
 import com.stasis.stasis.model.SemesterEnrollment;
 import com.stasis.stasis.model.EnrolledCourse;
+import com.stasis.stasis.model.CourseSection;
 import com.stasis.stasis.repository.SemesterEnrollmentRepository;
 import com.stasis.stasis.repository.EnrolledCourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +68,17 @@ public class SemesterEnrollmentService {
             .map(enrollment -> {
                 List<EnrolledCourse> enrolledCourses = enrolledCourseRepository.findBySemesterEnrollment(enrollment);
                 int totalCredits = enrolledCourses.stream()
-                    .mapToInt(ec -> ec.getSection().getCourse().getCreditUnits())
+                    .mapToInt(ec -> {
+                        // Calculate credits from all schedules in the course section
+                        CourseSection section = ec.getSection();
+                        if (section != null && section.getSchedules() != null) {
+                            return section.getSchedules().stream()
+                                .filter(schedule -> schedule.getCourse() != null)
+                                .mapToInt(schedule -> schedule.getCourse().getCreditUnits())
+                                .sum(); // Sum all credits from different courses in the section
+                        }
+                        return 0;
+                    })
                     .sum();
                 enrollment.setTotalCredits(totalCredits);
                 return semesterEnrollmentRepository.save(enrollment);

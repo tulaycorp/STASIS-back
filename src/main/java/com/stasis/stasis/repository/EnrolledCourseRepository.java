@@ -18,7 +18,8 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
            "LEFT JOIN FETCH se.student st " +
            "LEFT JOIN FETCH st.program p " +
            "LEFT JOIN FETCH ec.section s " +
-           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH s.schedules sch " +
+           "LEFT JOIN FETCH sch.course c " +
            "LEFT JOIN FETCH ec.grade g " +
            "WHERE s.faculty.facultyID = :facultyId " +
            "AND st.program.programID = :programId")
@@ -32,7 +33,8 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
            "LEFT JOIN FETCH se.student st " +
            "LEFT JOIN FETCH st.program p " +
            "LEFT JOIN FETCH ec.section s " +
-           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH s.schedules sch " +
+           "LEFT JOIN FETCH sch.course c " +
            "LEFT JOIN FETCH s.faculty f " +
            "LEFT JOIN FETCH ec.grade g " +
            "WHERE s.faculty.facultyID = :facultyId")
@@ -41,10 +43,11 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
     @Query("SELECT ec FROM EnrolledCourse ec WHERE ec.semesterEnrollment.student.id = :studentId")
     List<EnrolledCourse> findByStudentId(@Param("studentId") Long studentId);
     
-    // Alternative query that joins with section and course for better data loading
+    // Alternative query that joins with section and schedules for better data loading
     @Query("SELECT ec FROM EnrolledCourse ec " +
            "LEFT JOIN FETCH ec.section s " +
-           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH s.schedules sch " +
+           "LEFT JOIN FETCH sch.course c " +
            "LEFT JOIN FETCH s.faculty f " +
            "WHERE ec.semesterEnrollment.student.id = :studentId")
     List<EnrolledCourse> findByStudentIdWithDetails(@Param("studentId") Long studentId);
@@ -56,7 +59,8 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
            "LEFT JOIN FETCH se.student st " +
            "LEFT JOIN FETCH st.program p " +
            "LEFT JOIN FETCH ec.section s " +
-           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH s.schedules sch " +
+           "LEFT JOIN FETCH sch.course c " +
            "LEFT JOIN FETCH ec.grade g " +
            "WHERE ec.section.sectionID = :sectionId")
     List<EnrolledCourse> findBySectionId(@Param("sectionId") Long sectionId);
@@ -67,7 +71,8 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
            "LEFT JOIN FETCH se.student st " +
            "LEFT JOIN FETCH st.program p " +
            "LEFT JOIN FETCH ec.section s " +
-           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH s.schedules sch " +
+           "LEFT JOIN FETCH sch.course c " +
            "LEFT JOIN FETCH s.faculty f " +
            "LEFT JOIN FETCH ec.grade g " +
            "WHERE ec.section.sectionID IN :sectionIds")
@@ -79,9 +84,10 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
            "LEFT JOIN FETCH se.student st " +
            "LEFT JOIN FETCH st.program p " +
            "LEFT JOIN FETCH ec.section s " +
-           "LEFT JOIN FETCH s.course c " +
+           "LEFT JOIN FETCH s.schedules sch " +
+           "LEFT JOIN FETCH sch.course c " +
            "LEFT JOIN FETCH s.faculty f " +
            "LEFT JOIN FETCH ec.grade g " +
-           "WHERE s.course.id = :courseId")
+           "WHERE sch.course.id = :courseId")
     List<EnrolledCourse> findByCourseId(@Param("courseId") Long courseId);
 }

@@ -54,7 +54,7 @@ public class CourseSectionService {
     public CourseSection updateSection(Long id, CourseSection updatedSection) {
         return courseSectionRepository.findById(id)
             .map(section -> {
-                section.setCourse(updatedSection.getCourse());
+                // Remove course assignment from section level since courses are now managed per schedule
                 section.setFaculty(updatedSection.getFaculty());
                 section.setSectionName(updatedSection.getSectionName());
                 section.setSemester(updatedSection.getSemester());

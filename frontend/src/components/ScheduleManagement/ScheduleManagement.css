@@ -520,6 +520,33 @@ body {
    color: #b45309;
 }
 
+/* === SCHEDULE BADGES === */
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.course-badge {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.multiple-badge {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fbbf24;
+}
+
+.course-id .badge {
+  margin-left: 8px;
+}
+
 /* === ACTION BUTTONS === */
 .action-buttons { 
   display: flex; 

@@ -49,13 +49,46 @@ public class ScheduleController {
             return ResponseEntity.badRequest().body("Failed to create schedule: " + e.getMessage());
         }
     }
+    
+    @PostMapping("/with-course")
+    public ResponseEntity<?> createScheduleWithCourse(
+            @RequestParam(required = false) Long courseSectionId,
+            @RequestParam(required = false) Long courseId,
+            @RequestBody Schedule schedule) {
+        // Validate the required fields
+        if (schedule.getStartTime() == null || schedule.getEndTime() == null) {
+            return ResponseEntity.badRequest().body("Start time and end time are required");
+        }
+        if (schedule.getDay() == null || schedule.getDay().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Day is required");
+        }
+        
+        try {
+            Schedule createdSchedule = scheduleService.createScheduleWithCourse(schedule, courseSectionId, courseId);
+            return ResponseEntity.ok(createdSchedule);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to create schedule: " + e.getMessage());
+        }
+    }
 
     @PutMapping("/{id}")
     public ResponseEntity<Schedule> updateSchedule(@PathVariable Long id, @RequestBody Schedule schedule) {
         try {
             return ResponseEntity.ok(scheduleService.updateSchedule(id, schedule));
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    @PutMapping("/{id}/with-course")
+    public ResponseEntity<Schedule> updateScheduleWithCourse(
+            @PathVariable Long id, 
+            @RequestParam(required = false) Long courseId,
+            @RequestBody Schedule schedule) {
+        try {
+            return ResponseEntity.ok(scheduleService.updateScheduleWithCourse(id, schedule, courseId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
         }
     }
 
@@ -91,6 +124,16 @@ public class ScheduleController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/conflicts/check")
+    public ResponseEntity<List<Schedule>> checkConflicts(
+            @RequestParam String day,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
+            @RequestParam(required = false) Long excludeScheduleId) {
+        List<Schedule> conflicts = scheduleService.checkConflicts(day, startTime, endTime, excludeScheduleId);
+        return ResponseEntity.ok(conflicts);
     }
 
     @GetMapping("/conflicts")

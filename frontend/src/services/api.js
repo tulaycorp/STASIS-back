@@ -768,10 +768,34 @@ export const scheduleAPI = {
     return api.post(url, scheduleData);
   },
   
+  // Create new schedule with course assignment
+  createScheduleWithCourse: (scheduleData, courseSectionId) => {
+    let url = '/schedules/with-course';
+    const params = [];
+    if (courseSectionId) params.push(`courseSectionId=${encodeURIComponent(courseSectionId)}`);
+    if (scheduleData.courseId) params.push(`courseId=${encodeURIComponent(scheduleData.courseId)}`);
+    if (params.length > 0) url += '?' + params.join('&');
+    
+    console.log('Calling createScheduleWithCourse API to', url, 'with data:', scheduleData);
+    console.log('Full API URL will be:', api.defaults.baseURL + url);
+    console.log('Course Section ID:', courseSectionId);
+    console.log('Course ID from scheduleData:', scheduleData.courseId);
+    return api.post(url, scheduleData);
+  },
+  
   // Update schedule
   updateSchedule: (id, scheduleData) => {
     console.log('Calling updateSchedule API for ID:', id, 'with data:', scheduleData);
     return api.put(`/schedules/${id}`, scheduleData);
+  },
+  
+  // Update schedule with course assignment
+  updateScheduleWithCourse: (id, scheduleData) => {
+    let url = `/schedules/${id}/with-course`;
+    if (scheduleData.courseId) url += `?courseId=${encodeURIComponent(scheduleData.courseId)}`;
+    
+    console.log('Calling updateScheduleWithCourse API for ID:', id, 'with data:', scheduleData);
+    return api.put(url, scheduleData);
   },
   
   // Delete schedule
@@ -788,6 +812,15 @@ export const scheduleAPI = {
   
   // Get schedules by room
   getSchedulesByRoom: (room) => api.get(`/schedules/room/${room}`),
+  
+  // Check for schedule conflicts with optional exclusion
+  checkConflicts: (day, startTime, endTime, excludeScheduleId) => {
+    let url = `/schedules/conflicts/check?day=${encodeURIComponent(day)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`;
+    if (excludeScheduleId) url += `&excludeScheduleId=${encodeURIComponent(excludeScheduleId)}`;
+    
+    console.log('Calling checkConflicts API with URL:', url);
+    return api.get(url);
+  },
   
   // Find conflicting schedules
   findConflictingSchedules: (day, startTime, endTime) => {

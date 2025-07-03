@@ -25,5 +25,10 @@ public class Schedule {
     private String status;
     private String room;
     
+    // Add course reference for one-to-one course-schedule relationship
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "course_id")
+    private Course course;
+    
     // Foreign key will be managed by CourseSection
 }

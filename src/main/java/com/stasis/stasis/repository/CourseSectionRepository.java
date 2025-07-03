@@ -17,12 +17,14 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // Find by semester and year
     List<CourseSection> findBySemesterAndYear(String semester, int year);
     
-    // Find by course
-    List<CourseSection> findByCourse_Id(Long courseId);
+    // Find by course through schedules (since courses are now managed per schedule)
+    @Query("SELECT DISTINCT cs FROM CourseSection cs " +
+           "JOIN cs.schedules s " +
+           "WHERE s.course.id = :courseId")
+    List<CourseSection> findByCourse_Id(@Param("courseId") Long courseId);
     
     // Find by faculty with optimized fetch joins
     @Query("SELECT cs FROM CourseSection cs " +
-           "JOIN FETCH cs.course c " +
            "JOIN FETCH cs.program p " +
            "JOIN FETCH cs.faculty f " +
            "LEFT JOIN FETCH cs.schedules s " +
