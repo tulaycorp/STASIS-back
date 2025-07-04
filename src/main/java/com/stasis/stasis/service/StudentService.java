@@ -97,14 +97,14 @@ public class StudentService {
         // Create User account for the student with auto-generated credentials
         // Format: [year]-[counter starting from 10000]-[S for student]
         // Password: randomly generated 7 character alphanumeric string
-        Users user = userService.createUserWithGeneratedCredentials(
+        com.stasis.stasis.dto.UserWithPlainPassword userWithPassword = userService.createUserWithGeneratedCredentialsForDisplay(
                 savedStudent.getFirstName(), 
                 savedStudent.getLastName(), 
                 savedStudent.getEmail(),
                 UserRole.STUDENT
         );
 
-        return new StudentWithCredentials(savedStudent, user.getUsername(), user.getPassword());
+        return new StudentWithCredentials(savedStudent, userWithPassword.getUser().getUsername(), userWithPassword.getPlainTextPassword());
     }
 
     public Student updateStudent(Long id, Student studentDetails) {

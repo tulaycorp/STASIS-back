@@ -47,6 +47,23 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public com.stasis.stasis.dto.UserWithPlainPassword createUserWithGeneratedCredentialsForDisplay(String firstName, String lastName, String email, UserRole role) {
+        String username = generateUsername(role);
+        String plainTextPassword = generatePassword();
+        
+        Users user = Users.builder()
+                .username(username)
+                .password(passwordEncoder.encode(plainTextPassword)) // Hash the password for storage
+                .firstName(firstName)
+                .lastName(lastName)
+                .email(email)
+                .role(role)
+                .build();
+        
+        Users savedUser = userRepository.save(user);
+        return new com.stasis.stasis.dto.UserWithPlainPassword(savedUser, plainTextPassword);
+    }
+
     private String generateUsername(UserRole role) {
         int currentYear = LocalDate.now().getYear();
         String roleCode = role == UserRole.STUDENT ? "S" : "F";

@@ -80,14 +80,14 @@ public class FacultyService {
         // Create User account for the faculty with auto-generated credentials
         // Format: [year]-[counter starting from 10000]-[F for faculty]
         // Password: randomly generated 7 character alphanumeric string
-        Users user = userService.createUserWithGeneratedCredentials(
+        com.stasis.stasis.dto.UserWithPlainPassword userWithPassword = userService.createUserWithGeneratedCredentialsForDisplay(
                 savedFaculty.getFirstName(),
                 savedFaculty.getLastName(),
                 savedFaculty.getEmail(),
                 UserRole.FACULTY
         );
 
-        return new FacultyWithCredentials(savedFaculty, user.getUsername(), user.getPassword());
+        return new FacultyWithCredentials(savedFaculty, userWithPassword.getUser().getUsername(), userWithPassword.getPlainTextPassword());
     }
 
     public Faculty updateFaculty(Long id, Faculty facultyDetails) {
