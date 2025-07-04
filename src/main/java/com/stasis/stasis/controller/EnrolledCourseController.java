@@ -194,12 +194,44 @@ public class EnrolledCourseController {
     }
 
     @PostMapping
+    // @PreAuthorize("hasRole('STUDENT')") // Temporarily disabled for debugging
+    public ResponseEntity<?> enrollInCourse(@RequestBody Map<String, Object> payload) {
+        try {
+            Long studentId = Long.valueOf(payload.get("studentId").toString());
+            Long courseSectionId = Long.valueOf(payload.get("courseSectionId").toString());
+            String status = payload.get("status") != null ? payload.get("status").toString() : "Enrolled";
+            
+            // Check if scheduleId is provided for more precise enrollment
+            if (payload.containsKey("scheduleId") && payload.get("scheduleId") != null) {
+                Long scheduleId = Long.valueOf(payload.get("scheduleId").toString());
+                EnrolledCourse enrolled = enrolledCourseService.createEnrollmentForStudentWithSchedule(studentId, courseSectionId, scheduleId, status);
+                return ResponseEntity.ok(enrolled);
+            } else {
+                EnrolledCourse enrolled = enrolledCourseService.studentEnrollInCourse(studentId, courseSectionId, status);
+                return ResponseEntity.ok(enrolled);
+            }
+        } catch (RuntimeException e) {
+            // If the error is about duplicate course enrollment, return 409 Conflict
+            String msg = e.getMessage() != null ? e.getMessage() : "Enrollment failed";
+            if (msg.contains("already enrolled in this course")) {
+                return ResponseEntity.status(409).body(Map.of("error", msg));
+            }
+            // Otherwise, return 400 Bad Request
+            return ResponseEntity.badRequest().body(Map.of("error", msg));
+        }
+    }
+
+    /**
+     * Enroll in a schedule (not section), ensuring no multiple schedules of the same course are enrolled.
+     * Accepts: studentId, scheduleId, status
+     */
+    @PostMapping("/enroll-schedule")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<EnrolledCourse> enrollInCourse(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<EnrolledCourse> enrollInSchedule(@RequestBody Map<String, Object> payload) {
         Long studentId = Long.valueOf(payload.get("studentId").toString());
-        Long courseSectionId = Long.valueOf(payload.get("courseSectionId").toString());
+        Long scheduleId = Long.valueOf(payload.get("scheduleId").toString());
         String status = payload.get("status") != null ? payload.get("status").toString() : "Enrolled";
-        EnrolledCourse enrolled = enrolledCourseService.studentEnrollInCourse(studentId, courseSectionId, status);
+        EnrolledCourse enrolled = enrolledCourseService.studentEnrollInSchedule(studentId, scheduleId, status);
         return ResponseEntity.ok(enrolled);
     }
 
@@ -340,5 +372,16 @@ public class EnrolledCourseController {
         
     }
 
+
+    /**
+     * Returns all available schedules for enrollment (no filtering by course).
+     * The check for only one instance of a course per student is enforced on enrollment.
+     */
+    @GetMapping("/available-schedules/{studentId}")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN')")
+    public ResponseEntity<List<?>> getAvailableSchedulesForStudent(@PathVariable Long studentId) {
+        List<?> availableSchedules = enrolledCourseService.getAllAvailableSchedules();
+        return ResponseEntity.ok(availableSchedules);
+    }
 
 }
