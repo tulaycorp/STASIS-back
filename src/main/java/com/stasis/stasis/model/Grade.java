@@ -27,5 +27,7 @@ public class Grade {
     private Double overallGrade;
     private String remark;
 
-
+    // Back-reference to ensure unique relationship
+    @OneToOne(mappedBy = "grade", fetch = FetchType.LAZY)
+    private EnrolledCourse enrolledCourse;
 }

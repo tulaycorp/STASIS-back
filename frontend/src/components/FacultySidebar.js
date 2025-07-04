@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/api';
 import './FacultySidebar.module.css';
 
 // Utility function to get active page from current URL
@@ -96,9 +97,17 @@ const FacultySidebar = ({ onNavigate, userInfo, sections }) => {
         </div>
       </div>
       <div className="sidebar-footer">
-        <button className="logout-button" onClick={() => {
+        <button className="logout-button" onClick={async () => {
           if (window.confirm('Are you sure you want to log out?')) {
-            window.location.href = '/';
+            try {
+              await authAPI.logout();
+              window.location.href = '/login';
+            } catch (error) {
+              console.error('Logout error:', error);
+              // Still redirect even if logout request fails
+              localStorage.clear();
+              window.location.href = '/login';
+            }
           }
         }}>
           🚪 Log Out

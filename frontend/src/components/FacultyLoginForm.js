@@ -3,11 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useFacultyData } from '../hooks/useFacultyData';
 import { useAdminData } from '../hooks/useAdminData';
 import './LoginForm.css';
-import { loginUser } from '../services/api';
+import { authAPI } from '../services/api-fixed';
 
 const FacultyLoginForm = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [credentials, setCredentials] = useState({
+        username: '',
+        password: '',
+        role: 'FACULTY'
+    });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -25,70 +28,90 @@ const FacultyLoginForm = () => {
     const [modalError, setModalError] = useState('');
     const [modalLoading, setModalLoading] = useState(false);
 
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setCredentials(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        // Clear error when user starts typing
+        if (error) setError('');
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setError('');
+        
+        if (!credentials.username || !credentials.password) {
+            setError('Please fill in all fields');
+            return;
+        }
+
         setLoading(true);
+        setError('');
 
         try {
-            // First try FACULTY role
-            let loginData = {
-                username,
-                password,
-                role: 'FACULTY'
-            };
+            console.log('Attempting faculty login with credentials:', {
+                username: credentials.username,
+                role: credentials.role
+            });
 
-            let response = await loginUser(loginData);
-
-            // If faculty login fails, try ADMIN role
-            if (!response.success) {
-                loginData = {
-                    username,
-                    password,
-                    role: 'ADMIN'
-                };
-                response = await loginUser(loginData);
+            // Try FACULTY login first
+            let result = await authAPI.login(credentials);
+            
+            // If faculty login fails, try ADMIN login
+            if (!result.success && (result.message?.toLowerCase().includes('role') || result.message?.toLowerCase().includes('invalid'))) {
+                console.log('Faculty login failed, trying ADMIN role...');
+                const adminCredentials = { ...credentials, role: 'ADMIN' };
+                result = await authAPI.login(adminCredentials);
             }
 
-            setLoading(false);
-
-            if (response.success) {
-                console.log('Login Successful:', response);
+            if (result.success) {
+                console.log('Login Successful:', result.data);
                 
                 // Check user role and navigate accordingly
-                if (response.role === 'ADMIN') {
+                if (result.data.role === 'ADMIN') {
                     // Store admin data in the admin hook
                     setAdminInfo({
-                        userId: response.userId,
-                        firstName: response.firstName,
-                        lastName: response.lastName,
-                        username: response.username,
-                        role: response.role
+                        userId: result.data.userId,
+                        firstName: result.data.firstName,
+                        lastName: result.data.lastName,
+                        username: result.data.username,
+                        role: result.data.role
                     });
                     // Navigate to admin dashboard
                     navigate('/admin-dashboard');
-                } else {
+                } else if (result.data.role === 'FACULTY') {
                     // Store faculty data in the faculty hook
                     setFacultyInfo({
-                        facultyId: response.facultyId,
-                        firstName: response.firstName,
-                        lastName: response.lastName,
-                        email: response.email,
-                        position: response.position,
-                        program: response.program,
-                        username: response.username,
-                        userId: response.userId
+                        facultyId: result.data.facultyId,
+                        firstName: result.data.firstName,
+                        lastName: result.data.lastName,
+                        email: result.data.email,
+                        position: result.data.position,
+                        program: result.data.program,
+                        username: result.data.username,
+                        userId: result.data.userId
                     });
                     // Navigate to faculty dashboard
                     navigate('/faculty-dashboard');
+                } else {
+                    setError('Invalid role for this login page. Expected FACULTY or ADMIN role.');
                 }
             } else {
-                setError(response.message || 'Login failed. Please check your credentials.');
+                // Handle specific error messages
+                if (result.message && result.message.toLowerCase().includes('credentials')) {
+                    setError('Invalid username or password. Please check your credentials.');
+                } else if (result.message && result.message.toLowerCase().includes('role')) {
+                    setError('This account does not have faculty or admin access.');
+                } else {
+                    setError(result.message || 'Login failed. Please try again.');
+                }
             }
         } catch (err) {
-            setLoading(false);
-            setError('An error occurred during login. Please try again.');
             console.error('Login request failed:', err);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -247,9 +270,10 @@ const FacultyLoginForm = () => {
                     <input
                         type="text"
                         id="faculty-username"
+                        name="username"
                         placeholder="e.g., 2024-10001-F"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        value={credentials.username}
+                        onChange={handleChange}
                         required
                         className="form-input"
                     />
@@ -259,9 +283,10 @@ const FacultyLoginForm = () => {
                     <input
                         type="password"
                         id="faculty-password"
+                        name="password"
                         placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={credentials.password}
+                        onChange={handleChange}
                         required
                         className="form-input"
                     />

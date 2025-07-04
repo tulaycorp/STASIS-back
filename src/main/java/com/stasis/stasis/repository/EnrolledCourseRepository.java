@@ -28,7 +28,7 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
         @Param("programId") Long programId
     );
 
-    @Query("SELECT ec FROM EnrolledCourse ec " +
+    @Query("SELECT DISTINCT ec FROM EnrolledCourse ec " +
            "LEFT JOIN FETCH ec.semesterEnrollment se " +
            "LEFT JOIN FETCH se.student st " +
            "LEFT JOIN FETCH st.program p " +
@@ -37,7 +37,8 @@ public interface EnrolledCourseRepository extends JpaRepository<EnrolledCourse, 
            "LEFT JOIN FETCH sch.course c " +
            "LEFT JOIN FETCH s.faculty f " +
            "LEFT JOIN FETCH ec.grade g " +
-           "WHERE s.faculty.facultyID = :facultyId")
+           "WHERE s.faculty.facultyID = :facultyId " +
+           "ORDER BY st.lastName, st.firstName, c.courseCode")
     List<EnrolledCourse> findByFacultyId(@Param("facultyId") Long facultyId);
     
     @Query("SELECT ec FROM EnrolledCourse ec WHERE ec.semesterEnrollment.student.id = :studentId")

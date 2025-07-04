@@ -40,25 +40,27 @@ const StudentSchedule = () => {
           })
           .map((ec) => {
             console.log('Processing enrollment for schedule:', ec);
-            console.log('Section data:', ec.section);
-            console.log('Course data:', ec.section?.course);
-            console.log('Faculty data:', ec.section?.faculty);
+            console.log('Enrollment data:', {
+              courseCode: ec.courseCode,
+              courseDescription: ec.courseDescription,
+              sectionName: ec.sectionName,
+              faculty: ec.faculty,
+              startTime: ec.startTime,
+              endTime: ec.endTime,
+              day: ec.day,
+              room: ec.room
+            });
             
+            // Use the DTO fields directly since they're already mapped properly
             return {
-              courseCode: ec.section?.course?.courseCode || 'N/A',
-              course: ec.section?.course?.courseDescription || ec.section?.course?.courseName || ec.section?.course?.courseCode || '',
-              section: ec.section?.sectionName || '',
-              instructor: ec.section?.faculty
-                ? `${ec.section.faculty.firstName} ${ec.section.faculty.lastName}`
-                : 'TBA',
-              room: ec.section?.schedule?.room || 'TBA',
-              day: ec.section?.schedule?.day || '',
-              timeFrom: ec.section?.schedule?.startTime 
-                ? ec.section.schedule.startTime.substring(0, 5) 
-                : '',
-              timeTo: ec.section?.schedule?.endTime 
-                ? ec.section.schedule.endTime.substring(0, 5) 
-                : '',
+              courseCode: ec.courseCode || 'N/A',
+              course: ec.courseDescription || 'Unknown Course',
+              section: ec.sectionName || 'N/A',
+              instructor: ec.faculty || 'TBA',
+              room: ec.room || 'TBA',
+              day: ec.day || 'TBA',
+              timeFrom: ec.startTime ? ec.startTime.substring(0, 5) : 'TBA',
+              timeTo: ec.endTime ? ec.endTime.substring(0, 5) : 'TBA',
               status: ec.status
             };
           });

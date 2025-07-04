@@ -515,7 +515,15 @@ const CurriculumManagement = () => {
       try {
         const program = programsList.find(p => p.programID.toString() === value);
         if (program) {
+          console.log('Loading courses for program:', program.programName);
+          console.log('Program object:', program);
           const response = await courseAPI.getCoursesByProgram(program.programName);
+          console.log('Courses response:', response.data);
+          console.log('Number of courses found:', response.data.length);
+          if (response.data.length > 0) {
+            console.log('First course structure:', response.data[0]);
+            console.log('First course program field:', response.data[0].program);
+          }
           setAvailableCourses(response.data);
         }
       } catch (error) {

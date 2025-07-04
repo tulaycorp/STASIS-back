@@ -212,34 +212,55 @@ function StudentEnrollment(props) {
           console.log('Enrollments data:', enrollmentsResponse.data);
           console.log('Number of enrollments:', enrollmentsResponse.data?.length || 0);
           
-          // Transform enrollment data to handle new structure
+          // Transform enrollment data to handle new DTO structure
           const transformedEnrollments = (enrollmentsResponse.data || []).map(enrollment => {
-            // Log each enrollment for debugging
-            console.log('Processing enrollment:', {
-              id: enrollment.enrolledCourseID,
+            console.log('Processing enrollment with DTO structure:', enrollment);
+            
+            // Create enhanced enrollment object using DTO fields
+            const enhancedEnrollment = {
+              enrolledCourseID: enrollment.enrolledCourseID,
               status: enrollment.status,
-              section: enrollment.section,
-              semesterEnrollment: enrollment.semesterEnrollment
-            });
-            
-            // Enhance section data with schedule information
-            if (enrollment.section) {
-              const sectionId = enrollment.section.sectionID;
-              const matchingTransformedSections = transformedSections.filter(s => s.sectionID === sectionId);
               
-              if (matchingTransformedSections.length > 0) {
-                // Use the first matching section for display, but mark if there are multiple
-                const primarySection = matchingTransformedSections[0];
-                
-                enrollment.section = {
-                  ...enrollment.section,
-                  ...primarySection,
-                  hasMultipleSchedules: matchingTransformedSections.length > 1
-                };
-              }
-            }
+              // Create section object using DTO data
+              section: {
+                sectionName: enrollment.sectionName,
+                course: {
+                  id: enrollment.courseCode, // Use courseCode as ID for matching
+                  courseID: enrollment.courseCode,
+                  courseCode: enrollment.courseCode,
+                  courseDescription: enrollment.courseDescription,
+                  courseName: enrollment.courseDescription,
+                  credits: enrollment.credits
+                },
+                faculty: enrollment.faculty ? {
+                  firstName: enrollment.faculty.split(' ')[0] || '',
+                  lastName: enrollment.faculty.split(' ').slice(1).join(' ') || ''
+                } : null,
+                startTime: enrollment.startTime,
+                endTime: enrollment.endTime,
+                day: enrollment.day,
+                room: enrollment.room
+              },
+              
+              // Semester enrollment info
+              semesterEnrollment: {
+                semester: enrollment.semester,
+                academicYear: enrollment.academicYear
+              },
+              
+              // Grade information
+              grade: enrollment.gradeValue || enrollment.midtermGrade || enrollment.finalGrade ? {
+                gradeValue: enrollment.gradeValue,
+                midtermGrade: enrollment.midtermGrade,
+                finalGrade: enrollment.finalGrade,
+                overallGrade: enrollment.overallGrade,
+                letterGrade: enrollment.grade,
+                remark: enrollment.remark
+              } : null
+            };
             
-            return enrollment;
+            console.log('Enhanced enrollment:', enhancedEnrollment);
+            return enhancedEnrollment;
           });
           
           setMyEnrollments(transformedEnrollments);
@@ -1211,8 +1232,8 @@ function StudentEnrollment(props) {
                         if (enrollment.section?.hasDirectCourse) rowClasses.push('has-direct-course');
                         if (enrollment.section?.hasMultipleSchedules) rowClasses.push('has-multiple-schedules');
                         
-                        // NEW: Handle schedule-course assignments
-                        const scheduleInfo = enrollment.section?.selectedSchedule || {
+                        // Use DTO data structure directly
+                        const scheduleInfo = {
                           startTime: enrollment.section?.startTime,
                           endTime: enrollment.section?.endTime,
                           day: enrollment.section?.day,
@@ -1223,26 +1244,16 @@ function StudentEnrollment(props) {
                           <tr key={enrollment.enrolledCourseID} className={rowClasses.join(' ')}>
                             <td>
                               {enrollment.section?.course?.courseCode || 'N/A'}
-                              {(enrollment.section?.hasDirectCourse || enrollment.section?.selectedSchedule) && 
-                                <span className="badge course-badge" title="Course assigned to specific schedule">📚</span>}
                             </td>
                             <td>
                               <div className="schedule-info">
                                 <div className="schedule-course">
-                                  {enrollment.section?.course?.courseName || 
-                                   enrollment.section?.course?.courseDescription || 'N/A'}
+                                  {enrollment.section?.course?.courseDescription || 'N/A'}
                                 </div>
-                                {enrollment.section?.selectedSchedule && (
-                                  <div className="schedule-detail" style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                                    Schedule-Course Assignment
-                                  </div>
-                                )}
                               </div>
                             </td>
                             <td>
                               {enrollment.section?.sectionName || 'N/A'}
-                              {enrollment.section?.hasMultipleSchedules && 
-                                <span className="badge multiple-badge" title="Section has multiple schedules">+</span>}
                             </td>
                             <td>
                               <div className="time-info">
@@ -1252,13 +1263,6 @@ function StudentEnrollment(props) {
                                 <div className="day-info">{scheduleInfo.day || 'TBA'}</div>
                                 {scheduleInfo.room && (
                                   <div className="room-info">Room: {scheduleInfo.room}</div>
-                                )}
-                                {enrollment.section?.selectedSchedule && (
-                                  <div className="schedule-id" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                                    Schedule ID: {enrollment.section.selectedSchedule.id || 
-                                                 enrollment.section.selectedSchedule.scheduleID || 
-                                                 enrollment.section.selectedSchedule.scheduleId || 'N/A'}
-                                  </div>
                                 )}
                               </div>
                             </td>

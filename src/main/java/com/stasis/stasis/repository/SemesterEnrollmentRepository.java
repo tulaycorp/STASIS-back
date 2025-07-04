@@ -14,6 +14,8 @@ public interface SemesterEnrollmentRepository extends JpaRepository<SemesterEnro
     // Use method name queries instead of custom @Query to avoid field name issues
     List<SemesterEnrollment> findByStudent_Id(Long studentId);
     
+    List<SemesterEnrollment> findByStudent_IdAndStatus(Long studentId, String status);
+    
     Optional<SemesterEnrollment> findByStudent_IdAndSemesterAndAcademicYear(
         Long studentId, 
         String semester, 

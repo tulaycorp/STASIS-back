@@ -14,17 +14,18 @@ public class EnrolledCourse {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long enrolledCourseID;
 
-    @ManyToOne
-    @JoinColumn(name = "semesterEnrollmentID")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "semesterEnrollmentID", nullable = false)
     private SemesterEnrollment semesterEnrollment;
 
-    @ManyToOne
-    @JoinColumn(name = "sectionID")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sectionID", nullable = false)
     private CourseSection section;
 
     private String status;
 
-    @OneToOne
-    @JoinColumn(name = "gradeID", nullable = true)
+    // Each enrolled course should have its own unique grade
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "gradeID", nullable = true, unique = true)
     private Grade grade;
 }

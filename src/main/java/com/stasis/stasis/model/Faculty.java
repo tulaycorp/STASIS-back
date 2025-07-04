@@ -1,5 +1,6 @@
 package com.stasis.stasis.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,6 +30,7 @@ public class Faculty {
     private String position; 
     
     @ManyToOne
+    @JsonBackReference
     private Program program;
 
     @Transient

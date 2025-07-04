@@ -6,7 +6,8 @@ import { useFacultyData } from '../../hooks/useFacultyData';
 import { 
   courseSectionAPI, 
   enrolledCourseAPI,
-  scheduleAPI
+  scheduleAPI,
+  facultyGradesAPI
 } from '../../services/api';
 
 const FacultyGrades = () => {
@@ -75,8 +76,9 @@ const FacultyGrades = () => {
 
       const newCourseList = filteredProgramCourses.map(grade => ({
         id: grade.id, 
-        name: grade.course, 
+        name: `${grade.course} - ${grade.section}`, // Include section name in display
         section: grade.section,
+        course: grade.course,
         schedule: grade.schedule || null
       }));
       
@@ -96,8 +98,9 @@ const FacultyGrades = () => {
       // If no program is selected but we have grades, show all courses
       const allCourses = gradesList.map(grade => ({
         id: grade.id, 
-        name: grade.course, 
+        name: `${grade.course} - ${grade.section}`, // Include section name in display
         section: grade.section,
+        course: grade.course,
         schedule: grade.schedule || null
       }));
       console.log('All courses:', allCourses);
@@ -120,18 +123,89 @@ const FacultyGrades = () => {
     }
   }, [studentsGrades, selectedCourseId, courses]);
 
+  // Function to fetch students for a selected course
+  const fetchStudentsForCourse = async (courseId) => {
+    try {
+      console.log('Fetching students for course/section ID:', courseId);
+      
+      // Use the new faculty grades API to fetch students for this section
+      const response = await facultyGradesAPI.getSectionStudents(courseId);
+      console.log('Students response:', response);
+      
+      if (response?.data && Array.isArray(response.data)) {
+        const enrolledStudents = response.data;
+        console.log('Raw enrolled students:', enrolledStudents);
+        
+        // Process enrolled students to match the expected format
+        const processedStudents = enrolledStudents.map(student => {
+          // The backend now returns a flattened structure
+          if (!student.id) {
+            console.warn('No student ID found in data:', student);
+            return null;
+          }
+          
+          return {
+            id: student.id,
+            name: `${student.lastName || 'Unknown'}, ${student.firstName || 'Unknown'}`,
+            email: student.email || '',
+            yearLevel: student.yearLevel || '',
+            program: student.programName || 'Unknown Program',
+            midterm: student.midtermGrade || null,
+            final: student.finalGrade || null,
+            weightedAverage: student.overallGrade || null,
+            enrollmentId: student.enrolledCourseID,
+            enrollmentStatus: student.status || 'PENDING',
+            semesterEnrollmentId: student.semesterEnrollmentID,
+            remark: student.remark || 'INCOMPLETE'
+          };
+        }).filter(student => student !== null);
+        
+        console.log('Processed students:', processedStudents);
+        
+        // Update the selected course with the fetched students
+        const courseData = gradesList.find(grade => grade.id === courseId);
+        if (courseData) {
+          const updatedCourseData = {
+            ...courseData,
+            students: processedStudents
+          };
+          setSelectedCourse(updatedCourseData);
+          console.log('Updated selectedCourse with students:', updatedCourseData);
+        }
+        
+      } else {
+        console.warn('No students found or invalid response format');
+        const courseData = gradesList.find(grade => grade.id === courseId);
+        if (courseData) {
+          setSelectedCourse({
+            ...courseData,
+            students: []
+          });
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error fetching students for course:', error);
+      const courseData = gradesList.find(grade => grade.id === courseId);
+      if (courseData) {
+        setSelectedCourse({
+          ...courseData,
+          students: []
+        });
+      }
+    }
+  };
+
   // Effect to update the main table when a course is selected
   useEffect(() => {
     if (selectedCourseId) {
-      const courseData = gradesList.find(grade => grade.id === selectedCourseId);
-      setSelectedCourse(courseData);
       setStudentSearchTerm(''); // Clear search when changing course
     } else {
       setSelectedCourse(null);
     }
-  }, [selectedCourseId, gradesList]);
+  }, [selectedCourseId]);
 
-  // Fetch programs and course sections based on faculty's assigned sections
+  // Simplified fetch initial data using the new faculty grades API
   const fetchInitialData = async () => {
     if (!facultyData || isInitializing) {
       if (!facultyData) {
@@ -147,7 +221,6 @@ const FacultyGrades = () => {
       setError(null);
       
       console.log('Faculty data:', facultyData);
-      console.log('Faculty data keys:', facultyData ? Object.keys(facultyData) : 'No faculty data');
       
       // Get faculty ID
       const facultyId = facultyData?.facultyID || facultyData?.facultyId;
@@ -159,11 +232,10 @@ const FacultyGrades = () => {
         return;
       }
 
-      // CORRECTED LOGIC: Get faculty's assigned course sections, then get student enrollments for those sections
-      console.log('Fetching faculty assigned sections for faculty ID:', facultyId);
+      console.log('Fetching faculty sections for faculty ID:', facultyId);
       
-      // Get all course sections assigned to this faculty with full details
-      const sectionsResponse = await courseSectionAPI.getSectionsByFaculty(facultyId);
+      // Get faculty sections with grade summary using the new API
+      const sectionsResponse = await facultyGradesAPI.getFacultySections(facultyId);
       console.log('Faculty sections response:', sectionsResponse);
       
       const facultySections = sectionsResponse.data || [];
@@ -180,12 +252,21 @@ const FacultyGrades = () => {
 
       // Extract unique programs from the faculty's assigned sections
       const uniquePrograms = [...new Set(facultySections.map(section => {
-        const programName = section.program?.programName || 
-                          section.course?.program?.programName || 
-                          'Unknown Program';
-        console.log('Program name for section:', section.sectionID, programName);
+        // For the new API response, get program from course description prefix or infer from course code
+        const courseCode = section.courseCode || '';
+        const courseDescription = section.courseDescription || '';
+        
+        // Try to extract program name from course code (e.g., "CS" from "CS101")
+        const programMatch = courseCode.match(/^[A-Z]+/);
+        const programName = programMatch ? programMatch[0] : 
+                          (courseDescription.includes('Computer') ? 'Computer Science' :
+                           courseDescription.includes('Engineering') ? 'Engineering' :
+                           courseDescription.includes('Business') ? 'Business' :
+                           'General Education');
+        
+        console.log('Program name for section:', section.sectionId, programName);
         return programName;
-      }))].filter(program => program !== 'Unknown Program');
+      }))];
 
       console.log('Unique programs:', uniquePrograms);
 
@@ -205,171 +286,33 @@ const FacultyGrades = () => {
         console.log('Selected program:', firstProgramName);
       }
 
-      // Now get student enrollments for each of the faculty's sections
-      // Updated to handle multiple courses per section with schedules
-      const sectionMap = new Map();
-      
-      // Process each section and fetch student enrollments
-      for (const section of facultySections) {
-        console.log('=== PROCESSING SECTION ===');
-        console.log('Section details:', section);
-        console.log('Section ID:', section.sectionID);
-        console.log('Section Name:', section.sectionName);
-        console.log('Program:', section.program?.programName);
-        console.log('Schedules:', section.schedules);
+      // Convert sections to the expected format (without students for now)
+      const processedGrades = facultySections.map(section => {
+        console.log('Processing section summary:', section);
         
-        // Handle multiple schedules per section (new structure)
-        // Instead of creating separate entries for each schedule, we'll create one entry per unique course
-        if (Array.isArray(section.schedules) && section.schedules.length > 0) {
-          // Group schedules by course to avoid duplication
-          const courseScheduleMap = new Map();
-          
-          section.schedules.forEach((schedule, scheduleIndex) => {
-            const courseKey = schedule.course?.courseCode || schedule.course?.courseDescription || 'Unknown Course';
-            
-            if (!courseScheduleMap.has(courseKey)) {
-              const scheduleId = `${section.sectionID}-${courseKey}`;
-              console.log(`Processing unique course ${courseKey} for section ${section.sectionID}:`, schedule);
-              
-              // Create section data for each unique course
-              const sectionData = {
-                id: scheduleId,
-                course: schedule.course?.courseDescription || schedule.course?.courseCode || section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
-                section: section.sectionName,
-                creditUnits: schedule.course?.credits || section.course?.credits || 3,
-                program: section.program?.programName || 'Unknown Program',
-                status: section.status || 'ACTIVE',
-                instructor: `${section.faculty?.firstName} ${section.faculty?.lastName}`,
-                schedule: {
-                  day: schedule.day,
-                  startTime: schedule.startTime,
-                  endTime: schedule.endTime,
-                  room: schedule.room
-                },
-                students: []
-              };
-              
-              console.log('Created section data for unique course:', sectionData);
-              courseScheduleMap.set(courseKey, sectionData);
-              sectionMap.set(scheduleId, sectionData);
-            }
-          });
-        } else {
-          // Handle sections without schedules (fallback to original structure)
-          const sectionData = {
-            id: section.sectionID,
-            course: section.course?.courseDescription || section.course?.courseCode || 'Unknown Course',
-            section: section.sectionName,
-            creditUnits: section.course?.credits || 3,
-            program: section.program?.programName || 'Unknown Program',
-            status: section.status || 'ACTIVE',
-            instructor: `${section.faculty?.firstName} ${section.faculty?.lastName}`,
-            students: []
-          };
-          
-          console.log('Created section data (no schedules):', sectionData);
-          sectionMap.set(section.sectionID, sectionData);
-        }
+        // Determine program from course code
+        const courseCode = section.courseCode || '';
+        const programMatch = courseCode.match(/^[A-Z]+/);
+        const programName = programMatch ? programMatch[0] : 
+                          (section.courseDescription?.includes('Computer') ? 'Computer Science' :
+                           section.courseDescription?.includes('Engineering') ? 'Engineering' :
+                           section.courseDescription?.includes('Business') ? 'Business' :
+                           'General Education');
         
-        // Try to fetch students for this section
-        try {
-          console.log('Fetching enrollments for section:', section.sectionID);
-          const enrolledResponse = await enrolledCourseAPI.getEnrolledCoursesBySection(section.sectionID);
-          console.log('Enrolled response:', enrolledResponse);
-          
-          if (enrolledResponse?.data && Array.isArray(enrolledResponse.data) && enrolledResponse.data.length > 0) {
-            const enrolledData = enrolledResponse.data;
-            console.log(`Raw enrollments for section ${section.sectionID}:`, enrolledData);
-            
-            // Log the structure of the first enrollment to understand the data
-            console.log('Sample enrollment structure:', JSON.stringify(enrolledData[0], null, 2));
-            
-            // Process enrolled students with better error handling
-            const students = enrolledData.map(enrollment => {
-              try {
-                console.log('Processing enrollment:', enrollment);
-                
-                // Check if enrollment has the basic structure
-                if (!enrollment) {
-                  console.warn('Null enrollment found');
-                  return null;
-                }
+        return {
+          id: section.sectionId,
+          course: section.courseDescription || section.courseCode || 'Unknown Course',
+          section: section.sectionName,
+          creditUnits: 3, // Default credits
+          program: programName,
+          status: 'ACTIVE',
+          instructor: facultyData.firstName + ' ' + facultyData.lastName,
+          enrolledStudentsCount: section.enrolledStudentsCount || 0,
+          studentsWithGrades: section.studentsWithGrades || 0,
+          students: [] // Students will be fetched separately when a section is selected
+        };
+      });
 
-                // Extract student data from enrollment
-                const student = enrollment.semesterEnrollment?.student;
-                if (!student) {
-                  console.warn('No student data found in enrollment:', enrollment);
-                  return null;
-                }
-
-                console.log('Student data found:', student);
-                
-                // Create student object with comprehensive fallbacks
-                const studentData = {
-                  id: student.id,
-                  name: `${student.lastName || 'Unknown'}, ${student.firstName || 'Unknown'}`,
-                  email: student.email || '',
-                  yearLevel: student.yearLevel || student.year_level || '',
-                  program: student.program?.programName || 'Unknown Program',
-                  midterm: enrollment.grade?.midtermGrade || null,
-                  final: enrollment.grade?.finalGrade || null,
-                  weightedAverage: enrollment.grade?.overallGrade || null,
-                  enrollmentId: enrollment.enrolledCourseID,
-                  enrollmentStatus: enrollment.status || 'PENDING',
-                  semesterEnrollmentId: enrollment.semesterEnrollment?.semesterEnrollmentID,
-                  remark: enrollment.grade?.remark || 'INCOMPLETE'
-                };
-
-                console.log('Successfully processed student data:', studentData);
-                return studentData;
-              } catch (error) {
-                console.error('Error processing enrollment:', error);
-                console.error('Enrollment that caused error:', enrollment);
-                return null;
-              }
-            }).filter(student => student !== null); // Remove null entries
-            
-            // Deduplicate students by ID to ensure no duplicates
-            const uniqueStudents = [];
-            const seenStudentIds = new Set();
-            
-            for (const student of students) {
-              if (!seenStudentIds.has(student.id)) {
-                seenStudentIds.add(student.id);
-                uniqueStudents.push(student);
-              } else {
-                console.warn(`Duplicate student ID ${student.id} found and removed`);
-              }
-            }
-          
-            console.log('Processed students for section:', uniqueStudents);
-            console.log(`Original count: ${students.length}, After deduplication: ${uniqueStudents.length}`);
-            
-            // Debug: Log enrollment IDs for each student
-            uniqueStudents.forEach(student => {
-              console.log(`Student ${student.id} (${student.name}) - Enrollment ID: ${student.enrollmentId}`);
-            });
-            
-            // Apply students to section entries for this section
-            // Find all entries that belong to this section and assign students (without duplication)
-            for (const [key, sectionData] of sectionMap.entries()) {
-              if (key.startsWith(section.sectionID.toString())) {
-                // Simply assign students directly - they should be the same for all courses in the same section
-                sectionData.students = uniqueStudents;
-                console.log(`Assigned ${uniqueStudents.length} students to section ${key}`);
-              }
-            }
-          } else {
-            console.warn('No enrollments found for section:', section.sectionID);
-          }
-          
-        } catch (err) {
-          console.error(`Error fetching enrollments for section ${section.sectionID}:`, err);
-          // Section will have empty students array
-        }
-      }
-
-      const processedGrades = Array.from(sectionMap.values());
       console.log('=== FINAL PROCESSED GRADES ===');
       console.log('Total sections processed:', processedGrades.length);
       
@@ -380,8 +323,8 @@ const FacultyGrades = () => {
           course: grade.course,
           section: grade.section,
           program: grade.program,
-          studentCount: grade.students.length,
-          students: grade.students.map(s => ({ id: s.id, name: s.name }))
+          enrolledCount: grade.enrolledStudentsCount,
+          studentsWithGrades: grade.studentsWithGrades
         });
       });
       
@@ -390,8 +333,7 @@ const FacultyGrades = () => {
         console.warn('No processed grades found - this might indicate a data processing issue');
         setError('No course sections found for this faculty member.');
       } else {
-        const totalStudents = processedGrades.reduce((sum, grade) => sum + grade.students.length, 0);
-        console.log(`Successfully processed ${processedGrades.length} sections with ${totalStudents} total students`);
+        console.log(`Successfully processed ${processedGrades.length} sections`);
       }
       
       setGradesList(processedGrades);
@@ -415,8 +357,104 @@ const FacultyGrades = () => {
     setSelectedSectionFilter('All Sections'); // Reset section filter when program changes
   };
 
-  const handleCourseSelect = (courseId) => {
+  const handleCourseSelect = async (courseId) => {
+    console.log('=== COURSE SELECTION ===');
+    console.log('Selected course ID (section ID):', courseId);
+    
     setSelectedCourseId(courseId);
+    
+    // Find the SPECIFIC SECTION from gradesList
+    const sectionData = gradesList.find(grade => grade.id === courseId);
+    if (!sectionData) {
+      console.error('Section not found in gradesList:', courseId);
+      return;
+    }
+    
+    console.log('Found section data:', sectionData);
+    console.log('Section name:', sectionData.section);
+    console.log('Section ID for API call:', courseId);
+    
+    // Fetch students for this SPECIFIC SECTION
+    try {
+      console.log('Fetching students for section ID:', courseId);
+      const studentsResponse = await facultyGradesAPI.getSectionStudents(courseId);
+      console.log('Students response for section', sectionData.section, ':', studentsResponse);
+      
+      const studentsData = studentsResponse.data || [];
+      console.log(`Raw students data for section ${sectionData.section}:`, studentsData);
+      
+      // Process the students data to match the expected format
+      const processedStudents = studentsData.map((studentDto, index) => {
+        console.log('Processing student DTO for section', sectionData.section, ':', studentDto);
+        
+        // Validate student ID and provide fallbacks
+        const studentId = studentDto.id || studentDto.studentId || `student-${index}`;
+        const enrollmentId = studentDto.enrolledCourseID || studentDto.enrollmentId || `enrollment-${index}`;
+        
+        if (!studentDto.id && !studentDto.studentId) {
+          console.warn('Student DTO missing ID, using fallback:', studentId, studentDto);
+        }
+        
+        return {
+          id: studentId,
+          name: `${studentDto.lastName || 'Unknown'}, ${studentDto.firstName || 'Unknown'}`,
+          email: studentDto.email || '',
+          yearLevel: studentDto.yearLevel || '',
+          program: studentDto.programName || 'Unknown Program',
+          midterm: studentDto.midtermGrade || null,
+          final: studentDto.finalGrade || null,
+          weightedAverage: studentDto.overallGrade || null,
+          enrollmentId: enrollmentId,
+          enrollmentStatus: studentDto.status || 'PENDING',
+          semesterEnrollmentId: studentDto.semesterEnrollmentID,
+          remark: studentDto.remark || 'INCOMPLETE'
+        };
+      }).filter(student => student.id); // Remove any students without valid IDs
+      
+      console.log(`Processed ${processedStudents.length} students for section ${sectionData.section}:`, processedStudents);
+      
+      // Debug: Check for duplicate IDs
+      const studentIds = processedStudents.map(s => s.id);
+      const duplicateIds = studentIds.filter((id, index) => studentIds.indexOf(id) !== index);
+      if (duplicateIds.length > 0) {
+        console.warn('Found duplicate student IDs:', duplicateIds);
+      }
+      
+      // Create updated section data with ONLY these students
+      const updatedSection = {
+        ...sectionData,
+        students: processedStudents
+      };
+      
+      console.log('Updated section with students:', {
+        id: updatedSection.id,
+        section: updatedSection.section,
+        course: updatedSection.course,
+        studentCount: updatedSection.students.length,
+        students: updatedSection.students.map(s => ({ id: s.id, name: s.name, section: sectionData.section }))
+      });
+      
+      setSelectedCourse(updatedSection);
+      
+      // Also update the gradesList to cache the students for this specific section
+      setGradesList(prevGradesList => 
+        prevGradesList.map(grade => 
+          grade.id === courseId 
+            ? { ...grade, students: processedStudents }
+            : grade
+        )
+      );
+      
+      console.log(`Successfully loaded ${processedStudents.length} students for section: ${sectionData.section}`);
+      
+    } catch (error) {
+      console.error('Error fetching students for section:', error);
+      // Set the course without students
+      setSelectedCourse({
+        ...sectionData,
+        students: []
+      });
+    }
   };
 
   const handleGradeChange = (studentId, field, value) => {
@@ -574,7 +612,7 @@ const FacultyGrades = () => {
 
           console.log(`Updating grades for student key ${studentCourseKey} with enrollment ID ${grades.enrollmentId}:`, updateData);
           
-          const response = await enrolledCourseAPI.updateGrades(grades.enrollmentId, updateData);
+          const response = await facultyGradesAPI.updateGrades(grades.enrollmentId, updateData);
           console.log(`API response for student key ${studentCourseKey}:`, response);
           
           if (response && (response.status === 200 || response.status === 204)) {
@@ -820,6 +858,14 @@ const FacultyGrades = () => {
                 </div>
               </div>
               
+              {/* Current Section Display */}
+              {selectedCourse && (
+                <div className={styles.sectionInfo}>
+                  <h3>Section: {selectedCourse.section} - {selectedCourse.course}</h3>
+                  <p>Students: {selectedCourse.students?.length || 0} enrolled</p>
+                </div>
+              )}
+              
               <div className={styles.tableContainer}>
                 <table className={styles.gradesTable}>
                   <thead>
@@ -840,6 +886,9 @@ const FacultyGrades = () => {
                     {(() => {
                       console.log('=== TABLE RENDERING DEBUG ===');
                       console.log('selectedCourse:', selectedCourse);
+                      console.log('selectedCourse?.id:', selectedCourse?.id);
+                      console.log('selectedCourse?.section:', selectedCourse?.section);
+                      console.log('selectedCourse?.course:', selectedCourse?.course);
                       console.log('selectedCourse?.students:', selectedCourse?.students);
                       console.log('selectedCourse?.students?.length:', selectedCourse?.students?.length);
                       console.log('filteredStudents:', filteredStudents);
@@ -880,15 +929,18 @@ const FacultyGrades = () => {
                       }
                       
                       console.log('Showing student rows for:', filteredStudents.length, 'students');
-                      return filteredStudents.map((student) => {
+                      return filteredStudents.map((student, index) => {
                         const studentCourseKey = `${student.id}-${selectedCourse.id}`;
                         const currentGrades = studentsGrades[studentCourseKey] || {};
                         const displayedMidterm = currentGrades.midterm ?? student.midterm;
                         const displayedFinal = currentGrades.final ?? student.final;
                         const displayedWeightedAverage = currentGrades.weightedAverage ?? student.weightedAverage;
                         
+                        // Create a unique key with fallback
+                        const uniqueKey = student.id ? `${student.id}-${selectedCourse.id}` : `student-${index}-${selectedCourse.id}`;
+                        
                         return (
-                          <tr key={`${student.id}-${selectedCourse.id}`}>
+                          <tr key={uniqueKey}>
                             <td>
                               <div className={styles.cellContent}>
                                 <span className={styles.studentIdLabel}>{student.id}</span>

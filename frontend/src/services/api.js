@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// Create axios instance with base configuration
+// Create axios instance with base configuration for session-based auth
 const api = axios.create({
   baseURL: 'http://localhost:8080/api',
+  withCredentials: true, // CRITICAL - enables session cookies for Spring Security
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -16,10 +17,7 @@ api.interceptors.request.use(
     console.log('Request method:', config.method);
     console.log('Request data:', config.data);
     
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // No more JWT token handling - using session cookies instead
     return config;
   },
   (error) => {
@@ -47,9 +45,16 @@ api.interceptors.response.use(
       }
     });
     
-    // Don't redirect on auth errors during development
+    // Handle authentication errors
     if (error.response?.status === 401) {
-      console.warn('Authentication error - token may be invalid');
+      console.warn('Authentication error - session may be invalid');
+      // Clear user data and redirect to login
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('username');
+      window.location.href = '/login';
+    } else if (error.response?.status === 403) {
+      console.error('Access denied - insufficient permissions');
     }
     
     return Promise.reject(error);
@@ -573,34 +578,90 @@ export const userAPI = {
   },
 };
 
-// Authentication API endpoints
+// Authentication API endpoints - Updated for Spring Security session-based auth
 export const authAPI = {
-  // Login user
-  login: (loginData) => {
+  // Login user - using fetch for better session cookie handling
+  login: async (loginData) => {
     console.log('Calling login API with data:', loginData);
-    return api.post('/auth/login', loginData);
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: loginData.username,
+          password: loginData.password,
+          role: loginData.role // Role is required for Spring Security
+        }),
+        credentials: 'include' // CRITICAL for session cookies
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Store user info in localStorage for frontend use
+        localStorage.setItem('userRole', data.role);
+        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('username', data.username);
+        
+        return { data: { success: true, ...data } };
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
   
   // Logout user
-  logout: () => {
+  logout: async () => {
     console.log('Calling logout API...');
-    return api.post('/auth/logout');
+    try {
+      await fetch('http://localhost:8080/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      // Clear stored data
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('username');
+      
+      return { data: { success: true } };
+    } catch (error) {
+      // Still clear data even if logout request fails
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('username');
+      throw error;
+    }
   },
   
-  // Refresh token
-  refreshToken: () => {
-    console.log('Calling refresh token API...');
-    return api.post('/auth/refresh');
+  // Check authentication status
+  checkAuth: async () => {
+    console.log('Calling auth check API...');
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/check', { 
+        credentials: 'include' 
+      });
+      return { data: { authenticated: response.ok } };
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      return { data: { authenticated: false } };
+    }
   },
   
-  // Verify token
-  verifyToken: () => {
-    console.log('Calling verify token API...');
-    return api.get('/auth/verify');
+  // Verify token (kept for compatibility but uses session check)
+  verifyToken: async () => {
+    console.log('Calling verify token API (session check)...');
+    return await authAPI.checkAuth();
   },
 };
 
-// Convenience function for login (used by components)
+// Convenience function for login (used by components) - Updated for Spring Security
 export const loginUser = async (loginData) => {
   try {
     console.log('Attempting login with data:', loginData);
@@ -609,13 +670,40 @@ export const loginUser = async (loginData) => {
   } catch (error) {
     console.error('Login error:', error);
     if (error.response?.data) {
-      return error.response.data;
+      return { success: false, message: error.response.data.message };
     }
     return {
       success: false,
-      message: 'Network error occurred during login'
+      message: error.message || 'Network error occurred during login'
     };
   }
+};
+
+// Utility functions for authentication
+export const getCurrentUser = () => {
+  return {
+    role: localStorage.getItem('userRole'),
+    id: localStorage.getItem('userId'),
+    username: localStorage.getItem('username')
+  };
+};
+
+export const getCurrentStudentId = () => {
+  const user = getCurrentUser();
+  return user.role === 'STUDENT' ? user.id : null;
+};
+
+export const getCurrentFacultyId = () => {
+  const user = getCurrentUser();
+  return user.role === 'FACULTY' ? user.id : null;
+};
+
+export const isAuthenticated = () => {
+  return !!localStorage.getItem('userRole');
+};
+
+export const hasRole = (role) => {
+  return localStorage.getItem('userRole') === role;
 };
 
 // Test connection function
@@ -733,7 +821,7 @@ export const semesterEnrollmentAPI = {
     console.log('Calling updateSemesterEnrollment API for ID:', id, 'with data:', enrollmentData);
     return api.put(`/semester-enrollments/${id}`, enrollmentData);
   },
-  
+
   // Delete semester enrollment
   deleteSemesterEnrollment: (id) => {
     console.log('Calling deleteSemesterEnrollment API for ID:', id);
@@ -839,6 +927,45 @@ export const scheduleAPI = {
   
   // Update schedule status
   updateScheduleStatus: (id, status) => api.put(`/schedules/${id}/status?status=${encodeURIComponent(status)}`)
+};
+
+// Faculty Grades API endpoints
+export const facultyGradesAPI = {
+  // Get all sections assigned to a faculty member with grade summary
+  getFacultySections: (facultyId) => {
+    console.log('Calling getFacultySections API for faculty ID:', facultyId);
+    return api.get(`/faculty-grades/faculty/${facultyId}/sections`);
+  },
+
+  // Get detailed enrolled students for a specific section
+  getSectionStudents: (sectionId) => {
+    console.log('Calling getSectionStudents API for section ID:', sectionId);
+    return api.get(`/faculty-grades/section/${sectionId}/students`);
+  },
+
+  // Update midterm grade for a student enrollment
+  updateMidtermGrade: (enrollmentId, grade) => {
+    console.log('Calling updateMidtermGrade API for enrollment ID:', enrollmentId, 'with grade:', grade);
+    return api.put(`/faculty-grades/enrollment/${enrollmentId}/midterm-grade`, { midtermGrade: grade });
+  },
+
+  // Update final grade for a student enrollment
+  updateFinalGrade: (enrollmentId, grade) => {
+    console.log('Calling updateFinalGrade API for enrollment ID:', enrollmentId, 'with grade:', grade);
+    return api.put(`/faculty-grades/enrollment/${enrollmentId}/final-grade`, { finalGrade: grade });
+  },
+
+  // Update complete grade information for a student enrollment
+  updateGrades: (enrollmentId, gradeData) => {
+    console.log('Calling updateGrades API for enrollment ID:', enrollmentId, 'with grades:', gradeData);
+    return api.put(`/faculty-grades/enrollment/${enrollmentId}/grades`, gradeData);
+  },
+
+  // Bulk update grades for multiple enrollments
+  bulkUpdateGrades: (gradeUpdates) => {
+    console.log('Calling bulkUpdateGrades API with updates:', gradeUpdates);
+    return api.put('/faculty-grades/bulk-update-grades', gradeUpdates);
+  }
 };
 
 export default api;

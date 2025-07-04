@@ -1,7 +1,9 @@
 package com.stasis.stasis.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.List;
 
 
 @NoArgsConstructor
@@ -40,6 +42,8 @@ public class Student {
     @Transient
     private String username;
 
-    @OneToOne(optional = true)
-    private SemesterEnrollment semesterEnrollment;
+    // Change from OneToOne to OneToMany to prevent sharing
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore  // Prevent circular reference in JSON serialization
+    private List<SemesterEnrollment> semesterEnrollments;
 }

@@ -44,29 +44,44 @@ const StudentGrades = () => {
         console.log('Student enrolled courses data:', res.data);
         
         // Transform backend data to match the expected structure
-        const backendGrades = (res.data || []).map(ec => ({
-          id: ec.section?.course?.courseCode || ec.enrolledCourseID || '',
-          course: ec.section?.course?.courseDescription || '',
-          section: ec.section?.sectionName || '',
-          instructor: ec.section?.faculty
-            ? `${ec.section.faculty.firstName} ${ec.section.faculty.lastName}`
-            : '',
-          creditUnits: ec.section?.course?.credits || 0,
-          midtermGrade: ec.grade?.midtermGrade ?? null,
-          finalGrade: ec.grade?.finalGrade ?? null,
-          overallGrade: ec.grade?.overallGrade ?? null,
-          letterGrade: ec.grade?.letterGrade ?? '',
-          remarks: ec.grade?.remark ?? 
-            (ec.grade?.overallGrade != null
-              ? (ec.grade.overallGrade >= 60 ? 'Passed' : 'Failed')
-              : 'In Progress'),
-          semester: `${ec.semesterEnrollment?.semester || ''} ${ec.semesterEnrollment?.academicYear || ''}`,
-          academicYear: ec.semesterEnrollment?.academicYear || '',
-          semesterOnly: ec.semesterEnrollment?.semester || '',
-          status: ec.status || '',
-          enrollmentID: ec.enrolledCourseID,
-          semesterEnrollmentID: ec.semesterEnrollment?.semesterEnrollmentID
-        }));
+        const backendGrades = (res.data || []).map(ec => {
+          console.log('Processing grade data for enrollment:', ec);
+          console.log('Grade data:', {
+            courseCode: ec.courseCode,
+            courseDescription: ec.courseDescription,
+            sectionName: ec.sectionName,
+            faculty: ec.faculty,
+            credits: ec.credits,
+            gradeValue: ec.gradeValue,
+            grade: ec.grade,
+            semester: ec.semester,
+            academicYear: ec.academicYear
+          });
+          
+          return {
+            id: ec.courseCode || ec.enrolledCourseID || '',
+            course: ec.courseDescription || 'Unknown Course',
+            section: ec.sectionName || 'N/A',
+            instructor: ec.faculty || 'TBA',
+            creditUnits: ec.credits || 0,
+            midtermGrade: ec.midtermGrade ?? null,
+            finalGrade: ec.finalGrade ?? null,
+            overallGrade: ec.gradeValue ?? null,
+            letterGrade: ec.grade ?? '',
+            remarks: ec.remark ?? 
+              (ec.gradeValue != null
+                ? (ec.gradeValue >= 60 ? 'Passed' : 'Failed')
+                : 'In Progress'),
+            semester: ec.semester && ec.academicYear 
+              ? `${ec.semester} ${ec.academicYear}` 
+              : 'Current Semester',
+            academicYear: ec.academicYear || 'Current',
+            semesterOnly: ec.semester || 'Current',
+            status: ec.status || 'Active',
+            enrollmentID: ec.enrolledCourseID,
+            semesterEnrollmentID: ec.semesterEnrollmentID
+          };
+        });
         
         console.log('Transformed grades data:', backendGrades);
         setGradesList(backendGrades);

@@ -69,14 +69,25 @@ const CourseManagement = () => {
 
   // Filter courses based on search and program
   const filteredCourses = coursesData.filter(course => {
-    const matchesSearch = course.courseDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.program.toLowerCase().includes(searchTerm.toLowerCase());
+    // Safely access course properties with null/undefined checks
+    const courseDescription = course.courseDescription || '';
+    const courseCode = course.courseCode || '';
+    const program = course.program || '';
     
-    const matchesProgram = selectedProgram === '' || course.program === selectedProgram;
+    const matchesSearch = courseDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         courseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         program.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesProgram = selectedProgram === '' || program === selectedProgram;
     
     return matchesSearch && matchesProgram;
   });
+  
+  // Debug: Log filtering results
+  console.log('Total courses:', coursesData.length);
+  console.log('Filtered courses:', filteredCourses.length);
+  console.log('Search term:', searchTerm);
+  console.log('Selected program:', selectedProgram);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -149,6 +160,12 @@ const CourseManagement = () => {
       
       const response = await courseAPI.getAllCourses();
       console.log('API Response:', response.data);
+      
+      // Debug: Log the structure of each course
+      if (response.data && response.data.length > 0) {
+        console.log('First course structure:', response.data[0]);
+        console.log('Course keys:', Object.keys(response.data[0]));
+      }
       
       setCoursesData(response.data);
       setError(null);
