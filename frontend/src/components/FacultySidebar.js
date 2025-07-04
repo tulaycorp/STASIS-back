@@ -101,12 +101,12 @@ const FacultySidebar = ({ onNavigate, userInfo, sections }) => {
           if (window.confirm('Are you sure you want to log out?')) {
             try {
               await authAPI.logout();
-              window.location.href = '/login';
+              window.location.href = '/';
             } catch (error) {
               console.error('Logout error:', error);
               // Still redirect even if logout request fails
               localStorage.clear();
-              window.location.href = '/login';
+              window.location.href = '/';
             }
           }
         }}>

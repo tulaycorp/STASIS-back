@@ -79,7 +79,7 @@ public class SecurityConfig {
             .httpBasic(basic -> basic.disable())
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
-                .logoutSuccessUrl("/api/auth/login")
+                .logoutSuccessUrl("/")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
             );
