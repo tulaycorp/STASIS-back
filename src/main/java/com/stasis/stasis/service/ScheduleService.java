@@ -77,14 +77,25 @@ public class ScheduleService {
     
     @Transactional
     public Schedule createScheduleWithCourse(Schedule schedule, Long courseSectionId, Long courseId) {
+        System.out.println("=== ScheduleService.createScheduleWithCourse START ===");
+        System.out.println("Schedule: " + schedule);
+        System.out.println("Course Section ID: " + courseSectionId);
+        System.out.println("Course ID: " + courseId);
+        
         // Find and assign the course if provided
         if (courseId != null) {
             Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found with id: " + courseId));
             schedule.setCourse(course);
+            System.out.println("Course assigned to schedule: " + course.getCourseCode() + " - " + course.getCourseDescription());
         }
         
-        return createSchedule(schedule, courseSectionId);
+        Schedule savedSchedule = createSchedule(schedule, courseSectionId);
+        System.out.println("Schedule saved with ID: " + savedSchedule.getScheduleID());
+        System.out.println("Schedule course after save: " + (savedSchedule.getCourse() != null ? savedSchedule.getCourse().getCourseCode() : "null"));
+        System.out.println("=== ScheduleService.createScheduleWithCourse END ===");
+        
+        return savedSchedule;
     }
     
     private void validateScheduleData(Schedule schedule) {

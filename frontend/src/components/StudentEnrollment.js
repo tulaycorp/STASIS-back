@@ -63,10 +63,17 @@ function StudentEnrollment(props) {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
   const [enrollmentLoading, setEnrollmentLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger
   
   // New state for bulk enrollment
   const [selectedCourses, setSelectedCourses] = useState({}); // courseId -> sectionId mapping
   const [selectedSections, setSelectedSections] = useState({}); // courseId -> section object mapping
+
+  // Manual refresh function
+  const refreshData = () => {
+    console.log('Manually refreshing enrollment data...');
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   // Fetch curriculum and enrollment data
   useEffect(() => {
@@ -125,6 +132,15 @@ function StudentEnrollment(props) {
         // Fetch available sections
         const sectionsResponse = await courseSectionAPI.getAllSections();
         console.log('Raw sections response:', sectionsResponse.data);
+        
+        // TEST: Call the debug endpoint to see backend data
+        try {
+          const debugResponse = await fetch('http://localhost:8080/api/test/sections-debug');
+          const debugData = await debugResponse.json();
+          console.log('DEBUG: Backend sections data:', debugData);
+        } catch (debugError) {
+          console.warn('Debug endpoint not available:', debugError);
+        }
         
         // Transform sections to handle multiple schedules per section
         const sectionScheduleMap = new Map();
@@ -289,7 +305,7 @@ function StudentEnrollment(props) {
     if (studentData && !studentLoading) {
       fetchData();
     }
-  }, [studentData, studentLoading]);
+  }, [studentData, studentLoading, refreshTrigger]);
 
     // Get courses available for enrollment based on student type
     const getAvailableCoursesForEnrollment = () => {
@@ -356,77 +372,91 @@ function StudentEnrollment(props) {
         });
 
         return semesterCondition && notCurrentlyEnrolled;
-      });
+      });        console.log('Eligible courses after filtering:', eligibleCourses);
+        console.log('Available sections for matching:', availableSections.length);
 
-      console.log('Eligible courses after filtering:', eligibleCourses);
-
-      // Add available sections to each course - updated for new schedule-course structure
-      return eligibleCourses.map(curriculumDetail => {
-        // Find matching sections for this course through schedule-course assignments
-        const courseSections = availableSections.filter(section => {
-          // Debug the structure of each section to understand what we're working with
-          console.log(`Checking section ${section.sectionID || section.id} for course ${curriculumDetail.courseId}:`, {
-            sectionCourseId: section.course?.id,
-            directCourseId: section.courseId,
-            course_id: section.course_id,
-            course: section.course,
-            schedules: section.schedules,
-            status: section.status,
-            scheduleStatus: section.scheduleStatus,
-            hasDirectCourse: section.hasDirectCourse
-          });
+        // Add available sections to each course - updated for new schedule-course structure
+        return eligibleCourses.map(curriculumDetail => {
+          console.log(`\n=== Processing curriculum course: ${curriculumDetail.courseId} (${curriculumDetail.courseName}) ===`);
           
-          // Convert IDs to strings for comparison to avoid type mismatches
-          const courseIdStr = String(curriculumDetail.courseId);                                        // NEW: Check if section has schedules with course assignments
-          if (section.schedules && section.schedules.length > 0) {
-            const hasMatchingSchedule = section.schedules.some(schedule => {
-              if (schedule.course) {
-                const scheduleMatches = String(schedule.course.id) === courseIdStr || 
-                                     String(schedule.course.courseID) === courseIdStr;
-                const scheduleId = schedule.id || schedule.scheduleID || schedule.scheduleId;
-                console.log(`Schedule ${scheduleId || 'undefined'} course match check: ${scheduleMatches}`);
-                return scheduleMatches;
-              }
-              return false;
+          // Find matching sections for this course through schedule-course assignments
+          const courseSections = availableSections.filter(section => {
+            // Debug the structure of each section to understand what we're working with
+            console.log(`  Checking section ${section.sectionID || section.id} (${section.sectionName}) for course ${curriculumDetail.courseId}:`, {
+              sectionCourseId: section.course?.id,
+              directCourseId: section.courseId,
+              course_id: section.course_id,
+              course: section.course,
+              schedules: section.schedules?.length || 0,
+              hasDirectCourse: section.hasDirectCourse,
+              schedulesDetail: section.schedules?.map(s => ({
+                scheduleId: s.scheduleID || s.id,
+                courseId: s.course?.id,
+                courseCode: s.course?.courseCode,
+                courseDescription: s.course?.courseDescription
+              }))
             });
             
-            if (hasMatchingSchedule) {
-              console.log('Schedule-course relationship match');
+            // Convert IDs to strings for comparison to avoid type mismatches
+            const courseIdStr = String(curriculumDetail.courseId);
+            
+            // NEW: Check if section has schedules with course assignments
+            if (section.schedules && section.schedules.length > 0) {
+              const hasMatchingSchedule = section.schedules.some(schedule => {
+                if (schedule.course) {
+                  const scheduleMatches = String(schedule.course.id) === courseIdStr || 
+                                       String(schedule.course.courseID) === courseIdStr;
+                  const scheduleId = schedule.id || schedule.scheduleID || schedule.scheduleId;
+                  console.log(`    Schedule ${scheduleId || 'undefined'} course match check:`, {
+                    scheduleMatches,
+                    scheduleCourseId: schedule.course.id,
+                    scheduleCourseCode: schedule.course.courseCode,
+                    curriculumCourseId: courseIdStr
+                  });
+                  return scheduleMatches;
+                }
+                console.log(`    Schedule has no course assigned`);
+                return false;
+              });
+              
+              if (hasMatchingSchedule) {
+                console.log(`    ✓ MATCH: Schedule-course relationship found`);
+                return true;
+              }
+            }
+            
+            // BACKWARD COMPATIBILITY: For sections with direct course assignments (old structure)
+            if (section.hasDirectCourse && section.course) {
+              const matches = String(section.course.id) === courseIdStr || String(section.course.courseID) === courseIdStr;
+              console.log(`    Direct course match check: ${matches}`);
+              return matches;
+            }
+            
+            // For sections with course through section relationship (backward compatibility)
+            if (section.course && (String(section.course.id) === courseIdStr || String(section.course.courseID) === courseIdStr)) {
+              console.log(`    Section course relationship match`);
               return true;
             }
-          }
-          
-          // BACKWARD COMPATIBILITY: For sections with direct course assignments (old structure)
-          if (section.hasDirectCourse && section.course) {
-            const matches = String(section.course.id) === courseIdStr || String(section.course.courseID) === courseIdStr;
-            console.log(`Direct course match check: ${matches}`);
-            return matches;
-          }
-          
-          // For sections with course through section relationship (backward compatibility)
-          if (section.course && (String(section.course.id) === courseIdStr || String(section.course.courseID) === courseIdStr)) {
-            console.log('Section course relationship match');
-            return true;
-          }
-          
-          // Check if section has courseId field directly
-          if (section.courseId && String(section.courseId) === courseIdStr) {
-            console.log('Direct courseId match');
-            return true;
-          }
-          
-          // Check if section has course_id field
-          if (section.course_id && String(section.course_id) === courseIdStr) {
-            console.log('course_id field match');
-            return true;
-          }
-          
-          return false;
+            
+            // Check if section has courseId field directly
+            if (section.courseId && String(section.courseId) === courseIdStr) {
+              console.log(`    Direct courseId match`);
+              return true;
+            }
+            
+            // Check if section has course_id field
+            if (section.course_id && String(section.course_id) === courseIdStr) {
+              console.log(`    course_id field match`);
+              return true;
+            }
+            
+            console.log(`    ✗ NO MATCH: No course relationship found`);
+            return false;
         });
         
-        console.log('Sections found for course', curriculumDetail.courseId, ':', courseSections.length);
+        console.log(`  Sections found for course ${curriculumDetail.courseId} (${curriculumDetail.courseName}):`, courseSections.length);
         if (courseSections.length > 0) {
-          console.log('First matching section:', courseSections[0]);
+          console.log(`  First matching section:`, courseSections[0]);
         }
         
         return {
@@ -926,6 +956,14 @@ function StudentEnrollment(props) {
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="search-input"
                     />
+                    <button 
+                      className="btn-secondary"
+                      onClick={refreshData}
+                      disabled={loading}
+                      title="Refresh available courses"
+                    >
+                      {loading ? '⏳' : '🔄'} Refresh
+                    </button>
                   </div>
                 )}
               </div>

@@ -19,7 +19,28 @@ public class CourseSectionService {
     private ScheduleService scheduleService;
 
     public List<CourseSection> getAllSections() {
-        return courseSectionRepository.findAll();
+        // Use the new method that eagerly loads schedules and courses
+        List<CourseSection> sections = courseSectionRepository.findAllWithSchedulesAndCourses();
+        System.out.println("=== CourseSectionService.getAllSections ===");
+        System.out.println("Total sections found: " + sections.size());
+        
+        // Debug schedule-course relationships
+        for (CourseSection section : sections) {
+            System.out.println("Section " + section.getSectionID() + " (" + section.getSectionName() + "):");
+            if (section.getSchedules() != null && !section.getSchedules().isEmpty()) {
+                for (Schedule schedule : section.getSchedules()) {
+                    String courseInfo = schedule.getCourse() != null ? 
+                        schedule.getCourse().getCourseCode() + " - " + schedule.getCourse().getCourseDescription() : 
+                        "No course assigned";
+                    System.out.println("  Schedule " + schedule.getScheduleID() + ": " + courseInfo);
+                }
+            } else {
+                System.out.println("  No schedules found");
+            }
+        }
+        System.out.println("=== End getAllSections ===");
+        
+        return sections;
     }
 
     public Optional<CourseSection> getSectionById(Long id) {

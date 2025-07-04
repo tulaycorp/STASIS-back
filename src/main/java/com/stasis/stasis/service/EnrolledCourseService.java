@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -144,6 +145,11 @@ public class EnrolledCourseService {
     }
     
     public EnrolledCourse createEnrollmentForStudent(Long studentId, Long courseSectionId, String status) {
+        System.out.println("=== Creating enrollment for student ===");
+        System.out.println("Student ID: " + studentId);
+        System.out.println("Course Section ID: " + courseSectionId);
+        System.out.println("Status: " + status);
+        
         // Get the student
         Student student = studentRepository.findById(studentId)
             .orElseThrow(() -> new RuntimeException("Student not found with ID: " + studentId));
@@ -152,18 +158,51 @@ public class EnrolledCourseService {
         CourseSection courseSection = courseSectionRepository.findById(courseSectionId)
             .orElseThrow(() -> new RuntimeException("Course section not found with ID: " + courseSectionId));
         
+        // Check if student is already enrolled in this specific course section
+        List<EnrolledCourse> existingEnrollments = enrolledCourseRepository.findByStudentIdWithDetails(studentId);
+        boolean alreadyEnrolled = existingEnrollments.stream()
+            .anyMatch(enrollment -> enrollment.getSection().getSectionID().equals(courseSectionId));
+        
+        if (alreadyEnrolled) {
+            System.out.println("Student is already enrolled in course section: " + courseSectionId);
+            throw new RuntimeException("Student is already enrolled in this course section");
+        }
+        
+        // Check for enrollment capacity or other business rules here if needed
+        
         // Find or create a semester enrollment for this student
-        // For now, we'll create a simple semester enrollment or find an existing one
         SemesterEnrollment semesterEnrollment = findOrCreateCurrentSemesterEnrollment(student);
+        System.out.println("Using semester enrollment ID: " + semesterEnrollment.getSemesterEnrollmentID());
         
         // Create the enrolled course
         EnrolledCourse enrolledCourse = EnrolledCourse.builder()
             .semesterEnrollment(semesterEnrollment)
             .section(courseSection)
-            .status(status)
+            .status(status != null ? status : "ACTIVE") // Default to ACTIVE if no status provided
             .build();
         
-        return enrolledCourseRepository.save(enrolledCourse);
+        EnrolledCourse savedEnrollment = enrolledCourseRepository.save(enrolledCourse);
+        System.out.println("Created enrollment with ID: " + savedEnrollment.getEnrolledCourseID());
+        
+        // Update the total credits in the semester enrollment
+        updateSemesterEnrollmentCredits(semesterEnrollment);
+        
+        // Log current enrollments for this student
+        List<EnrolledCourse> allStudentEnrollments = enrolledCourseRepository.findByStudentIdWithDetails(studentId);
+        System.out.println("Student now enrolled in " + allStudentEnrollments.size() + " courses total");
+        
+        return savedEnrollment;
+    }
+    
+    /**
+     * Update the total credits for a semester enrollment based on enrolled courses
+     */
+    private void updateSemesterEnrollmentCredits(SemesterEnrollment semesterEnrollment) {
+        List<EnrolledCourse> enrolledCourses = enrolledCourseRepository.findBySemesterEnrollment(semesterEnrollment);
+        int totalCredits = enrolledCourses.size() * 3; // Assuming 3 credits per course
+        semesterEnrollment.setTotalCredits(totalCredits);
+        semesterEnrollmentRepository.save(semesterEnrollment);
+        System.out.println("Updated semester enrollment credits to: " + totalCredits);
     }
     
     // Security helper methods
@@ -194,28 +233,43 @@ public class EnrolledCourseService {
     }
 
     private SemesterEnrollment findOrCreateCurrentSemesterEnrollment(Student student) {
-        // First, try to find an existing active semester enrollment for this student
+        // Get current academic year and semester
+        String currentAcademicYear = "2024-2025"; // You might want to calculate this dynamically
+        String currentSemester = "1"; // You might want to determine this based on current date
+        
+        // First, try to find an existing active semester enrollment for this student in the current semester
         List<SemesterEnrollment> existingEnrollments = semesterEnrollmentRepository.findAll()
             .stream()
-            .filter(se -> se.getStudent().getId().equals(student.getId()) && "ACTIVE".equals(se.getStatus()))
+            .filter(se -> se.getStudent().getId().equals(student.getId()) && 
+                         "ACTIVE".equals(se.getStatus()) &&
+                         currentAcademicYear.equals(se.getAcademicYear()) &&
+                         currentSemester.equals(se.getSemester()))
             .collect(Collectors.toList());
         
         if (!existingEnrollments.isEmpty()) {
-            // Return the first active enrollment
-            return existingEnrollments.get(0);
+            // Return the existing enrollment for this semester
+            SemesterEnrollment existing = existingEnrollments.get(0);
+            System.out.println("Found existing semester enrollment: " + existing.getSemesterEnrollmentID() + 
+                             " for academic year: " + existing.getAcademicYear() + 
+                             ", semester: " + existing.getSemester());
+            return existing;
         }
         
-        // If no active enrollment exists, create a new one
+        // If no active enrollment exists for this semester, create a new one
         SemesterEnrollment newSemesterEnrollment = SemesterEnrollment.builder()
             .student(student)
-            .semester("1") // Default to first semester
-            .academicYear("2024-2025") // Default academic year
+            .semester(currentSemester)
+            .academicYear(currentAcademicYear)
             .status("ACTIVE")
             .dateEnrolled(LocalDate.now())
             .totalCredits(0)
             .build();
         
-        return semesterEnrollmentRepository.save(newSemesterEnrollment);
+        SemesterEnrollment saved = semesterEnrollmentRepository.save(newSemesterEnrollment);
+        System.out.println("Created new semester enrollment: " + saved.getSemesterEnrollmentID() + 
+                         " for academic year: " + saved.getAcademicYear() + 
+                         ", semester: " + saved.getSemester());
+        return saved;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'FACULTY')")
@@ -506,5 +560,71 @@ public class EnrolledCourseService {
         }
         
         return enrollments;
+    }
+
+    /**
+     * Enroll a student in multiple course sections at once
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'FACULTY')")
+    @Transactional
+    public List<EnrolledCourse> enrollStudentInMultipleCourses(Long studentId, List<Long> courseSectionIds, String status) {
+        System.out.println("=== Enrolling student in multiple courses ===");
+        System.out.println("Student ID: " + studentId);
+        System.out.println("Course Section IDs: " + courseSectionIds);
+        
+        // Get the student
+        Student student = studentRepository.findById(studentId)
+            .orElseThrow(() -> new RuntimeException("Student not found with ID: " + studentId));
+        
+        // Find or create a semester enrollment for this student
+        SemesterEnrollment semesterEnrollment = findOrCreateCurrentSemesterEnrollment(student);
+        
+        // Get existing enrollments to check for duplicates
+        List<EnrolledCourse> existingEnrollments = enrolledCourseRepository.findByStudentIdWithDetails(studentId);
+        List<Long> existingSectionIds = existingEnrollments.stream()
+            .map(enrollment -> enrollment.getSection().getSectionID())
+            .collect(Collectors.toList());
+        
+        List<EnrolledCourse> newEnrollments = new ArrayList<>();
+        
+        for (Long courseSectionId : courseSectionIds) {
+            // Skip if already enrolled
+            if (existingSectionIds.contains(courseSectionId)) {
+                System.out.println("Student already enrolled in section " + courseSectionId + ", skipping...");
+                continue;
+            }
+            
+            // Get the course section
+            CourseSection courseSection = courseSectionRepository.findById(courseSectionId)
+                .orElseThrow(() -> new RuntimeException("Course section not found with ID: " + courseSectionId));
+            
+            // Create the enrolled course
+            EnrolledCourse enrolledCourse = EnrolledCourse.builder()
+                .semesterEnrollment(semesterEnrollment)
+                .section(courseSection)
+                .status(status)
+                .build();
+            
+            EnrolledCourse savedEnrollment = enrolledCourseRepository.save(enrolledCourse);
+            newEnrollments.add(savedEnrollment);
+            System.out.println("Created enrollment with ID: " + savedEnrollment.getEnrolledCourseID());
+        }
+        
+        // Update the total credits in the semester enrollment
+        if (!newEnrollments.isEmpty()) {
+            updateSemesterEnrollmentCredits(semesterEnrollment);
+        }
+        
+        System.out.println("Successfully enrolled student in " + newEnrollments.size() + " new courses");
+        return newEnrollments;
+    }
+
+    /**
+     * Check if a student can enroll in a specific course section
+     */
+    public boolean canStudentEnrollInSection(Long studentId, Long courseSectionId) {
+        List<EnrolledCourse> existingEnrollments = enrolledCourseRepository.findByStudentIdWithDetails(studentId);
+        return existingEnrollments.stream()
+            .noneMatch(enrollment -> enrollment.getSection().getSectionID().equals(courseSectionId));
     }
 }

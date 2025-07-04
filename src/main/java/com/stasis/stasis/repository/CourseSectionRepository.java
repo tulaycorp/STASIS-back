@@ -57,4 +57,12 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
            "JOIN cs.schedules s " +
            "WHERE s.scheduleID = :scheduleId")
     CourseSection findBySchedule_ScheduleID(@Param("scheduleId") Long scheduleId);
+    
+    // Find all sections with schedules and courses eagerly loaded
+    @Query("SELECT DISTINCT cs FROM CourseSection cs " +
+           "LEFT JOIN FETCH cs.program p " +
+           "LEFT JOIN FETCH cs.faculty f " +
+           "LEFT JOIN FETCH cs.schedules s " +
+           "LEFT JOIN FETCH s.course c")
+    List<CourseSection> findAllWithSchedulesAndCourses();
 }
