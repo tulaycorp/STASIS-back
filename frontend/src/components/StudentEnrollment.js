@@ -225,8 +225,8 @@ function StudentEnrollment(props) {
               section: {
                 sectionName: enrollment.sectionName,
                 course: {
-                  id: enrollment.courseCode, // Use courseCode as ID for matching
-                  courseID: enrollment.courseCode,
+                  id: enrollment.courseId, // Use numeric courseId for proper matching
+                  courseID: enrollment.courseId,
                   courseCode: enrollment.courseCode,
                   courseDescription: enrollment.courseDescription,
                   courseName: enrollment.courseDescription,

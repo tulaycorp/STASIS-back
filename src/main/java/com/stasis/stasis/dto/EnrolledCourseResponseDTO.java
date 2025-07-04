@@ -14,6 +14,7 @@ public class EnrolledCourseResponseDTO {
     private String status;
     
     // Course information
+    private Long courseId;
     private String courseCode;
     private String courseDescription;
     private Integer credits;

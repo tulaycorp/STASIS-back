@@ -77,6 +77,7 @@ public class EnrolledCourseController {
             .status(enrolledCourse.getStatus());
         
         // Initialize default values
+        Long courseId = null;
         String courseCode = "N/A";
         String courseDescription = "Unknown Course";
         Integer credits = 0;
@@ -100,6 +101,7 @@ public class EnrolledCourseController {
                     var schedule = primarySchedule.get();
                     var course = schedule.getCourse();
                     
+                    courseId = course.getId();
                     courseCode = course.getCourseCode();
                     courseDescription = course.getCourseDescription();
                     credits = course.getCredits();
@@ -121,7 +123,8 @@ public class EnrolledCourseController {
         }
         
         // Set the course and schedule information
-        builder.courseCode(courseCode)
+        builder.courseId(courseId)
+               .courseCode(courseCode)
                .courseDescription(courseDescription)
                .credits(credits)
                .startTime(startTime)
