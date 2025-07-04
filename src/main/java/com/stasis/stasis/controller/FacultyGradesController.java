@@ -252,24 +252,60 @@ public class FacultyGradesController {
             @PathVariable Long enrollmentId, 
             @RequestBody Map<String, Object> gradeData) {
         
+        System.out.println("=== FacultyGradesController.updateGrades START ===");
+        System.out.println("Enrollment ID: " + enrollmentId);
+        System.out.println("Grade data received: " + gradeData);
+        
         try {
-            System.out.println("FacultyGradesController: Updating complete grades for enrollment: " + enrollmentId);
-            System.out.println("Grade data received: " + gradeData);
+            // Validate input parameters
+            if (enrollmentId == null) {
+                System.err.println("Enrollment ID is null");
+                return ResponseEntity.badRequest().body("Enrollment ID cannot be null");
+            }
+            
+            if (gradeData == null || gradeData.isEmpty()) {
+                System.err.println("Grade data is null or empty");
+                return ResponseEntity.badRequest().body("Grade data cannot be null or empty");
+            }
+            
+            // Debug authentication
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            System.out.println("Authentication: " + (auth != null ? auth.getName() : "null"));
+            System.out.println("Authorities: " + (auth != null ? auth.getAuthorities() : "null"));
+            
+            System.out.println("Calling service method...");
             
             // Use the service method that accepts Map<String, Object>
             EnrolledCourse updatedEnrollment = enrolledCourseService.updateGrades(enrollmentId, gradeData);
             
+            System.out.println("Service method completed successfully");
+            
             if (updatedEnrollment != null) {
-                System.out.println("FacultyGradesController: Successfully updated grades");
+                System.out.println("Successfully updated grades for enrollment: " + enrollmentId);
                 return ResponseEntity.ok(updatedEnrollment);
             } else {
+                System.err.println("Service returned null - enrollment not found");
                 return ResponseEntity.notFound().build();
             }
             
-        } catch (Exception e) {
-            System.err.println("FacultyGradesController: Error updating grades: " + e.getMessage());
+        } catch (SecurityException e) {
+            System.err.println("Security error: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error updating grades: " + e.getMessage());
+            return ResponseEntity.status(403).body("Access denied: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.err.println("Invalid argument: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
+        } catch (RuntimeException e) {
+            System.err.println("Runtime error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Server error: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Unexpected error: " + e.getMessage());
+        } finally {
+            System.out.println("=== FacultyGradesController.updateGrades END ===");
         }
     }
 
