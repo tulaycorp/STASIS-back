@@ -88,7 +88,7 @@ const FacultyGrades = () => {
       // Only deselect if the course is not in the filtered list AND we're not in the middle of saving grades
       if (selectedCourseId && 
           !newCourseList.some(c => c.id === selectedCourseId) && 
-          !Object.values(studentsGrades).some(g => g.hasChanges && g.courseId === selectedCourseId)) {
+          !Object.values(studentsGrades).some(g => g.hasChanges && String(g.courseId) === String(selectedCourseId))) {
         console.log('Deselecting course because it is not in the filtered list');
         setSelectedCourseId(null);
         setSelectedCourse(null);
@@ -476,7 +476,7 @@ const FacultyGrades = () => {
     console.log(`Selected course name: ${selectedCourse.name || selectedCourse.course}`);
 
     // Create a unique key for this student in this specific course
-    const studentCourseKey = `${studentId}-${selectedCourse.id}`;
+    const studentCourseKey = `${studentId}-${String(selectedCourse.id)}`;
     console.log(`Student-course key: ${studentCourseKey}`);
     
     const grades = studentsGrades[studentCourseKey] || {};
@@ -499,7 +499,7 @@ const FacultyGrades = () => {
       weightedAverage: newWeightedAverage,
       enrollmentId: student.enrollmentId,
       studentId: studentId,
-      courseId: selectedCourse.id,
+      courseId: String(selectedCourse.id), // Ensure courseId is stored as string for consistency
       hasChanges: true // Mark this student's grades as changed
     };
 
@@ -527,8 +527,8 @@ const FacultyGrades = () => {
     // Filter to only get changes for the current selected course with extra validation
     const changedStudents = Object.entries(studentsGrades).filter(([key, grades]) => {
       const hasChanges = grades.hasChanges === true;
-      const courseMatches = grades.courseId === selectedCourse.id;
-      const keyMatchesCourse = key.endsWith(`-${selectedCourse.id}`);
+      const courseMatches = String(grades.courseId) === String(selectedCourse.id);
+      const keyMatchesCourse = key.endsWith(`-${String(selectedCourse.id)}`);
       
       console.log(`Checking student key: ${key}`);
       console.log(`  - hasChanges: ${hasChanges}`);
@@ -563,31 +563,33 @@ const FacultyGrades = () => {
       for (const [studentCourseKey, grades] of changedStudents) {
         try {
           // Additional validation: ensure the student exists in the current course
-          // The key format is "studentId-courseId", where courseId can be a complex string
-          // We need to extract studentId from the beginning and courseId from the rest
+          // The key format is "studentId-sectionId", where sectionId is exactly selectedCourse.id
+          // We need to extract studentId from the beginning, assuming it's a number
           
-          // Find the first dash to separate studentId from courseId
-          const firstDashIndex = studentCourseKey.indexOf('-');
-          if (firstDashIndex === -1) {
-            console.error(`Invalid key format: ${studentCourseKey}`);
+          // Since we know the exact sectionId, we can extract it from the end
+          const sectionIdStr = String(selectedCourse.id);
+          const expectedSuffix = `-${sectionIdStr}`;
+          
+          if (!studentCourseKey.endsWith(expectedSuffix)) {
+            console.error(`Key doesn't end with expected section ID: ${studentCourseKey} (expected suffix: ${expectedSuffix})`);
             errorCount++;
             continue;
           }
           
-          const studentIdStr = studentCourseKey.substring(0, firstDashIndex);
-          const courseIdStr = studentCourseKey.substring(firstDashIndex + 1);
+          // Extract student ID by removing the section ID suffix
+          const studentIdStr = studentCourseKey.substring(0, studentCourseKey.length - expectedSuffix.length);
           const studentId = parseInt(studentIdStr);
+          
+          if (isNaN(studentId)) {
+            console.error(`Invalid student ID extracted from key: ${studentCourseKey} -> ${studentIdStr}`);
+            errorCount++;
+            continue;
+          }
           
           console.log(`Parsing key: ${studentCourseKey}`);
           console.log(`  - studentId: ${studentId}`);
-          console.log(`  - courseId: ${courseIdStr}`);
+          console.log(`  - sectionId: ${sectionIdStr}`);
           console.log(`  - selectedCourse.id: ${selectedCourse.id}`);
-          
-          if (courseIdStr !== selectedCourse.id) {
-            console.error(`Course ID mismatch for key ${studentCourseKey}: ${courseIdStr} !== ${selectedCourse.id}`);
-            errorCount++;
-            continue;
-          }
           
           const studentInCourse = selectedCourse.students.find(s => s.id === studentId);
           if (!studentInCourse) {
@@ -648,7 +650,7 @@ const FacultyGrades = () => {
           
           // Update students with new grades while preserving all students
           currentSection.students = currentSection.students.map(student => {
-            const studentCourseKey = `${student.id}-${selectedCourse.id}`;
+            const studentCourseKey = `${student.id}-${String(selectedCourse.id)}`;
             const updatedGrades = studentsGrades[studentCourseKey];
             if (updatedGrades?.hasChanges) {
               console.log(`Updating student ${student.id} with new grades:`, updatedGrades);
@@ -930,14 +932,14 @@ const FacultyGrades = () => {
                       
                       console.log('Showing student rows for:', filteredStudents.length, 'students');
                       return filteredStudents.map((student, index) => {
-                        const studentCourseKey = `${student.id}-${selectedCourse.id}`;
+                        const studentCourseKey = `${student.id}-${String(selectedCourse.id)}`;
                         const currentGrades = studentsGrades[studentCourseKey] || {};
                         const displayedMidterm = currentGrades.midterm ?? student.midterm;
                         const displayedFinal = currentGrades.final ?? student.final;
                         const displayedWeightedAverage = currentGrades.weightedAverage ?? student.weightedAverage;
                         
                         // Create a unique key with fallback
-                        const uniqueKey = student.id ? `${student.id}-${selectedCourse.id}` : `student-${index}-${selectedCourse.id}`;
+                        const uniqueKey = student.id ? `${student.id}-${String(selectedCourse.id)}` : `student-${index}-${String(selectedCourse.id)}`;
                         
                         return (
                           <tr key={uniqueKey}>
@@ -1009,7 +1011,7 @@ const FacultyGrades = () => {
               {/* Add Encode Grades button */}
               {selectedCourse && (() => {
                 const changedStudentsCount = Object.values(studentsGrades).filter(g => 
-                  g.hasChanges && g.courseId === selectedCourse.id
+                  g.hasChanges && String(g.courseId) === String(selectedCourse.id)
                 ).length;
                 
                 return changedStudentsCount > 0 ? (
