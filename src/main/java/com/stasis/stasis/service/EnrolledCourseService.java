@@ -627,4 +627,10 @@ public class EnrolledCourseService {
         return existingEnrollments.stream()
             .noneMatch(enrollment -> enrollment.getSection().getSectionID().equals(courseSectionId));
     }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @Transactional
+    public EnrolledCourse studentEnrollInCourse(Long studentId, Long courseSectionId, String status) {
+        return createEnrollmentForStudent(studentId, courseSectionId, status);
+    }
 }

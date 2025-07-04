@@ -194,12 +194,13 @@ public class EnrolledCourseController {
     }
 
     @PostMapping
-    public EnrolledCourse createEnrolledCourse(@RequestBody Map<String, Object> enrollmentRequest) {
-        Long studentId = Long.valueOf(enrollmentRequest.get("studentId").toString());
-        Long courseSectionId = Long.valueOf(enrollmentRequest.get("courseSectionId").toString());
-        String status = enrollmentRequest.get("status").toString();
-        
-        return enrolledCourseService.createEnrollmentForStudent(studentId, courseSectionId, status);
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<EnrolledCourse> enrollInCourse(@RequestBody Map<String, Object> payload) {
+        Long studentId = Long.valueOf(payload.get("studentId").toString());
+        Long courseSectionId = Long.valueOf(payload.get("courseSectionId").toString());
+        String status = payload.get("status") != null ? payload.get("status").toString() : "Enrolled";
+        EnrolledCourse enrolled = enrolledCourseService.studentEnrollInCourse(studentId, courseSectionId, status);
+        return ResponseEntity.ok(enrolled);
     }
 
     @PutMapping("/{id}")
@@ -335,5 +336,9 @@ public class EnrolledCourseController {
     public ResponseEntity<List<EnrolledCourse>> getEnrolledStudentsByCourse(@PathVariable Long courseId) {
         List<EnrolledCourse> enrolledCourses = enrolledCourseService.getEnrolledCoursesByCourse(courseId);
         return ResponseEntity.ok(enrolledCourses);
+
+        
     }
+
+
 }
