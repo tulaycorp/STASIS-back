@@ -221,37 +221,77 @@ public class EnrolledCourseService {
     @PreAuthorize("hasAnyRole('ADMIN', 'FACULTY')")
     @Transactional
     public EnrolledCourse updateGrades(Long enrolledCourseId, Map<String, Object> gradeData) {
-        EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
-            .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
+        System.out.println("=== EnrolledCourseService.updateGrades START ===");
+        System.out.println("EnrolledCourse ID: " + enrolledCourseId);
+        System.out.println("Grade data: " + gradeData);
+        
+        try {
+            EnrolledCourse enrolledCourse = enrolledCourseRepository.findById(enrolledCourseId)
+                .orElseThrow(() -> new RuntimeException("Enrolled Course not found with ID " + enrolledCourseId));
 
-        // Create or update the grade entity with all grade components
-        Grade grade = enrolledCourse.getGrade();
-        if (grade == null) {
-            // Create a unique grade for this enrollment
-            grade = createUniqueGrade(enrolledCourse, gradeData);
-        } else {
-            // Update existing grade while ensuring it remains unique to this enrollment
-            if (gradeData.containsKey("midtermGrade") && gradeData.get("midtermGrade") != null) {
-                grade.setMidtermGrade(Double.valueOf(gradeData.get("midtermGrade").toString()));
+            System.out.println("Found enrolled course: " + enrolledCourse.getEnrolledCourseID());
+
+            // Create or update the grade entity with all grade components
+            Grade grade = enrolledCourse.getGrade();
+            if (grade == null) {
+                System.out.println("Creating new grade...");
+                // Create a unique grade for this enrollment
+                grade = createUniqueGrade(enrolledCourse, gradeData);
+                System.out.println("Created new grade with ID: " + grade.getGradeID());
+            } else {
+                System.out.println("Updating existing grade with ID: " + grade.getGradeID());
+                // Update existing grade while ensuring it remains unique to this enrollment
+                if (gradeData.containsKey("midtermGrade") && gradeData.get("midtermGrade") != null) {
+                    Double midterm = parseGradeValue(gradeData.get("midtermGrade"));
+                    grade.setMidtermGrade(midterm);
+                    System.out.println("Updated midterm grade: " + midterm);
+                }
+                if (gradeData.containsKey("finalGrade") && gradeData.get("finalGrade") != null) {
+                    Double finalGrade = parseGradeValue(gradeData.get("finalGrade"));
+                    grade.setFinalGrade(finalGrade);
+                    System.out.println("Updated final grade: " + finalGrade);
+                }
+                if (gradeData.containsKey("overallGrade") && gradeData.get("overallGrade") != null) {
+                    Double overallGrade = parseGradeValue(gradeData.get("overallGrade"));
+                    grade.setGradeValue(BigDecimal.valueOf(overallGrade));
+                    grade.setOverallGrade(overallGrade);
+                    System.out.println("Updated overall grade: " + overallGrade);
+                }
+                if (gradeData.containsKey("remark") && gradeData.get("remark") != null) {
+                    String remark = gradeData.get("remark").toString();
+                    grade.setRemark(remark);
+                    System.out.println("Updated remark: " + remark);
+                }
+                grade.setGradeDate(LocalDate.now());
+                grade = gradeRepository.save(grade);
+                System.out.println("Saved grade successfully");
             }
-            if (gradeData.containsKey("finalGrade") && gradeData.get("finalGrade") != null) {
-                grade.setFinalGrade(Double.valueOf(gradeData.get("finalGrade").toString()));
-            }
-            if (gradeData.containsKey("overallGrade") && gradeData.get("overallGrade") != null) {
-                Double overallGrade = Double.valueOf(gradeData.get("overallGrade").toString());
-                grade.setGradeValue(BigDecimal.valueOf(overallGrade));
-                grade.setOverallGrade(overallGrade);
-            }
-            if (gradeData.containsKey("remark") && gradeData.get("remark") != null) {
-                grade.setRemark(gradeData.get("remark").toString());
-            }
-            grade.setGradeDate(LocalDate.now());
-            gradeRepository.save(grade);
+
+            // Update the enrolled course with the grade
+            enrolledCourse.setGrade(grade);
+            EnrolledCourse savedEnrollment = enrolledCourseRepository.save(enrolledCourse);
+            System.out.println("Saved enrolled course successfully");
+            
+            System.out.println("=== EnrolledCourseService.updateGrades END SUCCESS ===");
+            return savedEnrollment;
+            
+        } catch (Exception e) {
+            System.err.println("Error in updateGrades: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update grades: " + e.getMessage(), e);
         }
-
-        // Update the enrolled course with the grade
-        enrolledCourse.setGrade(grade);
-        return enrolledCourseRepository.save(enrolledCourse);
+    }
+    
+    private Double parseGradeValue(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        }
+        try {
+            return Double.valueOf(value.toString());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid grade value: " + value);
+        }
     }
 
     // Faculty grade management methods

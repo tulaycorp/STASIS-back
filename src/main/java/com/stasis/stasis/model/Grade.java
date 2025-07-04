@@ -4,12 +4,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Grade {
 
     @Id
@@ -27,7 +29,6 @@ public class Grade {
     private Double overallGrade;
     private String remark;
 
-    // Back-reference to ensure unique relationship
-    @OneToOne(mappedBy = "grade", fetch = FetchType.LAZY)
-    private EnrolledCourse enrolledCourse;
+    // Note: Removed back-reference to EnrolledCourse to prevent circular references
+    // The relationship is managed from the EnrolledCourse side only
 }

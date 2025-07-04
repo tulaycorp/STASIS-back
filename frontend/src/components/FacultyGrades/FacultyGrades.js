@@ -152,7 +152,7 @@ const FacultyGrades = () => {
             program: student.programName || 'Unknown Program',
             midterm: student.midtermGrade || null,
             final: student.finalGrade || null,
-            weightedAverage: student.overallGrade || null,
+            weightedAverage: (student.overallGrade !== null && !isNaN(student.overallGrade)) ? student.overallGrade : null,
             enrollmentId: student.enrolledCourseID,
             enrollmentStatus: student.status || 'PENDING',
             semesterEnrollmentId: student.semesterEnrollmentID,
@@ -471,7 +471,7 @@ const FacultyGrades = () => {
     }
 
     console.log(`=== GRADE CHANGE DEBUG ===`);
-    console.log(`Updating ${field} for student ${studentId} (enrollmentId: ${student.enrollmentId}) in course ${selectedCourse.id} to: ${value}`);
+    console.log(`Updating ${field} for student ${studentId} (enrollmentId: ${student.enrollmentId}) in course ${selectedCourse.id} to: "${value}"`);
     console.log(`Selected course ID: ${selectedCourse.id}`);
     console.log(`Selected course name: ${selectedCourse.name || selectedCourse.course}`);
 
@@ -480,18 +480,46 @@ const FacultyGrades = () => {
     console.log(`Student-course key: ${studentCourseKey}`);
     
     const grades = studentsGrades[studentCourseKey] || {};
+    
+    // Handle value conversion properly
+    let processedValue;
+    if (field === 'remark') {
+      processedValue = value;
+    } else {
+      // For numeric fields, handle empty string and null values properly
+      if (value === '' || value === null || value === undefined) {
+        processedValue = null;
+      } else {
+        const numValue = parseFloat(value);
+        processedValue = isNaN(numValue) ? null : numValue;
+      }
+    }
+    
     const updatedGrades = {
       ...grades,
-      [field]: field === 'remark' ? value : (parseFloat(value) || null)
+      [field]: processedValue
     };
 
-    // Calculate new weighted average if both grades are present
+    console.log(`Processed value for ${field}:`, processedValue);
+    console.log(`Updated grades object:`, updatedGrades);
+
+    // Calculate new weighted average if both grades are present and valid
     let newWeightedAverage = student.weightedAverage; // Keep existing if not calculated
-    const midtermGrade = field === 'midterm' ? parseFloat(value) : (grades.midterm ?? student.midterm);
-    const finalGrade = field === 'final' ? parseFloat(value) : (grades.final ?? student.final);
+    const midtermGrade = field === 'midterm' ? processedValue : (updatedGrades.midterm ?? student.midterm);
+    const finalGrade = field === 'final' ? processedValue : (updatedGrades.final ?? student.final);
     
-    if (midtermGrade !== null && finalGrade !== null) {
+    console.log(`Midterm for calculation: ${midtermGrade}`);
+    console.log(`Final for calculation: ${finalGrade}`);
+    
+    // Only calculate if both grades are valid numbers (not null, undefined, or NaN)
+    if (midtermGrade !== null && finalGrade !== null && 
+        !isNaN(midtermGrade) && !isNaN(finalGrade)) {
       newWeightedAverage = (midtermGrade + finalGrade) / 2;
+      console.log(`Calculated weighted average: ${newWeightedAverage}`);
+    } else {
+      // If either grade is missing/invalid, set weighted average to null
+      newWeightedAverage = null;
+      console.log('Weighted average set to null (missing grades)');
     }
 
     const gradeData = {
@@ -505,11 +533,15 @@ const FacultyGrades = () => {
 
     console.log(`Storing grade data for key ${studentCourseKey}:`, gradeData);
 
-    // Only update local state - no backend save
-    setStudentsGrades(prev => ({
-      ...prev,
-      [studentCourseKey]: gradeData
-    }));
+    // Update local state
+    setStudentsGrades(prev => {
+      const newState = {
+        ...prev,
+        [studentCourseKey]: gradeData
+      };
+      console.log('Updated studentsGrades state:', newState);
+      return newState;
+    });
   };
 
   // New function to handle encoding/saving all changed grades
@@ -963,8 +995,10 @@ const FacultyGrades = () => {
                                   min="1" 
                                   max="5" 
                                   step="0.01" 
-                                  value={displayedMidterm ?? ''} 
+                                  value={displayedMidterm !== null && displayedMidterm !== undefined ? displayedMidterm : ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'midterm', e.target.value)} 
+                                  onFocus={(e) => e.target.select()}
+                                  placeholder="1.00 - 5.00"
                                   className={`${styles.gradeInput} ${studentsGrades[studentCourseKey]?.hasChanges ? styles.changed : ''}`}
                                 />
                               </div>
@@ -976,15 +1010,19 @@ const FacultyGrades = () => {
                                   min="1" 
                                   max="5" 
                                   step="0.01" 
-                                  value={displayedFinal ?? ''} 
+                                  value={displayedFinal !== null && displayedFinal !== undefined ? displayedFinal : ''} 
                                   onChange={(e) => handleGradeChange(student.id, 'final', e.target.value)} 
+                                  onFocus={(e) => e.target.select()}
+                                  placeholder="1.00 - 5.00"
                                   className={`${styles.gradeInput} ${studentsGrades[studentCourseKey]?.hasChanges ? styles.changed : ''}`}
                                 />
                               </div>
                             </td>
                             <td>
                               <div className={`${styles.cellContent} ${styles.gradeScore}`}>
-                                {displayedWeightedAverage?.toFixed(2) ?? 'N/A'}
+                                {displayedWeightedAverage !== null && !isNaN(displayedWeightedAverage) 
+                                  ? displayedWeightedAverage.toFixed(2) 
+                                  : 'N/A'}
                               </div>
                             </td>
                             <td>
