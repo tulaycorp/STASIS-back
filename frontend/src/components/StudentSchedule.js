@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentSchedule.module.css';
 import Sidebar from './StudentSidebar';
+import Loading from './Loading';
 import { useStudentData } from '../hooks/useStudentData';
 import { enrolledCourseAPI } from '../services/api';
 
@@ -135,6 +136,45 @@ const StudentSchedule = () => {
     }
   };
 
+  if (studentLoading || loading) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar 
+          onNavigate={showSection}
+          userInfo={{ 
+            name: studentData ? `${studentData.firstName} ${studentData.lastName}` : "Loading...", 
+            role: "Student" 
+          }}
+          sections={[
+            {
+              items: [{ id: 'StudentDashboard', label: 'Dashboard', icon: '📊' }]
+            },
+            {
+              label: 'Management',
+              items: [
+                { id: 'StudentSchedule', label: 'Schedule', icon: '📅' },
+                { id: 'Enrollment', label: 'Enrollment', icon: '📝' },
+                { id: 'StudentCurriculum', label: 'Curriculum', icon: '📚' },
+                { id: 'StudentGrades', label: 'Grades', icon: '📈' }
+              ]
+            },
+            {
+              label: 'System',
+              items: [
+                { id: 'StudentSettings', label: 'Settings', icon: '⚙️'}
+              ]
+            }
+          ]}
+        />
+        <div className="main-content">
+          <div className="content-wrapper">
+            <Loading message="Loading schedule..." />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
@@ -245,11 +285,7 @@ const StudentSchedule = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={6}>Loading schedule...</td>
-                    </tr>
-                  ) : filteredSchedules.length === 0 ? (
+                  {filteredSchedules.length === 0 ? (
                     <tr>
                       <td colSpan={6}>No classes found.</td>
                     </tr>

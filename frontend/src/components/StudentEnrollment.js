@@ -13,6 +13,7 @@ import {
   studentAPI,  // Added for student data fetching
   curriculumDetailAPI  // Added for curriculum detail fetching
 } from '../services/api';
+import Loading from './Loading';
 
 /**
  * Enhanced StudentEnrollment Component
@@ -860,8 +861,7 @@ function StudentEnrollment(props) {
         <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading enrollment data...</p>
+            <Loading message="Loading enrollment data..." />
           </div>
         </div>
       </div>

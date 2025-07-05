@@ -4,6 +4,7 @@ import './StudentCurriculum.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 import { curriculumAPI, studentAPI } from '../services/api';
+import Loading from './Loading';
 
 const StudentCurriculum = () => {
   const { getUserInfo } = useStudentData();
@@ -165,7 +166,7 @@ const StudentCurriculum = () => {
 
             <div className="tab-content">
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>Loading curriculum...</div>
+                <Loading message="Loading curriculum..." />
               ) : (
                 <>
                   <div className="semester-info">

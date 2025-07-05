@@ -4,6 +4,7 @@ import './CurriculumManagement.css';
 import Sidebar from '../Sidebar';
 import { useAdminData } from '../../hooks/useAdminData';
 import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnection } from '../../services/api';
+import Loading from '../Loading';
 
 const CurriculumManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -614,10 +615,7 @@ const CurriculumManagement = () => {
         <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <h3>Loading curricula...</h3>
-              <p>Please wait while we fetch the data from the server.</p>
-            </div>
+            <Loading message="Loading curricula..." />
           </div>
         </div>
       </div>

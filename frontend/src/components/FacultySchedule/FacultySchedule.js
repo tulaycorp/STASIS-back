@@ -4,6 +4,7 @@ import './FacultySchedule.module.css';
 import Sidebar from '../FacultySidebar';
 import { useFacultyData } from '../../hooks/useFacultyData';
 import { courseSectionAPI, testConnection } from '../../services/api';
+import Loading from '../Loading';
 
 const FacultySchedule = () => {
   const { getUserInfo, facultyData } = useFacultyData();
@@ -183,9 +184,7 @@ const FacultySchedule = () => {
         <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
-            <div className="loading-container">
-              <div className="loading-spinner">Loading schedule...</div>
-            </div>
+            <Loading message="Loading schedule..." />
           </div>
         </div>
       </div>

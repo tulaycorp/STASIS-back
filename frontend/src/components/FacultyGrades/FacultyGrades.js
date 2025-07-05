@@ -9,6 +9,7 @@ import {
   scheduleAPI,
   facultyGradesAPI
 } from '../../services/api';
+import Loading from '../Loading';
 
 const FacultyGrades = () => {
   const { getUserInfo, facultyData } = useFacultyData();
@@ -852,7 +853,7 @@ const FacultyGrades = () => {
         <Sidebar userInfo={getUserInfo()}/>
         <div className={styles.mainContent}>
           <div className={styles.contentWrapper}>
-            <h1 className={styles.pageTitle}>Loading...</h1>
+            <Loading message="Loading grades..." />
           </div>
         </div>
       </div>

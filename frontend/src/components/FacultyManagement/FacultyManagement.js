@@ -4,6 +4,7 @@ import './FacultyManagement.css';
 import Sidebar from '../Sidebar';
 import { useAdminData } from '../../hooks/useAdminData';
 import { facultyAPI, programAPI } from '../../services/api';
+import Loading from '../Loading';
 
 const FacultyManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -305,9 +306,7 @@ const FacultyManagement = () => {
         <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="content-wrapper">
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <p>Loading faculty data...</p>
-            </div>
+            <Loading message="Loading faculty data..." />
           </div>
         </div>
       </div>

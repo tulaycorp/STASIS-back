@@ -4,6 +4,7 @@ import './StudentManagement.css';
 import Sidebar from '../Sidebar';
 import { useAdminData } from '../../hooks/useAdminData';
 import { studentAPI, programAPI, courseSectionAPI, curriculumAPI, testConnection } from '../../services/api';
+import Loading from '../Loading';
 
 const StudentManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -592,10 +593,7 @@ const StudentManagement = () => {
         <Sidebar userInfo={getUserInfo()}/>
         <div className="main-content">
           <div className="content-wrapper">
-            <div style={
-              { padding: '2rem', textAlign: 'center' }}>
-              <h3>Loading students...</h3>
-            </div>
+            <Loading message="Loading students..." />
           </div>
         </div>
       </div>

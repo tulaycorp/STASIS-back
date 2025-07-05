@@ -5,6 +5,7 @@ import Sidebar from '../Sidebar';
 import { useAdminData } from '../../hooks/useAdminData';
 import { courseAPI, courseSectionAPI, testConnection, programAPI, scheduleAPI } from '../../services/api';
 import axios from 'axios';
+import Loading from '../Loading';
 
 const CourseManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -419,9 +420,7 @@ const CourseManagement = () => {
         <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="content-wrapper">
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <p>Loading courses...</p>
-            </div>
+            <Loading message="Loading courses..." />
           </div>
         </div>
       </div>

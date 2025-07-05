@@ -4,6 +4,7 @@ import styles from './StudentGrades.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
 import { enrolledCourseAPI, semesterEnrollmentAPI } from '../services/api';
+import Loading from './Loading';
 
 const StudentGrades = () => {
   const { getUserInfo, studentData } = useStudentData(); // Add studentData here
@@ -282,7 +283,7 @@ const StudentGrades = () => {
 
               <div className={styles.tableContainer}>
                 {loading ? (
-                  <div className={styles.loading}>Loading your grades...</div>
+                  <Loading message="Loading your grades..." />
                 ) : error ? (
                   <div className={styles.errorMessage}>{error}</div>
                 ) : filteredGrades.length === 0 ? (

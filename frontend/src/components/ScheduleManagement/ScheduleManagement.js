@@ -4,6 +4,7 @@ import './ScheduleManagement.css';
 import Sidebar from '../Sidebar';
 import { useAdminData } from '../../hooks/useAdminData';
 import { courseSectionAPI, courseAPI, facultyAPI, programAPI, testConnection, scheduleAPI } from '../../services/api';
+import Loading from '../Loading';
 
 const ScheduleManagement = () => {
   const { getUserInfo } = useAdminData();
@@ -672,9 +673,7 @@ const ScheduleManagement = () => {
         <Sidebar userInfo={getUserInfo()} />
         <div className="main-content">
           <div className="content-wrapper">
-            <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <p>Loading schedules...</p>
-            </div>
+            <Loading message="Loading schedules..." />
           </div>
         </div>
       </div>
