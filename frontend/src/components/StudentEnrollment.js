@@ -523,15 +523,15 @@ function StudentEnrollment(props) {
       const newEnrollment = response.data;
 
       // Enhance the new enrollment with section data from our transformed sections
-      const enhancedEnrollment = {
-        ...newEnrollment,
-        section: {
-          ...newEnrollment.section,
-          ...selectedSection // Use the selected section data which has all the schedule info
-        }
-      };
+      // const enhancedEnrollment = {
+      //   ...newEnrollment,
+      //   section: {
+      //     ...newEnrollment.section,
+      //     ...selectedSection // Use the selected section data which has all the schedule info
+      //   }
+      // };
 
-      setMyEnrollments(prev => [...prev, enhancedEnrollment]);
+      // setMyEnrollments(prev => [...prev, enhancedEnrollment]); // REMOVE this line
       
       setShowEnrollModal(false);
       setSelectedSection(null);
@@ -540,7 +540,8 @@ function StudentEnrollment(props) {
       console.error('Enrollment error:', error);
       showToast('Failed to enroll in course. Please try again.', 'error'); 
     } finally {
-      setEnrollmentLoading(false);
+      setEnrollmentLoading(false); // Set loading false first
+      refreshData(); // Then refresh data
     }
   };
 
@@ -649,32 +650,22 @@ function StudentEnrollment(props) {
       console.log('All enrollments processed. New enrollments:', newEnrollments.length);
 
       // Update state only once with all new enrollments
-      if (newEnrollments.length > 0) {
-        setMyEnrollments(prev => {
-          // Filter out any potential duplicates based on enrolledCourseID
-          const existingIds = new Set(prev.map(e => e.enrolledCourseID));
-          const uniqueNewEnrollments = newEnrollments.filter(e => !existingIds.has(e.enrolledCourseID));
-          
-          const updated = [...prev, ...uniqueNewEnrollments];
-          console.log('Updated enrollments state after bulk enrollment:', updated.map(e => ({
-            id: e.enrolledCourseID,
-            status: e.status,
-            courseId: e.section?.course?.id,
-            courseName: e.section?.course?.courseName || e.section?.course?.courseDescription,
-            sectionId: e.section?.sectionID,
-            fullSection: e.section,
-            rawEnrollment: e
-          })));
-          return updated;
-        });
-      }
+      // if (newEnrollments.length > 0) {
+      //   setMyEnrollments(prev => {
+      //     // Filter out any potential duplicates based on enrolledCourseID
+      //     const existingIds = new Set(prev.map(e => e.enrolledCourseID));
+      //     const uniqueNewEnrollments = newEnrollments.filter(e => !existingIds.has(e.enrolledCourseID));
+      //     const updated = [...prev, ...uniqueNewEnrollments];
+      //     return updated;
+      //   });
+      // }
 
       // Clear selections
       setSelectedCourses({});
       setSelectedSections({});
 
       // Force a re-render to update the available courses list
-      console.log('Forcing re-render after bulk enrollment');
+      refreshData(); // Only refresh from backend, do not update myEnrollments locally
 
       if (newEnrollments.length === selectedCount) {
         showToast(`Successfully enrolled in ${newEnrollments.length} course(s)!`, 'success');
@@ -687,7 +678,8 @@ function StudentEnrollment(props) {
       console.error('Bulk enrollment error:', error);
       showToast('Failed to enroll in courses. Please try again.', 'error');
     } finally {
-      setEnrollmentLoading(false);
+      setEnrollmentLoading(false); // Set loading false first
+      refreshData(); // Then refresh data
     }
   };
 
