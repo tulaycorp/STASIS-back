@@ -63,8 +63,9 @@ public class EnrolledCourseController {
         // Use the data isolation method and convert to DTO
         List<EnrolledCourse> enrolledCourses = enrolledCourseService.getEnrolledCoursesByStudentWithIsolation(studentId);
         
+        // Convert each enrollment to separate DTOs for each course in the section
         List<EnrolledCourseResponseDTO> responseDTOs = enrolledCourses.stream()
-            .map(this::convertToDTO)
+            .flatMap(this::convertToMultipleDTOs)
             .collect(java.util.stream.Collectors.toList());
         
         System.out.println("EnrolledCourseController: Found " + responseDTOs.size() + " enrolled courses for student ID: " + studentId);
@@ -198,22 +199,27 @@ public class EnrolledCourseController {
     public ResponseEntity<?> enrollInCourse(@RequestBody Map<String, Object> payload) {
         try {
             Long studentId = Long.valueOf(payload.get("studentId").toString());
-            Long courseSectionId = Long.valueOf(payload.get("courseSectionId").toString());
             String status = payload.get("status") != null ? payload.get("status").toString() : "Enrolled";
             
-            // Check if scheduleId is provided for more precise enrollment
+            // NEW APPROACH: Always require scheduleId for course-specific enrollment
             if (payload.containsKey("scheduleId") && payload.get("scheduleId") != null) {
                 Long scheduleId = Long.valueOf(payload.get("scheduleId").toString());
-                EnrolledCourse enrolled = enrolledCourseService.createEnrollmentForStudentWithSchedule(studentId, courseSectionId, scheduleId, status);
+                System.out.println("Creating course-specific enrollment for schedule: " + scheduleId);
+                EnrolledCourse enrolled = enrolledCourseService.createCourseSpecificEnrollment(studentId, scheduleId, status);
                 return ResponseEntity.ok(enrolled);
-            } else {
+            } else if (payload.containsKey("courseSectionId")) {
+                // Fallback to old approach for backward compatibility
+                Long courseSectionId = Long.valueOf(payload.get("courseSectionId").toString());
+                System.out.println("Using legacy section-based enrollment for section: " + courseSectionId);
                 EnrolledCourse enrolled = enrolledCourseService.studentEnrollInCourse(studentId, courseSectionId, status);
                 return ResponseEntity.ok(enrolled);
+            } else {
+                throw new RuntimeException("Either scheduleId or courseSectionId must be provided");
             }
         } catch (RuntimeException e) {
             // If the error is about duplicate course enrollment, return 409 Conflict
             String msg = e.getMessage() != null ? e.getMessage() : "Enrollment failed";
-            if (msg.contains("already enrolled in this course")) {
+            if (msg.contains("already enrolled in this course") || msg.contains("already enrolled in this specific course")) {
                 return ResponseEntity.status(409).body(Map.of("error", msg));
             }
             // Otherwise, return 400 Bad Request
@@ -248,8 +254,10 @@ public class EnrolledCourseController {
     @DeleteMapping("/{id}")
     @PreAuthorize("permitAll()")  // Temporarily allow all access until authentication is fixed
     public ResponseEntity<Void> deleteEnrolledCourse(@PathVariable Long id, 
-                                                     @RequestHeader(value = "X-Student-ID", required = false) String studentIdHeader) {
-        System.out.println("EnrolledCourseController: Delete request for enrollment ID: " + id);
+                                                     @RequestHeader(value = "X-Student-ID", required = false) String studentIdHeader,
+                                                     @RequestParam(value = "scheduleId", required = false) Long scheduleId) {
+        System.out.println("EnrolledCourseController: Delete request for enrollment ID: " + id + 
+                          (scheduleId != null ? " (specific schedule: " + scheduleId + ")" : " (entire enrollment)"));
         
         // Application-level security check: only allow deletion if student ID matches enrollment
         if (studentIdHeader != null) {
@@ -285,8 +293,14 @@ public class EnrolledCourseController {
                              ", Authorities: " + auth.getAuthorities());
         }
         
-        enrolledCourseService.deleteEnrolledCourse(id);
-        return ResponseEntity.noContent().build();
+        // Use the new course-specific deletion method
+        boolean deleted = enrolledCourseService.deleteCourseSpecificEnrollment(id, scheduleId);
+        
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PutMapping("/{id}/status")
@@ -382,6 +396,109 @@ public class EnrolledCourseController {
     public ResponseEntity<List<?>> getAvailableSchedulesForStudent(@PathVariable Long studentId) {
         List<?> availableSchedules = enrolledCourseService.getAllAvailableSchedules();
         return ResponseEntity.ok(availableSchedules);
+    }
+
+    private java.util.stream.Stream<EnrolledCourseResponseDTO> convertToMultipleDTOs(EnrolledCourse enrolledCourse) {
+        // NEW: If enrollment has a specific scheduleId, only return that specific course
+        if (enrolledCourse.getScheduleId() != null) {
+            // Find the specific schedule this enrollment is for
+            if (enrolledCourse.getSection() != null && 
+                enrolledCourse.getSection().getSchedules() != null) {
+                
+                Optional<com.stasis.stasis.model.Schedule> targetSchedule = enrolledCourse.getSection().getSchedules().stream()
+                    .filter(schedule -> schedule.getScheduleID().equals(enrolledCourse.getScheduleId()))
+                    .findFirst();
+                
+                if (targetSchedule.isPresent()) {
+                    return java.util.stream.Stream.of(convertToDTOForSpecificSchedule(enrolledCourse, targetSchedule.get()));
+                } else {
+                    System.out.println("Warning: Could not find schedule " + enrolledCourse.getScheduleId() + 
+                                     " in section " + enrolledCourse.getSection().getSectionName());
+                }
+            }
+        }
+        
+        // LEGACY: If section has multiple schedules with different courses, create separate DTOs for each
+        if (enrolledCourse.getSection() != null && 
+            enrolledCourse.getSection().getSchedules() != null && 
+            !enrolledCourse.getSection().getSchedules().isEmpty()) {
+            
+            // Group schedules by course to avoid duplicates
+            Map<Long, com.stasis.stasis.model.Schedule> courseToScheduleMap = enrolledCourse.getSection().getSchedules().stream()
+                .filter(schedule -> schedule.getCourse() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                    schedule -> schedule.getCourse().getId(),
+                    schedule -> schedule,
+                    (existing, replacement) -> existing // Keep first schedule for each course
+                ));
+            
+            // Create separate DTO for each course
+            return courseToScheduleMap.values().stream()
+                .map(schedule -> convertToDTOForSpecificSchedule(enrolledCourse, schedule));
+        } else {
+            // Fallback to original conversion if no schedules
+            return java.util.stream.Stream.of(convertToDTO(enrolledCourse));
+        }
+    }
+    
+    private EnrolledCourseResponseDTO convertToDTOForSpecificSchedule(EnrolledCourse enrolledCourse, com.stasis.stasis.model.Schedule schedule) {
+        EnrolledCourseResponseDTO.EnrolledCourseResponseDTOBuilder builder = EnrolledCourseResponseDTO.builder()
+            .enrolledCourseID(enrolledCourse.getEnrolledCourseID())
+            .status(enrolledCourse.getStatus());
+        
+        // Use the specific schedule's course information
+        var course = schedule.getCourse();
+        Long courseId = course.getId();
+        String courseCode = course.getCourseCode();
+        String courseDescription = course.getCourseDescription();
+        Integer credits = course.getCredits();
+        
+        // Add schedule information from the specific schedule
+        String startTime = schedule.getStartTime() != null ? schedule.getStartTime().toString() : null;
+        String endTime = schedule.getEndTime() != null ? schedule.getEndTime().toString() : null;
+        String day = schedule.getDay();
+        String room = schedule.getRoom();
+        
+        // Set the course and schedule information
+        builder.courseId(courseId)
+               .courseCode(courseCode)
+               .courseDescription(courseDescription)
+               .credits(credits)
+               .startTime(startTime)
+               .endTime(endTime)
+               .day(day)
+               .room(room);
+        
+        // Add section information
+        if (enrolledCourse.getSection() != null) {
+            builder.sectionName(enrolledCourse.getSection().getSectionName());
+            
+            // Add faculty information
+            if (enrolledCourse.getSection().getFaculty() != null) {
+                String facultyName = enrolledCourse.getSection().getFaculty().getFirstName() + " " + 
+                                   enrolledCourse.getSection().getFaculty().getLastName();
+                builder.faculty(facultyName);
+            }
+        }
+        
+        // Add semester information
+        if (enrolledCourse.getSemesterEnrollment() != null) {
+            builder.semester(enrolledCourse.getSemesterEnrollment().getSemester())
+                   .academicYear(enrolledCourse.getSemesterEnrollment().getAcademicYear());
+        }
+        
+        // Add grade information
+        if (enrolledCourse.getGrade() != null) {
+            com.stasis.stasis.model.Grade grade = enrolledCourse.getGrade();
+            builder.grade(grade.getGradeValue() != null ? grade.getGradeValue().toString() : null)
+                   .gradeValue(grade.getGradeValue() != null ? grade.getGradeValue().doubleValue() : null)
+                   .midtermGrade(grade.getMidtermGrade())
+                   .finalGrade(grade.getFinalGrade())
+                   .overallGrade(grade.getOverallGrade())
+                   .remark(grade.getRemark());
+        }
+        
+        return builder.build();
     }
 
 }

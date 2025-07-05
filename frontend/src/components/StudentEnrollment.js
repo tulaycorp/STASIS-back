@@ -549,6 +549,11 @@ function StudentEnrollment(props) {
     const selectedCount = Object.keys(selectedCourses).length;
     if (selectedCount === 0) return;
 
+    console.log('=== BULK ENROLLMENT DEBUG ===');
+    console.log('Selected courses object:', selectedCourses);
+    console.log('Selected sections object:', selectedSections);
+    console.log('Number of selected courses:', selectedCount);
+
     if (!window.confirm(`Are you sure you want to enroll in ${selectedCount} course(s)?`)) return;
 
     try {
@@ -687,14 +692,48 @@ function StudentEnrollment(props) {
   };
 
   // Handle drop
-  const handleDrop = async (enrollmentId) => {
-    if (!window.confirm('Are you sure you want to drop this course?')) return;
+  const handleDrop = async (enrollmentId, courseId = null) => {
+    const confirmMessage = courseId 
+      ? 'Are you sure you want to drop this specific course?' 
+      : 'Are you sure you want to drop this course?';
+      
+    if (!window.confirm(confirmMessage)) return;
 
     try {
-      await enrolledCourseAPI.deleteEnrollment(enrollmentId);
+      console.log('=== DROPPING COURSE ===');
+      console.log('Enrollment ID:', enrollmentId);
+      console.log('Course ID:', courseId);
       
-      // Remove from enrollments
-      setMyEnrollments(prev => prev.filter(e => e.enrolledCourseID !== enrollmentId));
+      // Find the specific enrollment to get schedule information
+      const enrollmentToDrop = myEnrollments.find(e => 
+        e.enrolledCourseID === enrollmentId && 
+        (courseId ? e.courseId === courseId : true)
+      );
+      
+      console.log('Enrollment to drop:', enrollmentToDrop);
+      
+      // Try to get schedule ID for course-specific dropping
+      let scheduleId = null;
+      if (enrollmentToDrop && courseId) {
+        // Look for schedule ID in the enrollment data
+        scheduleId = enrollmentToDrop.scheduleId || 
+                    enrollmentToDrop.section?.scheduleId || 
+                    enrollmentToDrop.section?.selectedSchedule?.id ||
+                    enrollmentToDrop.section?.selectedSchedule?.scheduleID;
+        console.log('Found schedule ID for course-specific drop:', scheduleId);
+      }
+      
+      await enrolledCourseAPI.deleteEnrollment(enrollmentId, scheduleId);
+      
+      // Remove from enrollments - if course-specific drop, remove only matching course
+      if (courseId && scheduleId) {
+        setMyEnrollments(prev => prev.filter(e => 
+          !(e.enrolledCourseID === enrollmentId && e.courseId === courseId)
+        ));
+      } else {
+        // Remove all courses with the same enrollmentId (old behavior)
+        setMyEnrollments(prev => prev.filter(e => e.enrolledCourseID !== enrollmentId));
+      }
       
       // Clear any selected courses that might conflict
       setSelectedCourses({});
@@ -1034,6 +1073,11 @@ function StudentEnrollment(props) {
                                   className="form-select"
                                   value={selectedCourses[course.courseId] || ''}
                                   onChange={(e) => {
+                                    console.log('=== COURSE SELECTION DEBUG ===');
+                                    console.log('Course ID:', course.courseId);
+                                    console.log('Selection value:', e.target.value);
+                                    console.log('Current selectedCourses before:', selectedCourses);
+                                    
                                     const selectionValue = e.target.value;
                                     if (!selectionValue) {
                                       // If no selection, remove from both states
@@ -1041,6 +1085,7 @@ function StudentEnrollment(props) {
                                       const { [course.courseId]: __, ...restSections } = selectedSections;
                                       setSelectedCourses(restCourses);
                                       setSelectedSections(restSections);
+                                      console.log('Removed course from selection');
                                       return;
                                     }
                                     
@@ -1078,6 +1123,9 @@ function StudentEnrollment(props) {
                                             ...prev,
                                             [course.courseId]: enhancedSection
                                           }));
+                                          
+                                          console.log('Selected course (schedule-based):', course.courseId, 'with value:', selectionValue);
+                                          console.log('Enhanced section:', enhancedSection);
                                         }
                                       }
                                     } else {
@@ -1092,6 +1140,9 @@ function StudentEnrollment(props) {
                                           ...prev,
                                           [course.courseId]: section
                                         }));
+                                        
+                                        console.log('Selected course (section-based):', course.courseId, 'with value:', selectionValue);
+                                        console.log('Selected section:', section);
                                       }
                                     }
                                   }}
@@ -1228,14 +1279,56 @@ function StudentEnrollment(props) {
                                 type="checkbox"
                                 checked={!!selectedCourses[course.courseId]}
                                 onChange={(e) => {
-                                  if (!e.target.checked) {
+                                  if (e.target.checked) {
+                                    // Auto-select the first available schedule when checkbox is checked
+                                    if (course.availableSections && course.availableSections.length > 0) {
+                                      const firstSection = course.availableSections[0];
+                                      const selectionValue = `${firstSection.sectionId}-${firstSection.id}`;
+                                      
+                                      // Find the full section object
+                                      const section = availableSections.find(s => s.sectionID.toString() === firstSection.sectionId.toString());
+                                      
+                                      if (section && section.schedules) {
+                                        const schedule = section.schedules.find(sch => 
+                                          (sch.id || sch.scheduleID || sch.scheduleId) && 
+                                          (sch.id || sch.scheduleID || sch.scheduleId).toString() === firstSection.id.toString()
+                                        );
+                                        
+                                        if (schedule) {
+                                          const enhancedSection = {
+                                            ...section,
+                                            selectedSchedule: schedule,
+                                            course: schedule.course,
+                                            startTime: schedule.startTime,
+                                            endTime: schedule.endTime,
+                                            day: schedule.day,
+                                            room: schedule.room,
+                                            scheduleId: schedule.id || schedule.scheduleID || schedule.scheduleId,
+                                            hasDirectCourse: true
+                                          };
+                                          
+                                          setSelectedCourses(prev => ({
+                                            ...prev,
+                                            [course.courseId]: selectionValue
+                                          }));
+                                          setSelectedSections(prev => ({
+                                            ...prev,
+                                            [course.courseId]: enhancedSection
+                                          }));
+                                          
+                                          console.log('Auto-selected first schedule for course:', course.courseId, 'with value:', selectionValue);
+                                        }
+                                      }
+                                    }
+                                  } else {
+                                    // Remove selection when unchecked
                                     const { [course.courseId]: _, ...rest } = selectedCourses;
                                     const { [course.courseId]: __, ...sectionsRest } = selectedSections;
                                     setSelectedCourses(rest);
                                     setSelectedSections(sectionsRest);
                                   }
                                 }}
-                                disabled={!course.availableSections?.length || !selectedCourses[course.courseId]}
+                                disabled={!course.availableSections?.length}
                               />
                             </td>
                           </tr>
@@ -1314,7 +1407,8 @@ function StudentEnrollment(props) {
                               {enrollment.status === 'Enrolled' && (
                                 <button 
                                   className="btn-primary"
-                                  onClick={() => handleDrop(enrollment.enrolledCourseID)}
+                                  onClick={() => handleDrop(enrollment.enrolledCourseID, enrollment.courseId)}
+                                  title={`Drop ${enrollment.courseCode || 'course'}`}
                                 >
                                   Drop
                                 </button>

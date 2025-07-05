@@ -792,38 +792,140 @@ public class EnrolledCourseService {
     }
     
     /**
-     * Debug method - simplified enrollment without complex validation
+     * Create a separate enrollment record for each course-schedule combination.
+     * This allows individual course enrollment/dropping within the same section.
      */
     @Transactional
-    public EnrolledCourse createSimpleEnrollment(Long studentId, Long courseSectionId, String status) {
-        System.out.println("=== Creating SIMPLE enrollment for debugging ===");
+    public EnrolledCourse createCourseSpecificEnrollment(Long studentId, Long scheduleId, String status) {
+        System.out.println("=== Creating course-specific enrollment ===");
         System.out.println("Student ID: " + studentId);
-        System.out.println("Course Section ID: " + courseSectionId);
+        System.out.println("Schedule ID: " + scheduleId);
         System.out.println("Status: " + status);
         
         // Get the student
         Student student = studentRepository.findById(studentId)
             .orElseThrow(() -> new RuntimeException("Student not found with ID: " + studentId));
-        System.out.println("Found student: " + student.getFirstName() + " " + student.getLastName());
         
-        // Get the course section
-        CourseSection courseSection = courseSectionRepository.findById(courseSectionId)
-            .orElseThrow(() -> new RuntimeException("Course section not found with ID: " + courseSectionId));
-        System.out.println("Found course section: " + courseSection.getSectionName());
+        // Get the specific schedule
+        Schedule targetSchedule = scheduleRepository.findById(scheduleId)
+            .orElseThrow(() -> new RuntimeException("Schedule not found with ID: " + scheduleId));
         
-        // Find or create a semester enrollment for this student
+        if (targetSchedule.getCourse() == null) {
+            throw new RuntimeException("Schedule " + scheduleId + " does not have a course assigned");
+        }
+        
+        Long targetCourseId = targetSchedule.getCourse().getId();
+        System.out.println("Target course ID: " + targetCourseId);
+        
+        // Find the course section that contains this schedule
+        List<CourseSection> allSections = courseSectionRepository.findAll();
+        CourseSection courseSection = allSections.stream()
+            .filter(section -> section.getSchedules() != null && 
+                section.getSchedules().stream().anyMatch(sch -> sch.getScheduleID().equals(scheduleId)))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("No section found containing schedule: " + scheduleId));
+        
+        System.out.println("Found section: " + courseSection.getSectionName());
+        
+        // Check if student is already enrolled in this SPECIFIC course schedule
+        List<EnrolledCourse> existingEnrollments = enrolledCourseRepository.findByStudentIdWithDetails(studentId);
+        
+        boolean alreadyEnrolledInCourse = existingEnrollments.stream()
+            .anyMatch(enrollment -> {
+                // Check if already enrolled in this specific schedule
+                if (enrollment.getScheduleId() != null && enrollment.getScheduleId().equals(scheduleId)) {
+                    return true;
+                }
+                
+                // For backward compatibility, also check course-level enrollment
+                if (enrollment.getSection() == null || enrollment.getSection().getSchedules() == null) {
+                    return false;
+                }
+                // Check if any schedule in the enrollment's section matches the target course
+                return enrollment.getSection().getSchedules().stream()
+                    .anyMatch(sch -> sch.getCourse() != null && 
+                             sch.getCourse().getId().equals(targetCourseId) &&
+                             enrollment.getScheduleId() == null); // Only check for old enrollments without specific schedule
+            });
+        
+        if (alreadyEnrolledInCourse) {
+            throw new RuntimeException("Student is already enrolled in this specific course schedule");
+        }
+        
+        // Find or create semester enrollment
         SemesterEnrollment semesterEnrollment = findOrCreateCurrentSemesterEnrollment(student);
         System.out.println("Using semester enrollment ID: " + semesterEnrollment.getSemesterEnrollmentID());
         
+        // Create a new enrollment record for this specific course-schedule combination
         EnrolledCourse enrolledCourse = EnrolledCourse.builder()
             .semesterEnrollment(semesterEnrollment)
             .section(courseSection)
-            .status(status != null ? status : "ACTIVE")
+            .scheduleId(scheduleId)  // NEW: Store the specific schedule ID
+            .status(status != null ? status : "Enrolled")
             .build();
         
         EnrolledCourse savedEnrollment = enrolledCourseRepository.save(enrolledCourse);
-        System.out.println("Created simple enrollment with ID: " + savedEnrollment.getEnrolledCourseID());
+        System.out.println("Created course-specific enrollment with ID: " + savedEnrollment.getEnrolledCourseID() + 
+                          " for course: " + targetCourseId + ", schedule: " + scheduleId);
+        
+        updateSemesterEnrollmentCredits(semesterEnrollment);
         
         return savedEnrollment;
+    }
+    
+    /**
+     * Delete a course-specific enrollment by scheduleId to allow individual course dropping
+     */
+    @Transactional
+    public boolean deleteCourseSpecificEnrollment(Long enrollmentId, Long scheduleId) {
+        System.out.println("=== Deleting course-specific enrollment ===");
+        System.out.println("Enrollment ID: " + enrollmentId);
+        System.out.println("Schedule ID: " + scheduleId);
+        
+        Optional<EnrolledCourse> enrollmentOpt = enrolledCourseRepository.findById(enrollmentId);
+        if (!enrollmentOpt.isPresent()) {
+            return false;
+        }
+        
+        EnrolledCourse enrollment = enrollmentOpt.get();
+        
+        // NEW: If enrollment has a specific scheduleId, only delete if it matches
+        if (enrollment.getScheduleId() != null) {
+            if (scheduleId != null && !enrollment.getScheduleId().equals(scheduleId)) {
+                System.out.println("Schedule ID mismatch: enrollment has " + enrollment.getScheduleId() + 
+                                 " but trying to delete " + scheduleId);
+                return false;
+            }
+            // Delete the specific enrollment
+            enrolledCourseRepository.deleteById(enrollmentId);
+            System.out.println("Deleted specific course enrollment for schedule: " + enrollment.getScheduleId());
+            return true;
+        }
+        
+        // LEGACY: Handle old enrollments without specific schedule IDs
+        if (scheduleId == null) {
+            // If no specific schedule provided, delete the entire enrollment (old behavior)
+            enrolledCourseRepository.deleteById(enrollmentId);
+            System.out.println("Deleted entire enrollment record");
+            return true;
+        }
+        
+        // Check if this enrollment's section has multiple courses
+        if (enrollment.getSection() != null && enrollment.getSection().getSchedules() != null) {
+            long courseCount = enrollment.getSection().getSchedules().stream()
+                .filter(sch -> sch.getCourse() != null)
+                .map(sch -> sch.getCourse().getId())
+                .distinct()
+                .count();
+            
+            if (courseCount > 1) {
+                System.out.println("WARNING: This is a legacy enrollment covering " + courseCount + " courses. Deleting will affect all courses in this section.");
+                // For legacy enrollments, still delete the entire enrollment
+            }
+        }
+        
+        enrolledCourseRepository.deleteById(enrollmentId);
+        System.out.println("Deleted legacy enrollment record (affects all courses in section)");
+        return true;
     }
 }

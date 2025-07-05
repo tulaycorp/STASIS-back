@@ -226,10 +226,13 @@ export const enrolledCourseAPI = {
     return api.put('/enrolled-courses/bulk-update-grades', gradeUpdates);
   },
 
-  // Delete enrollment
-  deleteEnrollment: (id) => {
-    console.log('Calling deleteEnrollment API for ID:', id);
-    return api.delete(`/enrolled-courses/${id}`);
+  // Delete enrollment (with optional course-specific deletion)
+  deleteEnrollment: (id, scheduleId = null) => {
+    console.log('Calling deleteEnrollment API for ID:', id, scheduleId ? `(schedule: ${scheduleId})` : '(entire enrollment)');
+    const url = scheduleId 
+      ? `/enrolled-courses/${id}?scheduleId=${scheduleId}`
+      : `/enrolled-courses/${id}`;
+    return api.delete(url);
   },
 
   // Get enrolled courses by faculty's sections
