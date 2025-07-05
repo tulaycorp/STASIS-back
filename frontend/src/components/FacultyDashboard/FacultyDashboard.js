@@ -7,12 +7,14 @@ import { courseSectionAPI } from '../../services/api';
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
-  const { getFacultyName, getUserInfo } = useFacultyData();
+  const { getFacultyName, getUserInfo, facultyData } = useFacultyData();
   const [dashboardData, setStudentDashboardData] = useState({
     recentActivities: []
   });
 
-  const [scheduleData, setScheduleData] = useState([]); 
+  // Schedule state
+  const [scheduleList, setScheduleList] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
 
   const today = new Date();
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
@@ -23,24 +25,102 @@ const FacultyDashboard = () => {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const userInfo = getUserInfo();
-        if (!userInfo?.id) return;
-        const res = await courseSectionAPI.getSectionsByFaculty(userInfo.id);
-        // Map API data to your schedule item format if needed
-        const mapped = (res.data || []).map(section => ({
-          id: section.id,
-          time: section.time || 'TBA',
-          subject: section.courseName || section.subject || 'Unknown',
-          room: section.room || section.roomName || 'TBA',
-          type: section.type || 'blue', // You may want to map this based on section data
-        }));
-        setScheduleData(mapped);
+        setScheduleLoading(true);
+        const facultyId = facultyData?.facultyID || facultyData?.facultyId;
+        if (!facultyData || !facultyId) {
+          console.warn('Faculty information not available, cannot fetch schedule.');
+          setScheduleList([]);
+          setScheduleLoading(false);
+          return; 
+        }
+
+        console.log('Fetching schedule for faculty ID:', facultyId);
+        
+        // Fetch sections assigned to this faculty
+        const response = await courseSectionAPI.getSectionsByFaculty(facultyId);
+        console.log('API Response for faculty sections:', response);
+        
+        if (response && response.data) {
+          const sectionsData = Array.isArray(response.data) ? response.data : 
+                             (response.data.data || response.data.sections || []);
+          
+          console.log('Sections data for faculty:', sectionsData);
+          
+          // Initialize empty array for all schedule entries
+          const transformedSchedule = [];
+          
+          // Process each section
+          sectionsData.forEach(section => {
+            // Handle case where section has multiple schedules (array)
+            if (Array.isArray(section.schedules) && section.schedules.length > 0) {
+              section.schedules.forEach(schedule => {
+                transformedSchedule.push({
+                  id: schedule.scheduleID,
+                  courseCode: schedule.course?.courseCode || section.course?.courseCode || 'N/A',
+                  courseName: schedule.course?.courseDescription || section.course?.courseDescription || 'Unknown Course',
+                  section: section.sectionName || 'N/A',
+                  instructor: `${facultyData.firstName} ${facultyData.lastName}` || 'Unknown Instructor',
+                  room: schedule.room || 'TBA',
+                  day: schedule.day || 'TBA',
+                  timeFrom: schedule.startTime ? schedule.startTime.substring(0, 5) : 'TBA',
+                  timeTo: schedule.endTime ? schedule.endTime.substring(0, 5) : 'TBA',
+                  status: schedule.status || 'ACTIVE'
+                });
+              });
+            } 
+            // Backward compatibility - handle case where section has a single schedule object
+            else if (section.schedule) {
+              transformedSchedule.push({
+                id: section.schedule.scheduleID,
+                courseCode: section.course?.courseCode || 'N/A',
+                courseName: section.course?.courseDescription || 'Unknown Course',
+                section: section.sectionName || 'N/A',
+                instructor: `${facultyData.firstName} ${facultyData.lastName}` || 'Unknown Instructor',
+                room: section.schedule.room || 'TBA',
+                day: section.schedule.day || 'TBA',
+                timeFrom: section.schedule.startTime ? section.schedule.startTime.substring(0, 5) : 'TBA',
+                timeTo: section.schedule.endTime ? section.schedule.endTime.substring(0, 5) : 'TBA',
+                status: section.schedule.status || 'ACTIVE'
+              });
+            }
+          });
+          
+          console.log('Transformed schedule:', transformedSchedule);
+          setScheduleList(transformedSchedule);
+        } else {
+          console.log('No data received from API');
+          setScheduleList([]);
+        }
       } catch (err) {
-        setScheduleData([]);
+        console.error('Error fetching schedule data:', err);
+        setScheduleList([]);
+      } finally {
+        setScheduleLoading(false);
       }
     };
     fetchSchedule();
-  }, [getUserInfo]);
+  }, [facultyData]);
+
+  // Helper function to get day name from date
+  const getDayName = (date, month, year) => {
+    const dateObj = new Date(year, month, date);
+    return dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+  };
+
+  // Format time for display
+  const formatTime = (time) => {
+    if (!time || time === 'TBA') return '';
+    const [hours, minutes] = time.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours < 12 ? 'AM' : 'PM';
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  // Get schedule for selected date
+  const getScheduleForDate = () => {
+    const selectedDayName = getDayName(selectedDate, calendarMonth, calendarYear);
+    return scheduleList.filter(schedule => schedule.day === selectedDayName);
+  };
 
   // Generate calendar days for the selected month/year
   const generateCalendarDays = () => {
@@ -62,7 +142,7 @@ const FacultyDashboard = () => {
       days.push({
         day,
         isCurrentMonth: true,
-        isSelected: day === selectedDate && calendarMonth === today.getMonth() && calendarYear === today.getFullYear(),
+        isSelected: day === selectedDate && calendarMonth === calendarMonth && calendarYear === calendarYear,
         isToday: day === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear()
       });
     }
@@ -177,31 +257,43 @@ const FacultyDashboard = () => {
               </div>
             </div>
 
-            {/* Upcoming Schedule */}
+            {/* Schedule */}
             <div className="dashboard-section-card">
               <div className="dashboard-schedule-header-section">
-                <h2 className="dashboard-schedule-title">Upcoming Schedule</h2>
+                <h2 className="dashboard-schedule-title">Schedule</h2>
+                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                  {getDayName(selectedDate, calendarMonth, calendarYear)}
+                </div>
               </div>
               <div className="dashboard-schedule-content">
-                {scheduleData.length === 0 ? (
-                  <div style={{ color: '#6c757d', textAlign: 'center', padding: '30px 0' }}>
-                    No upcoming schedule found.
+                {scheduleLoading ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                    Loading schedule...
                   </div>
                 ) : (
-                  scheduleData.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className={`dashboard-schedule-item ${item.type === 'blue' ? 'dashboard-schedule-item-blue' : item.type === 'green' ? 'dashboard-schedule-item-green' : ''}`}
-                    >
-                      <span className="dashboard-schedule-icon">
-                        {item.type === 'blue' && <i className="fas fa-book"></i>}
-                        {item.type === 'green' && <i className="fas fa-flask"></i>}
-                      </span>
-                      <div className="dashboard-schedule-time">{item.time}</div>
-                      <div className="dashboard-schedule-subject">{item.subject}</div>
-                      <div className="dashboard-schedule-room">{item.room}</div>
-                    </div>
-                  ))
+                  (() => {
+                    const daySchedule = getScheduleForDate();
+                    return daySchedule.length === 0 ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                        No classes scheduled for this day
+                      </div>
+                    ) : (
+                      daySchedule.map((schedule, index) => (
+                        <div 
+                          key={`${schedule.courseCode}-${index}`} 
+                          className={`dashboard-schedule-item ${index % 2 === 0 ? 'dashboard-schedule-item-blue' : 'dashboard-schedule-item-green'}`}
+                        >
+                          <div className="dashboard-schedule-time">
+                            {formatTime(schedule.timeFrom)} - {formatTime(schedule.timeTo)}
+                          </div>
+                          <div className="dashboard-schedule-subject">
+                            {schedule.courseCode} - {schedule.courseName}
+                          </div>
+                          <div className="dashboard-schedule-room">{schedule.room}</div>
+                        </div>
+                      ))
+                    );
+                  })()
                 )}
               </div>
             </div>
