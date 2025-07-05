@@ -1,6 +1,5 @@
 package com.stasis.stasis.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -29,6 +28,6 @@ public class Program {
     
     @OneToOne
     @JoinColumn(name = "chair_faculty_id")
-    @JsonManagedReference
+    @JsonIgnoreProperties({"program"})
     private Faculty chairFaculty;
 }

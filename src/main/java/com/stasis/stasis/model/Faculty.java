@@ -1,6 +1,5 @@
 package com.stasis.stasis.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -32,7 +31,8 @@ public class Faculty {
     private String position; 
     
     @ManyToOne
-    @JsonBackReference
+    @JoinColumn(name = "program_id")
+    @JsonIgnoreProperties({"chairFaculty"})
     private Program program;
 
     @Transient
