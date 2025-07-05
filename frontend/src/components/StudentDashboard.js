@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './StudentDashboard.module.css';
 import Sidebar from './StudentSidebar';
 import { useStudentData } from '../hooks/useStudentData';
+import { enrolledCourseAPI } from '../services/api';
 
 const StudentDashboard = () => {
-  const { getStudentName, getUserInfo } = useStudentData();
+  const { studentData, loading: studentLoading, error: studentError, getStudentName, getUserInfo } = useStudentData();
+  const studentId = studentData?.id;
+
   const [dashboardData, setStudentDashboardData] = useState({
     recentActivities: []
   });
+
+  // Schedule state
+  const [scheduleList, setScheduleList] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
 
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [showGraduationModal, setShowGraduationModal] = useState(false);
@@ -31,6 +38,87 @@ const StudentDashboard = () => {
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [selectedDate, setSelectedDate] = useState(today.getDate());
 
+  // Fetch schedule from backend
+  useEffect(() => {
+    if (!studentId || studentLoading) return;
+    
+    console.log('Fetching schedule for student ID:', studentId);
+    setScheduleLoading(true);
+    
+    enrolledCourseAPI.getEnrolledCoursesByStudent(studentId)
+      .then(res => {
+        console.log('Raw enrolled courses response:', res);
+        console.log('Enrolled courses data:', res.data);
+        console.log('Number of enrolled courses:', res.data?.length || 0);
+        
+        // Filter only active enrollments and map to schedule format
+        const mapped = (res.data || [])
+          .filter(ec => {
+            console.log('Checking enrollment status:', ec.status);
+            return ec.status === 'Enrolled' || ec.status === 'ENROLLED';
+          })
+          .map((ec) => {
+            console.log('Processing enrollment for schedule:', ec);
+            console.log('Enrollment data:', {
+              courseCode: ec.courseCode,
+              courseDescription: ec.courseDescription,
+              sectionName: ec.sectionName,
+              faculty: ec.faculty,
+              startTime: ec.startTime,
+              endTime: ec.endTime,
+              day: ec.day,
+              room: ec.room
+            });
+            
+            // Use the DTO fields directly since they're already mapped properly
+            return {
+              courseCode: ec.courseCode || 'N/A',
+              course: ec.courseDescription || 'Unknown Course',
+              section: ec.sectionName || 'N/A',
+              instructor: ec.faculty || 'TBA',
+              room: ec.room || 'TBA',
+              day: ec.day || 'TBA',
+              timeFrom: ec.startTime ? ec.startTime.substring(0, 5) : 'TBA',
+              timeTo: ec.endTime ? ec.endTime.substring(0, 5) : 'TBA',
+              status: ec.status
+            };
+          });
+        console.log('Final mapped schedule data:', mapped);
+        setScheduleList(mapped);
+      })
+      .catch((error) => {
+        console.error('Error fetching enrolled courses:', error);
+        console.error('Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        setScheduleList([]);
+      })
+      .finally(() => setScheduleLoading(false));
+  }, [studentId, studentLoading]);
+
+  // Helper function to get day name from date
+  const getDayName = (date, month, year) => {
+    const dateObj = new Date(year, month, date);
+    return dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+  };
+
+  // Format time for display
+  const formatTime = (time) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour12 = hours % 12 || 12;
+    const ampm = hours < 12 ? 'AM' : 'PM';
+    return `${hour12}:${minutes} ${ampm}`;
+  };
+
+  // Get schedule for selected date
+  const getScheduleForDate = () => {
+    const selectedDayName = getDayName(selectedDate, calendarMonth, calendarYear);
+    return scheduleList.filter(schedule => schedule.day === selectedDayName);
+  };
+
   // Generate calendar days for the selected month/year
   const generateCalendarDays = () => {
     const days = [];
@@ -51,7 +139,7 @@ const StudentDashboard = () => {
       days.push({
         day,
         isCurrentMonth: true,
-        isSelected: day === selectedDate && calendarMonth === today.getMonth() && calendarYear === today.getFullYear(),
+        isSelected: day === selectedDate && calendarMonth === calendarMonth && calendarYear === calendarYear,
         isToday: day === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear()
       });
     }
@@ -149,31 +237,6 @@ const StudentDashboard = () => {
     alert('Graduation application submitted successfully!');
     closeGraduationModal();
   };
-
-  // Add these missing data arrays
-  const scheduleData = [
-    {
-      id: 1,
-      time: "8:00 AM",
-      subject: "Mathematics",
-      room: "Room 101",
-      type: "blue"
-    },
-    {
-      id: 2,
-      time: "10:00 AM",
-      subject: "Physics",
-      room: "Lab 201",
-      type: "green"
-    },
-    {
-      id: 3,
-      time: "2:00 PM",
-      subject: "Chemistry",
-      room: "Lab 301",
-      type: "blue"
-    }
-  ];
 
   const semesterOptions = [
     "1st Semester",
@@ -289,22 +352,58 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Upcoming Schedule */}
+            {/* Schedule */}
             <div className="dashboard-section-card">
               <div className="dashboard-schedule-header-section">
-                <h2 className="dashboard-schedule-title">Upcoming Schedule</h2>
+                <h2 className="dashboard-schedule-title">Schedule</h2>
+                <div className="dashboard-schedule-subtitle">
+                  {getDayName(selectedDate, calendarMonth, calendarYear)}
+                </div>
               </div>
               <div className="dashboard-schedule-content">
-                {scheduleData.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className={`dashboard-schedule-item ${item.type === 'blue' ? 'dashboard-schedule-item-blue' : item.type === 'green' ? 'dashboard-schedule-item-green' : ''}`}
-                  >
-                    <div className="dashboard-schedule-time">{item.time}</div>
-                    <div className="dashboard-schedule-subject">{item.subject}</div>
-                    <div className="dashboard-schedule-room">{item.room}</div>
+                {scheduleLoading ? (
+                  <div className="dashboard-schedule-loading">
+                    <div className="dashboard-schedule-loading-spinner"></div>
+                    <div>Loading schedule...</div>
                   </div>
-                ))}
+                ) : (
+                  (() => {
+                    const daySchedule = getScheduleForDate();
+                    return daySchedule.length === 0 ? (
+                      <div className="dashboard-schedule-empty">
+                        <div className="dashboard-schedule-empty-icon">📅</div>
+                        <div className="dashboard-schedule-empty-text">No classes scheduled</div>
+                        <div className="dashboard-schedule-empty-subtext">
+                          Enjoy your free day!
+                        </div>
+                      </div>
+                    ) : (
+                      daySchedule.map((schedule, index) => (
+                        <div 
+                          key={`${schedule.courseCode}-${index}`} 
+                          className={`dashboard-schedule-item ${index % 2 === 0 ? 'dashboard-schedule-item-blue' : 'dashboard-schedule-item-green'}`}
+                        >
+                          <div className="dashboard-schedule-time">
+                            {formatTime(schedule.timeFrom)} - {formatTime(schedule.timeTo)}
+                          </div>
+                          <div className="dashboard-schedule-subject">
+                            <span className="dashboard-schedule-course-code">{schedule.courseCode}</span>
+                            <span className="dashboard-schedule-course-name">{schedule.course}</span>
+                          </div>
+                          <div className="dashboard-schedule-details">
+                            <div className="dashboard-schedule-room">{schedule.room}</div>
+                            {schedule.instructor && schedule.instructor !== 'TBA' && (
+                              <div className="dashboard-schedule-instructor">{schedule.instructor}</div>
+                            )}
+                          </div>
+                          {schedule.status && (
+                            <div className="dashboard-schedule-status">{schedule.status}</div>
+                          )}
+                        </div>
+                      ))
+                    );
+                  })()
+                )}
               </div>
             </div>
           </div>
