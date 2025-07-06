@@ -28,6 +28,22 @@
   min-width: 0;
 }
 
+.course-main-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+}
+
+.course-section-header {
+  padding: 20px 28px;
+  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+
 /* Dashboard Header */
 .course-header {
   display: flex;

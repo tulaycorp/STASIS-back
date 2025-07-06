@@ -880,9 +880,9 @@ const ScheduleManagement = () => {
                         <option key={instructor} value={`instructor:${instructor}`}>{instructor}</option>
                       ))}
                     </select>
-                       <button className="btn btn-primary" onClick={showAddScheduleForm}>
-              + Add New Schedule
-            </button>
+                       <button className="schedule-btn-add-schedule" onClick={showAddScheduleForm}>
+                          + Add New Schedule
+                    </button>
                   </div>
                 </div>
 

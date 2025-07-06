@@ -122,6 +122,20 @@ body {
   background-color: #e5e7eb;
 }
 
+.schedule-btn-add-schedule {
+  width: 100%;
+  min-width: 150px;
+  padding: 8px 12px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
 /* === STATS CARDS === */
 .stats-grid {
   display: grid;
