@@ -1087,13 +1087,13 @@ const StudentManagement = () => {
                       >
                         ✏️
                       </button>
-                      <button 
+                      {/* <button 
                         className="btn btn-warning btn-multi-promote"
                         onClick={handleMultiPromote}
                         title="Promote selected students"
                       >
                         ⬆️
-                      </button>
+                      </button> */}
                       <button 
                         className="btn btn-danger btn-multi-delete"
                         onClick={handleMultiDelete}
