@@ -21,6 +21,10 @@ const StudentManagement = () => {
   const [selectedSection, setSelectedSection] = useState('All Sections');
   const [selectedProgram, setSelectedProgram] = useState('All Programs');
   const [selectedProgramSections, setSelectedProgramSections] = useState([]);
+  const [selectedYear, setSelectedYear] = useState('All Years');
+  const [availableYears, setAvailableYears] = useState([]);
+  const [selectionMode, setSelectionMode] = useState('individual'); // 'individual' or 'year'
+  const [filter, setFilter] = useState({ type: 'all', value: 'All' });
   const [editingStudent, setEditingStudent] = useState(null);
   const [availableSectionsForStudent, setAvailableSectionsForStudent] = useState([]);
   const [availableCurriculums, setAvailableCurriculums] = useState([]);
@@ -119,6 +123,10 @@ const StudentManagement = () => {
       setSectionsList(sectionsResponse.data);
       setCurriculumsList(curriculumResponse.data);
 
+      // Extract available years from students data
+      const years = [...new Set(studentsResponse.data.map(student => student.year_level).filter(year => year !== null && year !== undefined))].sort((a, b) => a - b);
+      setAvailableYears(years);
+
       // Set default selected program if programs exist
       if (programsResponse.data.length > 0) {
         setSelectedProgram('All Programs');
@@ -146,35 +154,38 @@ const StudentManagement = () => {
     }
   };
 
-  // Filter students based on search term, selected program, and selected section
+  // Enhanced filtering logic that supports program, individual and year-based selection
   const filteredStudents = studentsData.filter(student => {
-    // Search term matching
-    const matchesSearch =
-      student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const studentName = `${student.firstName || ''} ${student.lastName || ''}`.toLowerCase();
+    const matchesSearch = studentName.includes(searchTerm.toLowerCase()) ||
+                         student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         student.username?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFilter = filter.type === 'all' || 
+                         (filter.type === 'program' && student.program?.programName === filter.value) ||
+                         (filter.type === 'section' && student.section?.sectionName === filter.value) ||
+                         (filter.type === 'year' && student.year_level?.toString() === filter.value);
 
-    // Program matching
-    const matchesProgram = selectedProgram === 'All Programs' ||
-      student.program?.programName === selectedProgram;
-
-    // Section matching - Enhanced logic
-    let matchesSection;
-    if (selectedSection === 'All Sections') {
-      matchesSection = true;
-    } else {
-      // Check if student belongs to the selected section
-      matchesSection = student.section?.sectionName === selectedSection ||
-        student.sectionName === selectedSection;
-
-      // If no direct section match, check year level mapping
-      if (!matchesSection && selectedSection.includes('Year')) {
-        const yearNumber = selectedSection.replace('Year ', '');
-        matchesSection = student.year_level?.toString() === yearNumber;
-      }
+    // Program-based filtering
+    let matchesProgram = true;
+    if (selectedProgram !== 'All Programs') {
+      matchesProgram = student.program?.programName === selectedProgram;
     }
 
-    return matchesSearch && matchesProgram && matchesSection;
+    // Enhanced section/year filtering
+    let matchesSelection = true;
+    
+    if (selectionMode === 'year' && selectedYear !== 'All Years') {
+      // Year-based filtering: show all students for the selected year
+      matchesSelection = student.year_level === selectedYear;
+    } else if (selectionMode === 'individual' && selectedSection !== 'All Sections') {
+      // Individual section filtering
+      matchesSelection = student.section?.sectionName === selectedSection ||
+        student.sectionName === selectedSection;
+    }
+    // If "All Sections" and "All Years" are selected, show everything (matchesSelection remains true)
+    
+    return matchesSearch && matchesFilter && matchesProgram && matchesSelection;
   });
 
   // Student Modal functions
@@ -600,14 +611,16 @@ const StudentManagement = () => {
   // Handle program selection
   const handleProgramSelect = (programName) => {
     setSelectedProgram(programName);
-    // Always reset to "All Sections" when changing programs
+    // Reset selections when changing programs
     setSelectedSection('All Sections');
+    setSelectedYear('All Years');
+    setSelectionMode('individual');
 
     if (programName === 'All Programs') {
       // When "All Programs" is selected, we don't need to filter sections by program
       setSelectedProgramSections([]);
     } else {
-      // Filter sections for the selected program (only from API data now)
+      // Filter sections for the selected program
       const programSections = sectionsList.filter(section =>
         section.programName === programName ||
         section.program?.programName === programName
@@ -622,19 +635,50 @@ const StudentManagement = () => {
     }
   };
 
-  // Handle section selection with program context
-  const handleSectionSelect = (sectionName) => {
+  // Handle section selection
+  const handleSectionSelect = (sectionName, sectionObj = null) => {
     setSelectedSection(sectionName);
+    setSelectedYear('All Years'); // Reset year when selecting individual section
+    setSelectionMode('individual');
 
-    // Optional: If a specific section is selected while "All Programs" is active,
-    // you might want to automatically filter to show only the program that has this section
-    if (selectedProgram === 'All Programs' && sectionName !== 'All Sections') {
-      // Find which program this section belongs to
-      const sectionProgram = sectionsList.find(section => section.sectionName === sectionName);
-      if (sectionProgram && sectionProgram.program?.programName) {
-        // setSelectedProgram(sectionProgram.program.programName);
+    // If a specific section is selected while "All Programs" is active,
+    // automatically filter to show only the program that has this section
+    if (selectedProgram === 'All Programs' && sectionName !== 'All Sections' && sectionObj) {
+      if (sectionObj.program?.programName) {
+        setSelectedProgram(sectionObj.program.programName);
+        // Filter sections for the selected program
+        const programSections = sectionsList.filter(section =>
+          section.programName === sectionObj.program.programName ||
+          section.program?.programName === sectionObj.program.programName
+        );
+        const sortedProgramSections = programSections.sort((a, b) => {
+          const sectionA = a.sectionName || '';
+          const sectionB = b.sectionName || '';
+          return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+        setSelectedProgramSections(sortedProgramSections);
       }
     }
+  };
+
+  // Handle year selection
+  const handleYearSelect = (year) => {
+    setSelectedYear(year);
+    setSelectedSection('All Sections'); // Reset individual section when selecting year
+    setSelectionMode('year');
+  };
+
+  // Get unique values from studentsData for dynamic filters
+  const getUniquePrograms = () => {
+    return [...new Set(studentsData.map(s => s.program?.programName).filter(Boolean))];
+  };
+
+  const getUniqueSections = () => {
+    return [...new Set(studentsData.map(s => s.section?.sectionName).filter(Boolean))];
+  };
+
+  const getUniqueYears = () => {
+    return [...new Set(studentsData.map(s => s.year_level).filter(Boolean))].sort((a, b) => a - b);
   };
 
   // Pagination state
@@ -1005,92 +1049,110 @@ const StudentManagement = () => {
           </div>
 
           <div className="student-content-wrapper">
-            <div className="student-sidebar">
-              {/* Program Navigation Card */}
-              <div className="student-nav-section">
-                <div className="student-nav-header">
-                  <h2 className="student-nav-title">Programs</h2>
+          <div className="student-sidebar">
+            {/* Program Navigation Card */}
+            <div className="student-nav-section">
+              <div className="student-nav-header">
+                <h2 className="student-nav-title">Programs</h2>
+              </div>
+              <div className="student-nav-list">
+                <div
+                  className={`student-nav-item ${selectedProgram === 'All Programs' ? 'student-nav-item-active' : ''}`}
+                  onClick={() => handleProgramSelect('All Programs')}
+                >
+                  <span className="student-nav-icon">📚</span>
+                  All Programs
                 </div>
-                <div className="student-nav-list">
+                {programsList.map((program) => (
                   <div
-                    className={`student-nav-item ${selectedProgram === 'All Programs' ? 'student-nav-item-active' : ''}`}
-                    onClick={() => handleProgramSelect('All Programs')}
+                    key={program.programID}
+                    className={`student-nav-item ${selectedProgram === program.programName ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleProgramSelect(program.programName)}
                   >
                     <span className="student-nav-icon">📚</span>
-                    All Programs
+                    {program.programName}
                   </div>
-                  {programsList.map((program) => (
-                    <div
-                      key={program.programID}
-                      className={`student-nav-item ${selectedProgram === program.programName ? 'student-nav-item-active' : ''}`}
-                      onClick={() => handleProgramSelect(program.programName)}
-                    >
-                      <span className="student-nav-icon">📚</span>
-                      {program.programName}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="student-nav-section">
-                <div className="student-nav-header">
-                  <h2 className="student-nav-title">Sections</h2>
-                </div>
-                <div className="student-nav-list">
-                  <div
-                    className={`student-nav-item ${selectedSection === 'All Sections' ? 'student-nav-item-active' : ''}`}
-                    onClick={() => handleSectionSelect('All Sections')}
-                  >
-                    <span className="student-nav-icon">📋</span>
-                    All Sections
-                  </div>
-
-                  {selectedProgram === 'All Programs'
-                    ? // If "All Programs" is selected, show all sections from all programs
-                    [...sectionsList]
-                      .sort((a, b) => {
-                        const sectionA = a.sectionName || '';
-                        const sectionB = b.sectionName || '';
-                        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
-                      })
-                      .map((section) => (
-                        <div
-                          key={section.sectionID}
-                          className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
-                          onClick={() => handleSectionSelect(section.sectionName)}
-                        >
-                          <span className="student-nav-icon">📋</span>
-                          {section.sectionName}
-                          {/* Show program name for context */}
-                          <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '4px' }}>
-                            ({section.program?.programName || section.programName || 'No Program'})
-                          </span>
-                        </div>
-                      ))
-                    : // If specific program is selected, show only that program's sections
-                    selectedProgramSections.map((section) => (
-                      <div
-                        key={section.sectionID}
-                        className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
-                        onClick={() => handleSectionSelect(section.sectionName)}
-                      >
-                        <span className="student-nav-icon">📋</span>
-                        {section.sectionName}
-                      </div>
-                    ))
-                  }
-                </div>
-                {/* Add Section Button */}
-                <div className="add-section-container">
-                  <button className="btn-add-section" onClick={showAddSectionForm}>
-                    Add New Section
-                  </button>
-                  <button className="btn-delete-section" onClick={showDeleteSectionForm}>
-                    Delete Section
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
+
+            {/* Year Level Navigation Card */}
+            <div className="student-nav-section">
+              <div className="student-nav-header">
+                <h2 className="student-nav-title">Year Levels</h2>
+              </div>
+              <div className="student-nav-list">
+                <div
+                  className={`student-nav-item ${selectedYear === 'All Years' ? 'student-nav-item-active' : ''}`}
+                  onClick={() => handleYearSelect('All Years')}
+                >
+                  <span className="student-nav-icon">🎓</span>
+                  All Years
+                </div>
+                {availableYears.map((year) => (
+                  <div
+                    key={year}
+                    className={`student-nav-item ${selectedYear === year ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleYearSelect(year)}
+                  >
+                    <span className="student-nav-icon">🎓</span>
+                    Year {year}
+                  </div>
+                ))}
+                
+              </div>
+            </div>
+
+            <div className="student-nav-section">
+              <div className="student-nav-header">
+                <h2 className="student-nav-title">Sections</h2>
+              </div>
+              <div className="student-nav-list">
+                <div
+                  className={`student-nav-item ${selectedSection === 'All Sections' ? 'student-nav-item-active' : ''}`}
+                  onClick={() => handleSectionSelect('All Sections')}
+                >
+                  <span className="student-nav-icon">📋</span>
+                  All Sections
+                </div>
+
+                {(selectedProgram === 'All Programs' 
+                  ? [...sectionsList].sort((a, b) => {
+                      const sectionA = a.sectionName || '';
+                      const sectionB = b.sectionName || '';
+                      return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+                    })
+                  : selectedProgramSections
+                ).map((section) => {
+                  // Create unique key combining section name and program
+                  const uniqueKey = `${section.sectionID}-${section.program?.programID || 'no-program'}`;
+                  const displayName = selectedProgram === 'All Programs' 
+                    ? `${section.sectionName} (${section.program?.programName || 'No Program'})`
+                    : section.sectionName;
+                  
+                  return (
+                    <div
+                      key={uniqueKey}
+                      className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
+                      onClick={() => handleSectionSelect(section.sectionName, section)}
+                    >
+                      <span className="student-nav-icon">📋</span>
+                      <span className="section-name-text">{displayName}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Add Section Button */}
+              <div className="add-section-container">
+                <button className="btn-add-section" onClick={showAddSectionForm}>
+                  Add New Section
+                </button>
+                <button className="btn-delete-section" onClick={showDeleteSectionForm}>
+                  Delete Section
+                </button>
+              </div>
+            </div>
+          </div>
 
             {/* Main Student Management Section */}
             <div className="student-main-section">
@@ -1111,6 +1173,28 @@ const StudentManagement = () => {
                     />
                   </div>
                   <div className="student-header-actions">
+                    <select
+                      className="form-input"
+                      value={`${filter.type}:${filter.value}`}
+                      onChange={(e) => {
+                        const [type, value] = e.target.value.split(':');
+                        setFilter({ type, value });
+                      }}
+                    >
+                      <option value="all:All">All Students</option>
+                      {/* Dynamic program filters */}
+                      {getUniquePrograms().map(program => (
+                        <option key={program} value={`program:${program}`}>{program} Students</option>
+                      ))}
+                      {/* Dynamic section filters */}
+                      {getUniqueSections().map(section => (
+                        <option key={section} value={`section:${section}`}>{section}</option>
+                      ))}
+                      {/* Dynamic year filters */}
+                      {getUniqueYears().map(year => (
+                        <option key={year} value={`year:${year}`}>Year {year}</option>
+                      ))}
+                    </select>
                     <button className="student-btn-add-student" onClick={showAddStudentForm}>
                       + Add New Student
                     </button>

@@ -1023,12 +1023,10 @@ const ScheduleManagement = () => {
                             <tr key={schedule.id} className={isDuplicateSection ? 'duplicate-section-row' : ''}>
                               <td className="course-id">
                                 {schedule.courseId || 'N/A'}
-                                {schedule.scheduleHasCourse && <span className="badge course-badge" title="Course assigned to this schedule">📚</span>}
                               </td>
                               <td className="course-name">{schedule.courseName || schedule.course || 'N/A'}</td>
                               <td className="section">
                                 {schedule.section}
-                                {isDuplicateSection && <span className="badge multiple-badge" title="Multiple schedules for this section">+</span>}
                               </td>
                               <td className="instructor">{schedule.instructor}</td>
                               <td className="room">{schedule.room}</td>
