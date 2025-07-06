@@ -629,16 +629,25 @@ const AdminDashboard = () => {
         {/* Stats Cards */}
         <div className="dashboard-stats-grid">
           <div className="dashboard-stat-card">
-            <div className="dashboard-stat-title">Total Students</div>
-            <div className="dashboard-stat-value">{studentCount.toLocaleString()}</div>
+              <div className="stat-icon blue">👩‍🎓</div>
+              <div className="stat-content">
+                <div className="dashboard-stat-title">Total Students</div>
+                <div className="dashboard-stat-value">{studentCount.toLocaleString()}</div>
+            </div>
           </div>
           <div className="dashboard-stat-card">
-            <div className="dashboard-stat-title">Total Faculty</div>
-            <div className="dashboard-stat-value">{facultyList.length}</div>
+            <div className="stat-icon blue">👨‍🏫</div>
+            <div className="stat-content">
+              <div className="dashboard-stat-title">Total Faculty</div>
+              <div className="dashboard-stat-value">{facultyList.length}</div>
+            </div>
           </div>
           <div className="dashboard-stat-card">
-            <div className="dashboard-stat-title">Total Programs</div>
-            <div className="dashboard-stat-value">{programsList.length}</div>
+            <div className="stat-icon blue">📚</div>
+              <div className="stat-content">
+              <div className="dashboard-stat-title">Total Programs</div>
+              <div className="dashboard-stat-value">{programsList.length}</div>
+            </div>
           </div>
         </div>
 
