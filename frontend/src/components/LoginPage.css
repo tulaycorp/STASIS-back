@@ -1,9 +1,12 @@
+.body {
+    background: url('../assets/images/login-bg.jpg') no-repeat center center fixed;
+    background-size: cover;
+}
 .login-page {
     display: flex;
     width: 100%;
     max-width: 1200px; /* Limit maximum width */
     min-height: 700px; /* Ensure minimum height */
-    background-color: #fff;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     border-radius: 15px; /* Rounded corners for the main container */
     overflow: hidden; /* Important for rounded corners with image */
@@ -44,7 +47,6 @@
       z-index: 2;
       width: 80px; /* Adjust size as needed */
       height: auto; /* Maintain aspect ratio */
-      background-color: #a94442; /* Red shield background */
       padding: 10px;
       border-radius: 5px; /* Slightly rounded corners for the shield */
   }

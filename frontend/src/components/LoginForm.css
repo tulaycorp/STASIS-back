@@ -6,7 +6,6 @@
 
 body {
     font-family: var(--font-sans-serif);
-    background: #DBDBDB;
     min-height: 100vh;
     display: flex;
     align-items: center;
