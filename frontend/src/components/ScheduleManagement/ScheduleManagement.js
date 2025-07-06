@@ -936,12 +936,14 @@ const ScheduleManagement = () => {
                                     onClick={() => showEditScheduleForm(schedule)}
                                     title="Edit Schedule"
                                   >
+                                    ✏️
                                   </button>
                                   <button
                                     className="btn-action btn-delete"
                                     onClick={() => handleDeleteSchedule(schedule.id)}
                                     title="Delete Schedule"
                                   >
+                                    🗑️
                                   </button>
                                 </div>
                               </td>

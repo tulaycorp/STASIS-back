@@ -203,10 +203,15 @@ body {
   transform: translateY(-1px);
 }
 
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
 .stat-label {
   font-size: 14px;
   color: #6b7280;
-  margin-bottom: 8px;
+  margin-bottom: 8px; 
   font-weight: 500;
 }
 
@@ -475,7 +480,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f9fafb;
+  background-color: white;
   flex-wrap: wrap;
   gap: 16px;
 }

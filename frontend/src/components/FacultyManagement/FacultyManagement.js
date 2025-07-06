@@ -29,6 +29,7 @@ const FacultyManagement = () => {
 
   const [selectedProgram, setSelectedProgram] = useState('All Programs');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Active', 'Inactive'
   const [toasts, setToasts] = useState([]);
 
   // Position options for faculty
@@ -107,20 +108,25 @@ const FacultyManagement = () => {
   const totalFaculty = facultyList.length;
   const activeFaculty = facultyList.filter(f => f.status === 'Active').length;
   const inactiveFaculty = facultyList.filter(f => f.status === 'Inactive').length;
-  const totalPrograms = [...new Set(facultyList.map(f => f.program?.programName))].filter(Boolean).length;
+  // CORRECTED: Count all programs from the programs list, not from the faculty list.
+  const totalPrograms = programsList.length;
 
-  // Filter faculty based on search and program
+  // Filter faculty based on search, program, and status
   const filteredFaculty = facultyList.filter(faculty => {
+    const searchTermLower = searchTerm.toLowerCase();
+
     const matchesSearch = 
-      faculty.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      faculty.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      faculty.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      faculty.facultyID?.toString().includes(searchTerm.toLowerCase());
+      faculty.firstName?.toLowerCase().includes(searchTermLower) ||
+      faculty.lastName?.toLowerCase().includes(searchTermLower) ||
+      faculty.email?.toLowerCase().includes(searchTermLower) ||
+      (faculty.username && faculty.username.toLowerCase().includes(searchTermLower));
     
     const matchesProgram = selectedProgram === 'All Programs' || 
       faculty.program?.programName === selectedProgram;
     
-    return matchesSearch && matchesProgram;
+    const matchesStatus = statusFilter === 'All' || faculty.status === statusFilter;
+    
+    return matchesSearch && matchesProgram && matchesStatus;
   });
 
   // Add Faculty Modal functions
@@ -361,25 +367,44 @@ const FacultyManagement = () => {
           
           <div className="page-header">
             <h1 className="page-title">Faculty Management</h1>
-
           </div>
 
           <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-label">Total Faculty</div>
-              <div className="stat-value">{totalFaculty}</div>
+            <div 
+              className={`stat-card ${statusFilter === 'All' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('All')}
+            >
+              <div className="stat-icon blue">👨‍🏫</div>
+              <div className="stat-content">
+                <div className="stat-label"><h3>Total Faculty</h3></div>
+                <div className="stat-value">{totalFaculty}</div>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Active</div>
-              <div className="stat-value">{activeFaculty}</div>
+            <div 
+              className={`stat-card ${statusFilter === 'Active' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('Active')}
+            >
+              <div className="stat-icon green">✅</div>
+              <div className="stat-content">
+                <div className="stat-label"><h3>Active</h3></div>
+                <div className="stat-value">{activeFaculty}</div>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Inactive</div>
-              <div className="stat-value">{inactiveFaculty}</div>
+            <div className={`stat-card ${statusFilter === 'Inactive' ? 'active' : ''}`}
+              onClick={() => setStatusFilter('Inactive')}
+            >
+              <div className="stat-icon red">❌</div>
+              <div className="stat-content">
+                <div className="stat-label"><h3>Inactive</h3></div>
+                <div className="stat-value">{inactiveFaculty}</div>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Programs</div>
-              <div className="stat-value">{totalPrograms}</div>
+            <div className="stat-card no-action">
+              <div className="stat-icon blue">📚</div>
+              <div className="stat-content">
+                <div className="stat-label"><h3>Total Programs</h3></div>
+                <div className="stat-value">{totalPrograms}</div>
+              </div>
             </div>
           </div>
 
@@ -388,7 +413,6 @@ const FacultyManagement = () => {
               <div className="list-controls">
                 <h2 className="list-title">Faculty List</h2>
                 <div className="controls">
-                  
                   <select 
                     value={selectedProgram}
                     onChange={(e) => setSelectedProgram(e.target.value)}
@@ -408,12 +432,12 @@ const FacultyManagement = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
                   />
-                   <button 
-              onClick={showAddFacultyForm}
-              className="add-faculty-btn"
-            >
-              + Add New Faculty
-            </button>
+                  <button 
+                    onClick={showAddFacultyForm}
+                    className="add-faculty-btn"
+                  >
+                    + Add New Faculty
+                  </button>
                 </div>
               </div>
             </div>
@@ -473,7 +497,7 @@ const FacultyManagement = () => {
 
             <div className="table-footer">
               <div className="table-info">
-                Showing 1 to {filteredFaculty.length} of {totalFaculty} entries
+                Showing {filteredFaculty.length} of {totalFaculty} entries
               </div>
             </div>
           </div>
