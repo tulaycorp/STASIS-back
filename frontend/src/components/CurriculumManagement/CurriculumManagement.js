@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './CurriculumManagement.css';
 import Sidebar from '../Sidebar';
 import { useAdminData } from '../../hooks/useAdminData';
-import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, testConnection } from '../../services/api';
+import { curriculumAPI, programAPI, courseAPI, curriculumDetailAPI, courseSectionAPI, testConnection } from '../../services/api';
 import Loading from '../Loading';
 
 const CurriculumManagement = () => {
@@ -36,7 +36,10 @@ const CurriculumManagement = () => {
     selectedCourses: [],
     courseYearLevels: {}, // Maps courseId to YearLevel
     courseSemesters: {},   // Maps courseId to Semester
-    activeSemesterTab: '1' // Default to 1st semester tab
+    activeSemesterTab: '1', // Default to 1st semester tab
+    autoCreateSections: false, // Enable/disable auto create sections
+    autoCreateYear: '', // Selected year level for auto create
+    sectionsPerYear: '' // Number of sections to create per year
   });
   const [courseSearchTerm, setCourseSearchTerm] = useState('');
   const [toasts, setToasts] = useState([]);
@@ -278,7 +281,10 @@ const CurriculumManagement = () => {
       selectedCourses: [],
       courseYearLevels: {},
       courseSemesters: {},
-      activeSemesterTab: '1'
+      activeSemesterTab: '1',
+      autoCreateSections: false,
+      autoCreateYear: '',
+      sectionsPerYear: ''
     });
     setAvailableCourses([]); // Clear available courses
   };
@@ -295,7 +301,10 @@ const CurriculumManagement = () => {
       selectedCourses: [],
       courseYearLevels: {},
       courseSemesters: {},
-      activeSemesterTab: '1'
+      activeSemesterTab: '1',
+      autoCreateSections: false,
+      autoCreateYear: '',
+      sectionsPerYear: ''
     });
     setAvailableCourses([]); // Clear available courses
     setCourseSearchTerm(''); // Clear course search term
@@ -341,7 +350,10 @@ const CurriculumManagement = () => {
           selectedCourses: selectedCourseIds,
           courseYearLevels: courseYearLevels,
           courseSemesters: courseSemesters,
-          activeSemesterTab: '1'
+          activeSemesterTab: '1',
+          autoCreateSections: false, // Reset auto create for editing
+          autoCreateYear: '',
+          sectionsPerYear: ''
         });
         setIsModalOpen(true);
       } catch (error) {
@@ -349,6 +361,61 @@ const CurriculumManagement = () => {
         showToast('Failed to load curriculum details. Please try again.', 'error');
       }
     }
+  };
+
+  // Check if section already exists for the program
+  const checkSectionExists = async (programObj, sectionName) => {
+    try {
+      const sectionsResponse = await courseSectionAPI.getAllSections();
+      const existingSections = sectionsResponse.data.filter(section => 
+        (section.program?.programID === programObj.programID || 
+         section.programId === programObj.programID) &&
+        section.sectionName === sectionName
+      );
+      return existingSections.length > 0;
+    } catch (error) {
+      console.error('Error checking existing sections:', error);
+      return false; // If we can't check, allow creation (API will handle duplicates)
+    }
+  };
+
+  // Auto create sections function
+  const autoCreateSectionsForProgram = async (programObj, yearLevel, sectionsCount) => {
+    const createdSections = [];
+    const skippedSections = [];
+    const failedSections = [];
+
+    for (let sectionNum = 1; sectionNum <= sectionsCount; sectionNum++) {
+      const sectionName = `${yearLevel}-${sectionNum}`;
+      
+      try {
+        // Check if section already exists
+        const sectionExists = await checkSectionExists(programObj, sectionName);
+        
+        if (sectionExists) {
+          skippedSections.push(sectionName);
+          console.log(`Section ${sectionName} already exists for program ${programObj.programName}, skipping...`);
+          continue;
+        }
+
+        // Create the section
+        const sectionData = {
+          sectionName: sectionName,
+          program: programObj,
+          status: 'ACTIVE'
+        };
+
+        await courseSectionAPI.createSection(sectionData);
+        createdSections.push(sectionName);
+        console.log(`Successfully created section: ${sectionName}`);
+        
+      } catch (error) {
+        console.error(`Error creating section ${sectionName}:`, error);
+        failedSections.push(sectionName);
+      }
+    }
+
+    return { createdSections, skippedSections, failedSections };
   };
 
   // Save curriculum
@@ -372,6 +439,19 @@ const CurriculumManagement = () => {
     if (!formData.status) {
       showToast('Please select a status', 'error');
       return;
+    }
+
+    // Validate auto create sections if enabled
+    if (formData.autoCreateSections) {
+      if (!formData.autoCreateYear) {
+        showToast('Please select a year level for auto create sections', 'error');
+        return;
+      }
+      
+      if (!formData.sectionsPerYear || parseInt(formData.sectionsPerYear) < 1) {
+        showToast('Please select number of sections to create (minimum 1)', 'error');
+        return;
+      }
     }
 
     try {
@@ -415,26 +495,59 @@ const CurriculumManagement = () => {
       }
 
       // Save curriculum details (selected courses) with correct field names
-              if (formData.selectedCourses && formData.selectedCourses.length > 0) {
-                const detailPromises = formData.selectedCourses.map(courseId => {
-                  const course = availableCourses.find(c => c.id === courseId);
-                  if (course) {
-                    return curriculumDetailAPI.createCurriculumDetail({
-                      curriculum: { curriculumID: curriculumId },
-                      course: { id: courseId },
-                      yearLevel: formData.courseYearLevels?.[courseId] || 1,
-                      semester: formData.courseSemesters?.[courseId] || "1"
-                    });
-                  }
-                  return null;
-                }).filter(promise => promise !== null);
+      if (formData.selectedCourses && formData.selectedCourses.length > 0) {
+        const detailPromises = formData.selectedCourses.map(courseId => {
+          const course = availableCourses.find(c => c.id === courseId);
+          if (course) {
+            return curriculumDetailAPI.createCurriculumDetail({
+              curriculum: { curriculumID: curriculumId },
+              course: { id: courseId },
+              yearLevel: formData.courseYearLevels?.[courseId] || 1,
+              semester: formData.courseSemesters?.[courseId] || "1"
+            });
+          }
+          return null;
+        }).filter(promise => promise !== null);
 
         if (detailPromises.length > 0) {
           await Promise.all(detailPromises);
         }
       }
 
-      showToast(editingId ? 'Curriculum updated successfully!' : 'Curriculum created successfully!', 'success');
+      // Auto create sections if enabled and not editing
+      if (formData.autoCreateSections && !editingId) {
+        try {
+          const sectionsResult = await autoCreateSectionsForProgram(
+            selectedProgramObj,
+            formData.autoCreateYear,
+            parseInt(formData.sectionsPerYear)
+          );
+
+          // Show detailed results
+          let sectionMessage = '';
+          if (sectionsResult.createdSections.length > 0) {
+            sectionMessage += `Created sections: ${sectionsResult.createdSections.join(', ')}. `;
+          }
+          if (sectionsResult.skippedSections.length > 0) {
+            sectionMessage += `Skipped existing sections: ${sectionsResult.skippedSections.join(', ')}. `;
+          }
+          if (sectionsResult.failedSections.length > 0) {
+            sectionMessage += `Failed to create: ${sectionsResult.failedSections.join(', ')}. `;
+          }
+
+          if (sectionsResult.createdSections.length > 0 || sectionsResult.skippedSections.length > 0) {
+            showToast(`Curriculum saved successfully! ${sectionMessage}`, 'success');
+          } else {
+            showToast('Curriculum saved successfully, but no sections were created.', 'warning');
+          }
+        } catch (sectionError) {
+          console.error('Error in auto create sections:', sectionError);
+          showToast('Curriculum saved successfully, but section creation failed. Please create sections manually.', 'warning');
+        }
+      } else {
+        showToast(editingId ? 'Curriculum updated successfully!' : 'Curriculum created successfully!', 'success');
+      }
+
       closeModal();
       loadCurriculums(); // Fixed function name
     } catch (error) {
@@ -977,6 +1090,79 @@ const CurriculumManagement = () => {
                   ))}
                 </select>
               </div>
+
+              {/* Auto Create Sections Feature */}
+              {formData.programId && (
+                <div className="form-group auto-create-sections-group">
+                  <div className="auto-create-sections-header">
+                    <label className="form-label auto-create-checkbox-label">
+                      Auto Create Sections
+                      <input
+                        type="checkbox"
+                        name="autoCreateSections"
+                        checked={formData.autoCreateSections}
+                        onChange={handleInputChange}
+                        className="auto-create-checkbox"
+                      />
+                    </label>
+                  </div>
+                  
+                  {formData.autoCreateSections && (
+                    <div className="auto-create-sections-content">
+                      <div className="auto-create-sections-form">
+                        <div className="auto-create-field">
+                          <label className="form-label">Year Level *</label>
+                          <select
+                            name="autoCreateYear"
+                            value={formData.autoCreateYear}
+                            onChange={handleInputChange}
+                            className="form-select"
+                            required
+                          >
+                            <option value="">Select Year</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                          </select>
+                        </div>
+                        
+                        <div className="auto-create-field">
+                          <label className="form-label">Sections per Year *</label>
+                          <select
+                            name="sectionsPerYear"
+                            value={formData.sectionsPerYear}
+                            onChange={handleInputChange}
+                            className="form-select"
+                            required
+                          >
+                            <option value="">Select Number</option>
+                            <option value="1">1 Section</option>
+                            <option value="2">2 Sections</option>
+                            <option value="3">3 Sections</option>
+                            <option value="4">4 Sections</option>
+                            <option value="5">5 Sections</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      {formData.autoCreateYear && formData.sectionsPerYear && (
+                        <div className="sections-preview">
+                          <h4>Sections to be created:</h4>
+                          <div className="preview-sections">
+                            {Array.from({ length: parseInt(formData.sectionsPerYear) }, (_, index) => (
+                              <span key={index} className="preview-section">
+                                {formData.autoCreateYear}-{index + 1}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">Academic Year *</label>
                 <select 
