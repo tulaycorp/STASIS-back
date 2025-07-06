@@ -361,12 +361,7 @@ const FacultyManagement = () => {
           
           <div className="page-header">
             <h1 className="page-title">Faculty Management</h1>
-            <button 
-              onClick={showAddFacultyForm}
-              className="add-faculty-btn"
-            >
-              + Add New Faculty
-            </button>
+
           </div>
 
           <div className="stats-grid">
@@ -393,6 +388,7 @@ const FacultyManagement = () => {
               <div className="list-controls">
                 <h2 className="list-title">Faculty List</h2>
                 <div className="controls">
+                  
                   <select 
                     value={selectedProgram}
                     onChange={(e) => setSelectedProgram(e.target.value)}
@@ -412,6 +408,12 @@ const FacultyManagement = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
                   />
+                   <button 
+              onClick={showAddFacultyForm}
+              className="add-faculty-btn"
+            >
+              + Add New Faculty
+            </button>
                 </div>
               </div>
             </div>
