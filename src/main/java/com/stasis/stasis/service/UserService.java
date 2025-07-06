@@ -182,22 +182,4 @@ public class UserService {
             )
             .collect(Collectors.toList());
     }
-
-    /**
-     * Migrate existing plain text passwords to BCrypt encoding
-     * This should be called once to fix existing user accounts
-     */
-    public void migratePasswordsToBCrypt() {
-        List<Users> allUsers = userRepository.findAll();
-        for (Users user : allUsers) {
-            String password = user.getPassword();
-            // Check if password is not already BCrypt encoded
-            if (password != null && !password.startsWith("$2a$") && !password.startsWith("$2b$") && !password.startsWith("$2y$")) {
-                String encodedPassword = passwordEncoder.encode(password);
-                user.setPassword(encodedPassword);
-                userRepository.save(user);
-                System.out.println("Migrated password for user: " + user.getUsername());
-            }
-        }
-    }
 }

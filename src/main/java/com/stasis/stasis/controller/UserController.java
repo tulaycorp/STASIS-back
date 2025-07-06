@@ -64,16 +64,6 @@ public class UserController {
         }
     }
 
-    @PostMapping("/migrate-passwords")
-    public ResponseEntity<String> migratePasswordsToBCrypt() {
-        try {
-            userService.migratePasswordsToBCrypt();
-            return ResponseEntity.ok("Password migration completed successfully");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to migrate passwords: " + e.getMessage());
-        }
-    }
-
     @PutMapping("/{id}/status")
     public ResponseEntity<Users> updateUserStatus(@PathVariable Long id, @RequestParam String status) {
         try {
