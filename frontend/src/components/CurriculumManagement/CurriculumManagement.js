@@ -1061,270 +1061,282 @@ const CurriculumManagement = () => {
               </h2>
               <span className="close" onClick={closeModal}>x</span>
             </div>
+            
             <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Curriculum Name *</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  name="curriculumName"
-                  value={formData.curriculumName}
-                  onChange={handleInputChange}
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Program *</label>
-                <select 
-                  className="form-select" 
-                  name="programId"
-                  value={formData.programId}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select Program</option>
-                  {programsList.map(program => (
-                    <option key={program.programID} value={program.programID}>
-                      {program.programName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Auto Create Sections Feature */}
-              {formData.programId && (
-                <div className="form-group auto-create-sections-group">
-                  <div className="auto-create-sections-header">
-                    <label className="form-label auto-create-checkbox-label">
-                      <span>Create Sections</span>
-                      <input
-                        type="checkbox"
-                        name="autoCreateSections"
-                        checked={formData.autoCreateSections}
-                        onChange={handleInputChange}
-                        className="auto-create-checkbox"
-                      />
-                    </label>
+              <div className="modal-body-grid">
+                {/* Left Container - Basic Information */}
+                <div className="modal-left-container">
+                  <div className="form-group">
+                    <label className="form-label">Curriculum Name *</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      name="curriculumName"
+                      value={formData.curriculumName}
+                      onChange={handleInputChange}
+                      required 
+                    />
                   </div>
                   
-                  {formData.autoCreateSections && (
-                    <div className="auto-create-sections-content">
-                      <div className="auto-create-sections-form">
-                        <div className="auto-create-field">
-                          <label className="form-label">Year Level *</label>
-                          <select
-                            name="autoCreateYear"
-                            value={formData.autoCreateYear}
+                  <div className="form-group">
+                    <label className="form-label">Program *</label>
+                    <select 
+                      className="form-select" 
+                      name="programId"
+                      value={formData.programId}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Program</option>
+                      {programsList.map(program => (
+                        <option key={program.programID} value={program.programID}>
+                          {program.programName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Auto Create Sections Feature */}
+                  {formData.programId && (
+                    <div className="form-group auto-create-sections-group">
+                      <div className="auto-create-sections-header">
+                        <label className="form-label auto-create-checkbox-label">
+                          <span>Create Sections</span>
+                          <input
+                            type="checkbox"
+                            name="autoCreateSections"
+                            checked={formData.autoCreateSections}
                             onChange={handleInputChange}
-                            className="form-select"
-                            required
-                          >
-                            <option value="">Select Year</option>
-                            <option value="1">1st Year</option>
-                            <option value="2">2nd Year</option>
-                            <option value="3">3rd Year</option>
-                            <option value="4">4th Year</option>
-                          </select>
-                        </div>
-                        
-                        <div className="auto-create-field">
-                          <label className="form-label">Sections per Year *</label>
-                          <select
-                            name="sectionsPerYear"
-                            value={formData.sectionsPerYear}
-                            onChange={handleInputChange}
-                            className="form-select"
-                            required
-                          >
-                            <option value="">Select Number</option>
-                            <option value="1">1 Section</option>
-                            <option value="2">2 Sections</option>
-                            <option value="3">3 Sections</option>
-                            <option value="4">4 Sections</option>
-                            <option value="5">5 Sections</option>
-                          </select>
-                        </div>
+                            className="auto-create-checkbox"
+                          />
+                        </label>
                       </div>
                       
-                      {formData.autoCreateYear && formData.sectionsPerYear && (
-                        <div className="sections-preview">
-                          <h4>Sections to be created:</h4>
-                          <div className="preview-sections">
-                            {Array.from({ length: parseInt(formData.sectionsPerYear) }, (_, index) => (
-                              <span key={index} className="preview-section">
-                                {formData.autoCreateYear}-{index + 1}
-                              </span>
-                            ))}
+                      {formData.autoCreateSections && (
+                        <div className="auto-create-sections-content">
+                          <div className="auto-create-sections-form">
+                            <div className="auto-create-field">
+                              <label className="form-label">Year Level *</label>
+                              <select
+                                name="autoCreateYear"
+                                value={formData.autoCreateYear}
+                                onChange={handleInputChange}
+                                className="form-select"
+                                required
+                              >
+                                <option value="">Select Year</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                              </select>
+                            </div>
+                            
+                            <div className="auto-create-field">
+                              <label className="form-label">Sections per Year *</label>
+                              <select
+                                name="sectionsPerYear"
+                                value={formData.sectionsPerYear}
+                                onChange={handleInputChange}
+                                className="form-select"
+                                required
+                              >
+                                <option value="">Select Number</option>
+                                <option value="1">1 Section</option>
+                                <option value="2">2 Sections</option>
+                                <option value="3">3 Sections</option>
+                                <option value="4">4 Sections</option>
+                                <option value="5">5 Sections</option>
+                              </select>
+                            </div>
                           </div>
+                          
+                          {formData.autoCreateYear && formData.sectionsPerYear && (
+                            <div className="sections-preview">
+                              <h4>Sections to be created:</h4>
+                              <div className="preview-sections">
+                                {Array.from({ length: parseInt(formData.sectionsPerYear) }, (_, index) => (
+                                  <span key={index} className="preview-section">
+                                    {formData.autoCreateYear}-{index + 1}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                   )}
-                </div>
-              )}
 
-              <div className="form-group">
-                <label className="form-label">Academic Year *</label>
-                <select 
-                  className="form-select" 
-                  name="academicYear"
-                  value={formData.academicYear}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select Academic Year</option>
-                  <option value="2024-2025">2024-2025</option>
-                  <option value="2025-2026">2025-2026</option>
-                  <option value="2026-2027">2026-2027</option>
-                  <option value="2027-2028">2027-2028</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Status *</label>
-                <select 
-                  className="form-select" 
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea 
-                  className="form-textarea" 
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="4"
-                  placeholder="Enter curriculum description..."
-                />
-              </div>
-
-              {/* <<< MODIFIED: Available Courses Section with Search */}
-              {formData.programId && (
-                <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <label className="form-label" style={{ marginBottom: 0 }}>Available Courses</label>
-                    <input
-                      type="text"
-                      placeholder="Search courses..."
-                      value={courseSearchTerm}
-                      onChange={(e) => setCourseSearchTerm(e.target.value)}
-                      className="form-input"
-                      style={{ width: '40%' }}
-                    />
-                  </div>
-                  <div className="semester-tabs">
-                    <div className="tab-headers">
-                      <button 
-                        type="button"
-                        className={`tab-header ${formData.activeSemesterTab === '1' ? 'active' : ''}`}
-                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '1' }))}
-                      >
-                        1st Semester
-                      </button>
-                      <button 
-                        type="button"
-                        className={`tab-header ${formData.activeSemesterTab === '2' ? 'active' : ''}`}
-                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '2' }))}
-                      >
-                        2nd Semester
-                      </button>
-                      <button 
-                        type="button"
-                        className={`tab-header ${formData.activeSemesterTab === 'Summer' ? 'active' : ''}`}
-                        onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: 'Summer' }))}
-                      >
-                        Summer
-                      </button>
-                    </div>
-                    
-                    <div className="tab-content">
-                      <div className="courses-semester-section">
-                        <div className="courses-grid-semester">
-                          {filteredAvailableCourses
-                            .filter(course => {
-                              const courseSemester = formData.courseSemesters[course.id] || "1";
-                              return courseSemester === formData.activeSemesterTab;
-                            })
-                            .map(course => (
-                              <div key={course.id} className="course-card-selection">
-                                <div className="course-card-header">
-                                  <label className="course-checkbox-label">
-                                    <input
-                                      type="checkbox"
-                                      checked={formData.selectedCourses.includes(course.id)}
-                                      onChange={() => handleCourseSelection(course.id)}
-                                      className="course-checkbox"
-                                    />
-                                    <div className="course-card-info">
-                                      <div className="course-code-selection">{course.courseCode}</div>
-                                      <div className="course-name-selection">{course.courseDescription}</div>
-                                      <div className="course-credits">({course.credits} credits)</div>
-                                    </div>
-                                  </label>
-                                </div>
-                                
-                                {formData.selectedCourses.includes(course.id) && (
-                                  <div className="course-details-inline">
-                                    <div className="course-detail-group-inline">
-                                      <label className="detail-label-inline">Year:</label>
-                                      <select
-                                        value={formData.courseYearLevels[course.id] || 1}
-                                        onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
-                                        className="detail-select-inline"
-                                      >
-                                        <option value={1}>1</option>
-                                        <option value={2}>2</option>
-                                        <option value={3}>3</option>
-                                        <option value={4}>4</option>
-                                      </select>
-                                    </div>
-                                    <div className="course-detail-group-inline">
-                                      <label className="detail-label-inline">Semester:</label>
-                                      <select
-                                        value={formData.courseSemesters[course.id] || "1"}
-                                        onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
-                                        className="detail-select-inline"
-                                      >
-                                        <option value="1">1st</option>
-                                        <option value="2">2nd</option>
-                                        <option value="Summer">Summer</option>
-                                      </select>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                        </div>
-                        
-                        {filteredAvailableCourses.filter(course => {
-                          const courseSemester = formData.courseSemesters[course.id] || "1";
-                          return courseSemester === formData.activeSemesterTab;
-                        }).length === 0 && (
-                          <div className="no-courses-semester">
-                            <p>No courses assigned to {formData.activeSemesterTab === '1' ? '1st' : formData.activeSemesterTab === '2' ? '2nd' : 'Summer'} semester.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div className="form-group">
+                    <label className="form-label">Academic Year *</label>
+                    <select 
+                      className="form-select" 
+                      name="academicYear"
+                      value={formData.academicYear}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Academic Year</option>
+                      <option value="2024-2025">2024-2025</option>
+                      <option value="2025-2026">2025-2026</option>
+                      <option value="2026-2027">2026-2027</option>
+                      <option value="2027-2028">2027-2028</option>
+                    </select>
                   </div>
                   
-                  {availableCourses.length > 0 && filteredAvailableCourses.length === 0 && (
-                     <p className="no-courses">No courses match your search.</p>
-                  )}
-                  {availableCourses.length === 0 && (
-                    <p className="no-courses">No courses available for this program.</p>
+                  <div className="form-group">
+                    <label className="form-label">Status *</label>
+                    <select 
+                      className="form-select" 
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Status</option>
+                      <option value="Active">Active</option>
+                      <option value="Draft">Draft</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Description</label>
+                    <textarea 
+                      className="form-textarea" 
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows="4"
+                      placeholder="Enter curriculum description..."
+                    />
+                  </div>
+                </div>
+
+                {/* Right Container - Available Courses */}
+                <div className="modal-right-container">
+                  {formData.programId && (
+                    <div className="form-group">
+                      <div className="courses-header">
+                        <label className="form-label">Available Courses</label>
+                        <input
+                          type="text"
+                          placeholder="Search courses..."
+                          value={courseSearchTerm}
+                          onChange={(e) => setCourseSearchTerm(e.target.value)}
+                          className="form-input courses-search"
+                        />
+                      </div>
+                      
+                      <div className="semester-tabs">
+                        <div className="tab-headers">
+                          <button 
+                            type="button"
+                            className={`tab-header ${formData.activeSemesterTab === '1' ? 'active' : ''}`}
+                            onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '1' }))}
+                          >
+                            1st Semester
+                          </button>
+                          <button 
+                            type="button"
+                            className={`tab-header ${formData.activeSemesterTab === '2' ? 'active' : ''}`}
+                            onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: '2' }))}
+                          >
+                            2nd Semester
+                          </button>
+                          <button 
+                            type="button"
+                            className={`tab-header ${formData.activeSemesterTab === 'Summer' ? 'active' : ''}`}
+                            onClick={() => setFormData(prev => ({ ...prev, activeSemesterTab: 'Summer' }))}
+                          >
+                            Summer
+                          </button>
+                        </div>
+                        
+                        <div className="tab-content">
+                          <div className="courses-semester-section">
+                            <div className="courses-grid-semester">
+                              {filteredAvailableCourses
+                                .filter(course => {
+                                  const courseSemester = formData.courseSemesters[course.id] || "1";
+                                  return courseSemester === formData.activeSemesterTab;
+                                })
+                                .map(course => (
+                                  <div key={course.id} className="course-card-selection">
+                                    <div className="course-card-header">
+                                      <input
+                                        type="checkbox"
+                                        checked={formData.selectedCourses.includes(course.id)}
+                                        onChange={() => handleCourseSelection(course.id)}
+                                        className="course-checkbox"
+                                      />
+                                      <div className="course-card-info">
+                                        <div className="course-code-checkbox-container">
+                                          <div className="course-code-selection">{course.courseCode}</div>
+                                          <div className="course-credits">({course.credits} credits)</div>
+                                      </div>
+                                      <div className="course-name-selection">{course.courseDescription}</div>
+                                    </div>
+                                  </div>
+                                    
+                                    {formData.selectedCourses.includes(course.id) && (
+                                      <div className="course-details-inline">
+                                        <div className="course-detail-group-inline">
+                                          <label className="detail-label-inline">Year:</label>
+                                          <select
+                                            value={formData.courseYearLevels[course.id] || 1}
+                                            onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
+                                            className="detail-select-inline"
+                                          >
+                                            <option value={1}>1</option>
+                                            <option value={2}>2</option>
+                                            <option value={3}>3</option>
+                                            <option value={4}>4</option>
+                                          </select>
+                                        </div>
+                                        <div className="course-detail-group-inline">
+                                          <label className="detail-label-inline">Semester:</label>
+                                          <select
+                                            value={formData.courseSemesters[course.id] || "1"}
+                                            onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
+                                            className="detail-select-inline"
+                                          >
+                                            <option value="1">1st</option>
+                                            <option value="2">2nd</option>
+                                            <option value="Summer">Summer</option>
+                                          </select>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                            </div>
+                            
+                            {filteredAvailableCourses.filter(course => {
+                              const courseSemester = formData.courseSemesters[course.id] || "1";
+                              return courseSemester === formData.activeSemesterTab;
+                            }).length === 0 && (
+                              <div className="no-courses-semester">
+                                <p>No courses assigned to {formData.activeSemesterTab === '1' ? '1st' : formData.activeSemesterTab === '2' ? '2nd' : 'Summer'} semester.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {availableCourses.length > 0 && filteredAvailableCourses.length === 0 && (
+                         <p className="no-courses">No courses match your search.</p>
+                      )}
+                      {availableCourses.length === 0 && (
+                        <p className="no-courses">No courses available for this program.</p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
+            
             <div className="modal-footer">
               <button type="button" className="btn-secondary" onClick={closeModal}>
                 Cancel

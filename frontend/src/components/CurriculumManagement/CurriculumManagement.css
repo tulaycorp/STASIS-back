@@ -727,8 +727,8 @@
 .modal-contentt {
   background: white;
   border-radius: 12px;
-  width: 90%;
-  max-width: 900px;
+  width: 95%;
+  max-width: 1200px;
   max-height: 90vh;
   overflow: hidden; /* Changed from overflow-y: auto to overflow: hidden */
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -792,6 +792,150 @@
 
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: #a8b2ba;
+}
+
+/* Modal Body Grid Layout */
+.modal-body-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  min-height: 600px;
+}
+
+/* Left Container - Basic Information */
+.modal-left-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Right Container - Available Courses */
+.modal-right-container {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e9ecef;
+  padding-left: 30px;
+}
+
+.modal-right-container .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+/* Courses Header */
+.courses-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.courses-header .form-label {
+  margin-bottom: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.courses-search {
+  width: 300px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.courses-search:focus {
+  outline: none;
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+}
+
+/* Semester Tabs in Right Container */
+.modal-right-container .semester-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  min-height: 400px;
+}
+
+.modal-right-container .tab-headers {
+  display: flex;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+  flex-shrink: 0;
+}
+
+.modal-right-container .tab-header {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: #495057;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.modal-right-container .tab-header:hover {
+  background: #e9ecef;
+}
+
+.modal-right-container .tab-header.active {
+  color: #dc3545;
+  border-bottom: 2px solid #dc3545;
+  background: #fff;
+}
+
+.modal-right-container .tab-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Custom scrollbar for tab content */
+.modal-right-container .tab-content {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c7cd #f1f3f4;
+}
+
+.modal-right-container .tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-right-container .tab-content::-webkit-scrollbar-track {
+  background: #f1f3f4;
+  border-radius: 6px;
+}
+
+.modal-right-container .tab-content::-webkit-scrollbar-thumb {
+  background: #c1c7cd;
+  border-radius: 6px;
+}
+
+.modal-right-container .tab-content::-webkit-scrollbar-thumb:hover {
+  background: #a8b2ba;
+}
+
+/* Adjustments for auto-create sections in left container */
+.modal-left-container .auto-create-sections-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
 .form-group {
@@ -912,7 +1056,6 @@
 }
 
 .auto-create-sections-content {
-  padding-left: 26px; /* Align with checkbox text */
 }
 
 .auto-create-sections-form {
@@ -978,6 +1121,15 @@
   font-size: 12px;
   font-weight: 500;
   display: inline-block;
+}
+
+/* Legacy Auto Create Sections (for backward compatibility) */
+.auto-create-sections {
+  margin-top: 20px;
+  border: 1px solid #e9ecef;
+  padding: 15px 20px;
+  border-radius: 8px;
+  background-color: #fafafa;
 }
 
 /* Legacy Auto Create Sections (for backward compatibility) */
@@ -1215,7 +1367,8 @@
 }
 
 .course-checkbox {
-  margin-top: 4px;
+  margin-top: 2px;
+  align-self: center;
 }
 
 .course-card-info {
@@ -1239,6 +1392,9 @@
 .course-credits {
   font-size: 12px;
   color: #666;
+  margin-right: 24px;
+  text-align: left;
+  align-self: flex-start;
 }
 
 /* Inline Course Details */
@@ -1450,13 +1606,27 @@
 .course-checkbox-label {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  font-weight: 600;
+  color: #2c3e50;
   cursor: pointer;
+  margin-bottom: 0;
+  font-size: 14px;
   width: 100%;
 }
 
+.course-code-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .course-checkbox {
-  margin-top: 4px;
+  width: 16px;
+  max-width: 16px;
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .course-card-info {
@@ -1467,7 +1637,6 @@
   font-weight: 600;
   color: #2196f3;
   font-size: 14px;
-  margin-bottom: 4px;
 }
 
 .course-name-selection {
@@ -1480,6 +1649,7 @@
 .course-credits {
   font-size: 12px;
   color: #666;
+  text-align: left;
 }
 
 /* Inline Course Details */
