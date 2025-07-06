@@ -1159,7 +1159,6 @@ const StudentManagement = () => {
                                 onClick={() => showEditStudentForm(student)}
                                 title="Edit Student"
                               >
-                                ✏️
                               </button>
                               <button
                                 className="btn-action btn-promote"
@@ -1173,7 +1172,6 @@ const StudentManagement = () => {
                                 onClick={() => openDeleteStudentModal(student)} // Change this line
                                 title="Delete Student"
                               >
-                                🗑️
                               </button>
                             </div>
                           </td>
