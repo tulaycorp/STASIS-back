@@ -31,6 +31,23 @@ const AdminTools = () => {
     loadUsers();
   }, []);
 
+  // Listen for user deletion events from other components
+  useEffect(() => {
+    const handleUserDeleted = (event) => {
+      console.log('User deletion event received in AdminTools:', event.detail);
+      // Reload users to reflect the deletion
+      loadUsers();
+    };
+
+    // Add event listener for user deletions
+    window.addEventListener('userDeleted', handleUserDeleted);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener('userDeleted', handleUserDeleted);
+    };
+  }, []);
+
   // Filter logs when search term or filter type changes
   useEffect(() => {
     filterLogs();
