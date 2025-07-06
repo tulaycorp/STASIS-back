@@ -61,6 +61,21 @@ const StudentManagement = () => {
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
   const [toasts, setToasts] = useState([]);
+  
+  // Multi-select state
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showMultiEditModal, setShowMultiEditModal] = useState(false);
+  const [showMultiDeleteModal, setShowMultiDeleteModal] = useState(false);
+  const [showMultiPromoteModal, setShowMultiPromoteModal] = useState(false);
+  
+  // Multi-edit form state
+  const [multiEditForm, setMultiEditForm] = useState({
+    programId: '',
+    sectionId: '',
+    year_level: '',
+    curriculumId: ''
+  });
 
 
   // Toast notification function
@@ -586,6 +601,255 @@ const StudentManagement = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedProgram, selectedSection]);
 
+  // Multi-select functions
+  const handleSelectStudent = (studentId) => {
+    setSelectedStudents(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      } else {
+        return [...prev, studentId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedStudents([]);
+      setSelectAll(false);
+    } else {
+      const allStudentIds = paginatedStudents.map(student => student.id);
+      setSelectedStudents(allStudentIds);
+      setSelectAll(true);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedStudents([]);
+    setSelectAll(false);
+  };
+
+  // Update selectAll state when individual selections change
+  useEffect(() => {
+    if (paginatedStudents.length > 0) {
+      const allSelected = paginatedStudents.every(student => selectedStudents.includes(student.id));
+      setSelectAll(allSelected);
+    }
+  }, [selectedStudents, paginatedStudents]);
+
+  // Multi-operation functions
+  const showMultiEditForm = () => {
+    setMultiEditForm({
+      programId: '',
+      sectionId: '',
+      year_level: '',
+      curriculumId: ''
+    });
+    setAvailableSectionsForStudent([]);
+    setAvailableCurriculums([]);
+    setShowMultiEditModal(true);
+  };
+
+  const closeMultiEditModal = () => {
+    setShowMultiEditModal(false);
+    setMultiEditForm({
+      programId: '',
+      sectionId: '',
+      year_level: '',
+      curriculumId: ''
+    });
+    setAvailableSectionsForStudent([]);
+    setAvailableCurriculums([]);
+  };
+
+  const handleMultiEditFormChange = (field, value) => {
+    setMultiEditForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Handle program change for multi-edit
+    if (field === 'programId') {
+      setMultiEditForm(prev => ({
+        ...prev,
+        sectionId: '',
+        curriculumId: ''
+      }));
+
+      if (value) {
+        const programSections = sectionsList.filter(section =>
+          section.program?.programID?.toString() === value ||
+          section.programId?.toString() === value
+        );
+        setAvailableSectionsForStudent(programSections);
+
+        const programCurriculums = curriculumsList.filter(curriculum => 
+          curriculum.program?.programID?.toString() === value
+        );
+        setAvailableCurriculums(programCurriculums);
+      } else {
+        setAvailableSectionsForStudent([]);
+        setAvailableCurriculums([]);
+      }
+    }
+  };
+
+  const handleMultiEdit = async () => {
+    if (selectedStudents.length === 0) {
+      showToast('No students selected', 'error');
+      return;
+    }
+
+    // Validate that at least one field is selected for update
+    const hasUpdates = multiEditForm.programId || multiEditForm.sectionId || 
+                      multiEditForm.year_level || multiEditForm.curriculumId;
+    
+    if (!hasUpdates) {
+      showToast('Please select at least one field to update', 'error');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to update ${selectedStudents.length} student(s)?`)) {
+      try {
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const studentId of selectedStudents) {
+          try {
+            const student = studentsData.find(s => s.id === studentId);
+            if (!student) continue;
+
+            // Build update data with only changed fields
+            const updateData = {};
+            
+            if (multiEditForm.programId) {
+              const selectedProgramObj = programsList.find(p => p.programID.toString() === multiEditForm.programId);
+              updateData.program = selectedProgramObj;
+            } else {
+              updateData.program = student.program;
+            }
+
+            if (multiEditForm.sectionId) {
+              const selectedSectionObj = sectionsList.find(s => s.sectionID.toString() === multiEditForm.sectionId);
+              updateData.section = selectedSectionObj;
+            } else {
+              updateData.section = student.section;
+            }
+
+            if (multiEditForm.curriculumId) {
+              const selectedCurriculumObj = curriculumsList.find(c => c.curriculumID.toString() === multiEditForm.curriculumId);
+              updateData.curriculum = selectedCurriculumObj;
+            } else {
+              updateData.curriculum = student.curriculum;
+            }
+
+            // Keep existing data for unchanged fields
+            updateData.firstName = student.firstName;
+            updateData.lastName = student.lastName;
+            updateData.email = student.email;
+            updateData.dateOfBirth = student.dateOfBirth;
+            updateData.year_level = multiEditForm.year_level ? parseInt(multiEditForm.year_level) : student.year_level;
+
+            await studentAPI.updateStudent(studentId, updateData);
+            successCount++;
+          } catch (error) {
+            console.error(`Error updating student ${studentId}:`, error);
+            errorCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          showToast(`Successfully updated ${successCount} student(s)`, 'success');
+        }
+        if (errorCount > 0) {
+          showToast(`Failed to update ${errorCount} student(s)`, 'error');
+        }
+
+        closeMultiEditModal();
+        clearSelection();
+        loadInitialData();
+      } catch (error) {
+        console.error('Error in multi-edit:', error);
+        showToast('Failed to update students', 'error');
+      }
+    }
+  };
+
+  const handleMultiDelete = async () => {
+    if (selectedStudents.length === 0) {
+      showToast('No students selected', 'error');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${selectedStudents.length} student(s)? This action cannot be undone.`)) {
+      try {
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const studentId of selectedStudents) {
+          try {
+            await studentAPI.deleteStudent(studentId);
+            successCount++;
+          } catch (error) {
+            console.error(`Error deleting student ${studentId}:`, error);
+            errorCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          showToast(`Successfully deleted ${successCount} student(s)`, 'success');
+        }
+        if (errorCount > 0) {
+          showToast(`Failed to delete ${errorCount} student(s)`, 'error');
+        }
+
+        setShowMultiDeleteModal(false);
+        clearSelection();
+        loadInitialData();
+      } catch (error) {
+        console.error('Error in multi-delete:', error);
+        showToast('Failed to delete students', 'error');
+      }
+    }
+  };
+
+  const handleMultiPromote = async () => {
+    if (selectedStudents.length === 0) {
+      showToast('No students selected', 'error');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to promote ${selectedStudents.length} student(s) to the next year level?`)) {
+      try {
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const studentId of selectedStudents) {
+          try {
+            await studentAPI.promoteStudent(studentId);
+            successCount++;
+          } catch (error) {
+            console.error(`Error promoting student ${studentId}:`, error);
+            errorCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          showToast(`Successfully promoted ${successCount} student(s)`, 'success');
+        }
+        if (errorCount > 0) {
+          showToast(`Failed to promote ${errorCount} student(s)`, 'error');
+        }
+
+        setShowMultiPromoteModal(false);
+        clearSelection();
+        loadInitialData();
+      } catch (error) {
+        console.error('Error in multi-promote:', error);
+        showToast('Failed to promote students', 'error');
+      }
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -783,10 +1047,58 @@ const StudentManagement = () => {
                   </div>
                 </div>
 
+                {/* Multi-Action Toolbar */}
+                {selectedStudents.length > 0 && (
+                  <div className="multi-action-toolbar">
+                    <div className="multi-action-info">
+                      <span className="selected-count">{selectedStudents.length} student(s) selected</span>
+                    </div>
+                    <div className="multi-action-buttons">
+                      <button 
+                        className="btn btn-secondary btn-multi-edit"
+                        onClick={showMultiEditForm}
+                        title="Edit selected students"
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        className="btn btn-warning btn-multi-promote"
+                        onClick={handleMultiPromote}
+                        title="Promote selected students"
+                      >
+                        ⬆️
+                      </button>
+                      <button 
+                        className="btn btn-danger btn-multi-delete"
+                        onClick={handleMultiDelete}
+                        title="Delete selected students"
+                      >
+                        🗑️
+                      </button>
+                      <button 
+                        className="btn btn-secondary btn-clear-selection"
+                        onClick={clearSelection}
+                        title="Clear selection"
+                      >
+                        ✖️
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="student-table-container">
                   <table className="student-table">
                     <thead>
                       <tr>
+                        <th className="checkbox-column">
+                          <input
+                            type="checkbox"
+                            checked={selectAll}
+                            onChange={handleSelectAll}
+                            className="select-all-checkbox"
+                            title="Select all students on this page"
+                          />
+                        </th>
                         <th>Student Number</th>
                         <th>Name</th>
                         <th>Email</th>
@@ -799,7 +1111,18 @@ const StudentManagement = () => {
                     </thead>
                     <tbody>
                       {paginatedStudents.map((student) => (
-                        <tr key={student.id}>
+                        <tr 
+                          key={student.id}
+                          className={selectedStudents.includes(student.id) ? 'selected-row' : ''}
+                        >
+                          <td className="checkbox-column">
+                            <input
+                              type="checkbox"
+                              checked={selectedStudents.includes(student.id)}
+                              onChange={() => handleSelectStudent(student.id)}
+                              className="student-checkbox"
+                            />
+                          </td>
                           <td className="student-id">{student.username || 'N/A'}</td>
                           <td className="student-name">
                             {student.firstName} {student.lastName}
@@ -816,6 +1139,7 @@ const StudentManagement = () => {
                                 onClick={() => showEditStudentForm(student)}
                                 title="Edit Student"
                               >
+                                ✏️
                               </button>
                               <button
                                 className="btn-action btn-promote"
@@ -829,6 +1153,7 @@ const StudentManagement = () => {
                                 onClick={() => handleDeleteStudent(student.id)}
                                 title="Delete Student"
                               >
+                                🗑️
                               </button>
                             </div>
                           </td>
@@ -1138,6 +1463,123 @@ const StudentManagement = () => {
                 disabled={!deleteSectionForm.sectionId}
               >
                 Delete Section
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Multi-Edit Modal */}
+      {showMultiEditModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Multi Edit Students ({selectedStudents.length} selected)</h2>
+            </div>
+
+            <div className="modal-body">
+              <p style={{ marginBottom: '20px', color: '#6c757d' }}>
+                Only fill in the fields you want to update. Empty fields will remain unchanged.
+              </p>
+              
+              <div className="modal-grid">
+                <div className="form-group">
+                  <label className="form-label">Program</label>
+                  <select
+                    className="form-input"
+                    value={multiEditForm.programId}
+                    onChange={(e) => handleMultiEditFormChange('programId', e.target.value)}
+                  >
+                    <option value="">Keep current program</option>
+                    {programsList.map((program) => (
+                      <option key={program.programID} value={program.programID}>
+                        {program.programName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Year Level</label>
+                  <select
+                    className="form-input"
+                    value={multiEditForm.year_level}
+                    onChange={(e) => handleMultiEditFormChange('year_level', e.target.value)}
+                  >
+                    <option value="">Keep current year level</option>
+                    <option value={1}>Year 1</option>
+                    <option value={2}>Year 2</option>
+                    <option value={3}>Year 3</option>
+                    <option value={4}>Year 4</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Section</label>
+                  <select
+                    className="form-input"
+                    value={multiEditForm.sectionId}
+                    onChange={(e) => handleMultiEditFormChange('sectionId', e.target.value)}
+                    disabled={!multiEditForm.programId}
+                  >
+                    <option value="">Keep current section</option>
+                    {availableSectionsForStudent.map((section) => (
+                      <option key={section.sectionID} value={section.sectionID}>
+                        {section.sectionName}
+                      </option>
+                    ))}
+                  </select>
+                  {multiEditForm.programId && availableSectionsForStudent.length === 0 && (
+                    <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                      No sections available for this program.
+                    </p>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Curriculum</label>
+                  <select
+                    className="form-input"
+                    value={multiEditForm.curriculumId}
+                    onChange={(e) => handleMultiEditFormChange('curriculumId', e.target.value)}
+                    disabled={!multiEditForm.programId}
+                  >
+                    <option value="">Keep current curriculum</option>
+                    {availableCurriculums.map((curriculum) => (
+                      <option key={curriculum.curriculumID} value={curriculum.curriculumID}>
+                        {curriculum.curriculumName} ({curriculum.academicYear})
+                      </option>
+                    ))}
+                  </select>
+                  {multiEditForm.programId && availableCurriculums.length === 0 && (
+                    <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
+                      No curriculums available for this program.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#495057' }}>Selected Students:</h4>
+                <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
+                  {selectedStudents.map(studentId => {
+                    const student = studentsData.find(s => s.id === studentId);
+                    return student ? (
+                      <div key={studentId} style={{ fontSize: '13px', color: '#6c757d', marginBottom: '5px' }}>
+                        • {student.firstName} {student.lastName} ({student.username || 'N/A'})
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeMultiEditModal}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleMultiEdit}>
+                Update {selectedStudents.length} Student(s)
               </button>
             </div>
           </div>
