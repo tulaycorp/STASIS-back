@@ -94,7 +94,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow specific origins instead of wildcard for better security
-        configuration.setAllowedOrigins(Arrays.asList("https://stasis-edu.tech"));
+        configuration.setAllowedOrigins(Arrays.asList("68.183.136.47"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
