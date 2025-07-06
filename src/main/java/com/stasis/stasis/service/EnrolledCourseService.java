@@ -27,10 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Service for managing student course enrollments.
- * Enforces: A student may only be enrolled in one section/schedule per course.
- */
 @Service
 public class EnrolledCourseService {
 
@@ -193,9 +189,6 @@ public class EnrolledCourseService {
         return savedEnrollment;
     }
     
-    /**
-     * Update the total credits for a semester enrollment based on enrolled courses
-     */
     private void updateSemesterEnrollmentCredits(SemesterEnrollment semesterEnrollment) {
         List<EnrolledCourse> enrolledCourses = enrolledCourseRepository.findBySemesterEnrollment(semesterEnrollment);
         int totalCredits = enrolledCourses.size() * 3; // Assuming 3 credits per course
@@ -609,7 +602,7 @@ public class EnrolledCourseService {
     /**
      * Student-specific enrollment method that delegates to createEnrollmentForStudent
      */
-    // @PreAuthorize("hasRole('STUDENT')") // Temporarily disabled for debugging
+    @PreAuthorize("hasRole('STUDENT')")
     @Transactional
     public EnrolledCourse studentEnrollInCourse(Long studentId, Long courseSectionId, String status) {
         return createEnrollmentForStudent(studentId, courseSectionId, status);
@@ -618,7 +611,7 @@ public class EnrolledCourseService {
     /**
      * Student-specific enrollment method using schedule ID for validation
      */
-    // @PreAuthorize("hasRole('STUDENT')") // Temporarily disabled for debugging
+    @PreAuthorize("hasRole('STUDENT')")
     @Transactional
     public EnrolledCourse studentEnrollInSchedule(Long studentId, Long scheduleId, String status) {
         // Find the section that contains this schedule

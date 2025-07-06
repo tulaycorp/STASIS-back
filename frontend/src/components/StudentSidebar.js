@@ -24,7 +24,6 @@ const getActivePageFromURL = () => {
 const StudentSidebar = ({ onNavigate, userInfo }) => {
   const navigate = useNavigate();
   const activePage = getActivePageFromURL();
-  
   const showSection = (section) => {
     switch(section){
       case 'StudentDashboard':
@@ -40,11 +39,9 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
         navigate('/student-grades');
         break;
       default:
-        // No action for unknown sections
     }
   };
   
-  // Get user initials for avatar
   const getUserInitials = () => {
     if (!userInfo?.name) return 'S';
     const names = userInfo.name.split(' ');

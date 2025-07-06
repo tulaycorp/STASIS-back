@@ -16,11 +16,9 @@ const FacultyGrades = () => {
   const navigate = useNavigate();
   
   // State management
-  const [programs, setPrograms] = useState([]);
+  const [academicPeriods, setAcademicPeriods] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [programSections, setProgramSections] = useState(['All Sections']);
-  const [selectedProgram, setSelectedProgram] = useState('');
-  const [selectedSectionFilter, setSelectedSectionFilter] = useState('All Sections');
+  const [selectedAcademicPeriod, setSelectedAcademicPeriod] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
@@ -43,44 +41,34 @@ const FacultyGrades = () => {
     }
   }, [facultyData]);
 
-  // Effect to update the course/section sidebars when a program or section filter changes
+  // Effect to update the course sidebar when academic period changes
   useEffect(() => {
     console.log('=== FILTERING EFFECT TRIGGERED ===');
-    console.log('selectedProgram:', selectedProgram);
+    console.log('selectedAcademicPeriod:', selectedAcademicPeriod);
     console.log('gradesList.length:', gradesList.length);
-    console.log('selectedSectionFilter:', selectedSectionFilter);
     
-    if (selectedProgram && gradesList.length > 0) {
-      console.log('Filtering courses for program:', selectedProgram);
+    if (selectedAcademicPeriod && gradesList.length > 0) {
+      console.log('Filtering courses for academic period:', selectedAcademicPeriod);
       console.log('Available grades list:', gradesList);
       
-      const programCoursesRaw = gradesList.filter(grade => {
-        console.log(`Checking grade program: '${grade.program}' against selected: '${selectedProgram}'`);
-        const matches = grade.program.trim().toLowerCase() === selectedProgram.trim().toLowerCase();
+      const periodCoursesRaw = gradesList.filter(grade => {
+        const gradeAcademicPeriod = `${grade.semester} ${grade.academicYear}`;
+        console.log(`Checking grade academic period: '${gradeAcademicPeriod}' against selected: '${selectedAcademicPeriod}'`);
+        const matches = gradeAcademicPeriod === selectedAcademicPeriod;
         console.log('Match result:', matches);
         return matches;
       });
 
-      console.log('Program courses raw:', programCoursesRaw);
+      console.log('Academic period courses raw:', periodCoursesRaw);
 
-      // Derive unique sections for the selected program
-      const uniqueSections = ['All Sections', ...new Set(programCoursesRaw.map(course => course.section))];
-      console.log('Unique sections:', uniqueSections);
-      setProgramSections(uniqueSections);
-
-      // Filter courses based on the section filter
-      const filteredProgramCourses = selectedSectionFilter === 'All Sections'
-        ? programCoursesRaw
-        : programCoursesRaw.filter(course => course.section === selectedSectionFilter);
-
-      console.log('Filtered program courses:', filteredProgramCourses);
-
-      const newCourseList = filteredProgramCourses.map(grade => ({
+      const newCourseList = periodCoursesRaw.map(grade => ({
         id: grade.id, 
         name: `${grade.course} (${grade.section})`, // Show course name with section in parentheses
         section: grade.section,
         course: grade.course,
-        schedule: grade.schedule || null
+        schedule: grade.schedule || null,
+        semester: grade.semester,
+        academicYear: grade.academicYear
       }));
       
       console.log('New course list:', newCourseList);
@@ -94,23 +82,25 @@ const FacultyGrades = () => {
         setSelectedCourseId(null);
         setSelectedCourse(null);
       }
-    } else if (gradesList.length > 0 && !selectedProgram) {
-      console.log('No program selected but grades list exists, showing all courses');
-      // If no program is selected but we have grades, show all courses
+    } else if (gradesList.length > 0 && !selectedAcademicPeriod) {
+      console.log('No academic period selected but grades list exists, showing all courses');
+      // If no academic period is selected but we have grades, show all courses
       const allCourses = gradesList.map(grade => ({
         id: grade.id, 
         name: `${grade.course} (${grade.section})`, // Show course name with section in parentheses
         section: grade.section,
         course: grade.course,
-        schedule: grade.schedule || null
+        schedule: grade.schedule || null,
+        semester: grade.semester,
+        academicYear: grade.academicYear
       }));
       console.log('All courses:', allCourses);
       setCourses(allCourses);
     } else {
-      console.log('No courses to show - either no program selected or no grades list');
+      console.log('No courses to show - either no academic period selected or no grades list');
       setCourses([]);
     }
-  }, [selectedProgram, selectedSectionFilter, gradesList, selectedCourseId]);
+  }, [selectedAcademicPeriod, gradesList, selectedCourseId]);
 
   // Track changes separately to avoid dependency array issues
   useEffect(() => {
@@ -246,52 +236,52 @@ const FacultyGrades = () => {
       
       if (facultySections.length === 0) {
         console.log('No sections assigned to this faculty');
-        setPrograms([]);
+        setAcademicPeriods([]);
         setGradesList([]);
         setLoading(false);
         setIsInitializing(false);
         return;
       }
 
-      // Extract unique programs from the faculty's assigned sections
-      const uniquePrograms = [...new Set(facultySections.flatMap(section => {
-        // Get programs from courses in schedules
-        if (Array.isArray(section.schedules) && section.schedules.length > 0) {
-          return section.schedules
-            .filter(schedule => schedule.course)
-            .map(schedule => {
-              const programName = schedule.course.program?.programName;
-              if (programName) {
-                return programName;
-              }
-              
-              // Fallback: extract from course code
-              const courseCode = schedule.course.courseCode || '';
-              const programMatch = courseCode.match(/^[A-Z]+/);
-              return programMatch ? programMatch[0] : 'General Education';
-            });
+      // Extract unique academic periods from the faculty's assigned sections
+      const uniqueAcademicPeriods = [...new Set(facultySections.map(section => {
+        const semester = section.semester || 'Current Semester';
+        const year = section.year || new Date().getFullYear();
+        return `${semester} ${year}`;
+      }))].filter(Boolean);
+
+      console.log('Unique academic periods:', uniqueAcademicPeriods);
+
+      // Sort academic periods (most recent first)
+      const sortedAcademicPeriods = uniqueAcademicPeriods.sort((a, b) => {
+        const [semesterA, yearA] = a.split(' ');
+        const [semesterB, yearB] = b.split(' ');
+        
+        // First sort by year (descending)
+        if (yearA !== yearB) {
+          return parseInt(yearB) - parseInt(yearA);
         }
         
-        // Fallback to section's program
-        return [section.program?.programName || 'General Education'];
-      }))];
+        // Then sort by semester (assuming semester format like "1st Semester", "2nd Semester")
+        const semesterOrder = {
+          '1st': 1,
+          '2nd': 2,
+          'Summer': 3
+        };
+        
+        const orderA = semesterOrder[semesterA.split(' ')[0]] || 0;
+        const orderB = semesterOrder[semesterB.split(' ')[0]] || 0;
+        
+        return orderB - orderA;
+      });
 
-      console.log('Unique programs:', uniquePrograms);
+      console.log('Sorted academic periods:', sortedAcademicPeriods);
+      setAcademicPeriods(sortedAcademicPeriods);
 
-      // Create program objects
-      const programsData = uniquePrograms.map((programName, index) => ({
-        id: index + 1,
-        name: programName,
-        programName: programName
-      }));
-
-      console.log('Programs from faculty sections:', programsData);
-      setPrograms(programsData);
-
-      if (programsData.length > 0) {
-        const firstProgramName = programsData[0].name;
-        setSelectedProgram(firstProgramName);
-        console.log('Selected program:', firstProgramName);
+      if (sortedAcademicPeriods.length > 0) {
+        const firstAcademicPeriod = sortedAcademicPeriods[0];
+        setSelectedAcademicPeriod(firstAcademicPeriod);
+        console.log('Selected academic period:', firstAcademicPeriod);
       }
 
       // Convert sections to the expected format (without students for now)
@@ -299,6 +289,10 @@ const FacultyGrades = () => {
       
       facultySections.forEach(section => {
         console.log('Processing section summary:', section);
+        
+        // Extract semester and academic year information
+        const semester = section.semester || 'Current Semester';
+        const academicYear = section.year || new Date().getFullYear();
         
         // Handle sections with schedules - each schedule can have a different course
         if (Array.isArray(section.schedules) && section.schedules.length > 0) {
@@ -321,6 +315,8 @@ const FacultyGrades = () => {
               section: section.sectionName,
               creditUnits: course.creditUnits || 3,
               program: programName,
+              semester: semester,
+              academicYear: academicYear,
               status: section.status || 'ACTIVE',
               instructor: facultyData.firstName + ' ' + facultyData.lastName,
               enrolledStudentsCount: section.enrolledStudentsCount || 0,
@@ -340,6 +336,8 @@ const FacultyGrades = () => {
             section: section.sectionName,
             creditUnits: 3,
             program: programName,
+            semester: semester,
+            academicYear: academicYear,
             status: section.status || 'ACTIVE',
             instructor: facultyData.firstName + ' ' + facultyData.lastName,
             enrolledStudentsCount: section.enrolledStudentsCount || 0,
@@ -388,9 +386,35 @@ const FacultyGrades = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleProgramSelect = (programName) => {
-    setSelectedProgram(programName);
-    setSelectedSectionFilter('All Sections'); // Reset section filter when program changes
+  const handleAcademicPeriodSelect = (academicPeriod) => {
+    setSelectedAcademicPeriod(academicPeriod);
+  };
+
+  const getAcademicYear = (academicPeriod) => {
+    if (!academicPeriod) return 'N/A';
+    
+    // Extract academic year from academic period string
+    const parts = academicPeriod.trim().split(' ');
+    if (parts.length >= 2) {
+      return parts[parts.length - 1]; // Last part should be academic year
+    }
+    
+    return 'N/A';
+  };
+
+  const formatAcademicPeriodDisplay = (academicPeriod) => {
+    if (!academicPeriod) return { year: 'N/A', semester: 'N/A', academicYear: 'N/A' };
+    
+    // Parse "1st Semester 2023" format
+    const parts = academicPeriod.split(' ');
+    const semesterPart = parts.length >= 2 ? `${parts[0]} ${parts[1]}` : academicPeriod;
+    const yearPart = parts.length >= 3 ? parts[parts.length - 1] : '';
+    
+    return {
+      year: yearPart,
+      semester: semesterPart,
+      academicYear: yearPart
+    };
   };
 
   const handleCourseSelect = async (courseId) => {
@@ -898,25 +922,48 @@ const FacultyGrades = () => {
             <div>
               <div className={styles.studentNavSection}>
                 <div className={styles.studentNavHeader}>
-                  <h2 className={styles.studentNavTitle}>Programs</h2>
+                  <h2 className={styles.studentNavTitle}>Academic Periods</h2>
+                  <div className={styles.semesterCurrentInfo}>
+                    Academic Year: {getAcademicYear(selectedAcademicPeriod)}
+                  </div>
                 </div>
                 <div className={styles.studentNavList}>
-                  {programs.map((program) => {
-                    const programName = program.name || program.programName;
-                    return (
-                      <div 
-                        key={program.id} 
-                        className={`${styles.studentNavItem} ${
-                          selectedProgram === programName ? styles.studentNavItemActive : ''
-                        }`} 
-                        onClick={() => handleProgramSelect(programName)}
-                      >
-                        <div className={styles.semesterInfo}>
-                          <div className={styles.semesterMain}>{programName}</div>
+                  {academicPeriods.length > 0 ? (
+                    academicPeriods.map((academicPeriod) => {
+                      const periodInfo = formatAcademicPeriodDisplay(academicPeriod);
+                      return (
+                        <div
+                          key={academicPeriod}
+                          className={`${styles.studentNavItem} ${selectedAcademicPeriod === academicPeriod ? styles.studentNavItemActive : ''}`}
+                          onClick={() => handleAcademicPeriodSelect(academicPeriod)}
+                        >
+                          <span className={styles.studentNavIcon}>📅</span>
+                          <div className={styles.semesterInfo}>
+                            <div className={styles.semesterMain}>{periodInfo.semester}</div>
+                            <div className={styles.semesterYear}>{periodInfo.year}</div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  ) : (
+                    <div className={styles.noSemestersMessage}>
+                      {loading ? 'Loading academic periods...' : 'No academic periods available'}
+                    </div>
+                  )}
+                </div>
+                <div className={styles.studentNavInfo}>
+                  <div className={styles.studentNavInfoItem}>
+                    <div className={styles.studentNavInfoLabel}>Selected Period</div>
+                    <div className={styles.studentNavInfoValue}>{selectedAcademicPeriod || 'None'}</div>
+                  </div>
+                  <div className={styles.studentNavInfoItem}>
+                    <div className={styles.studentNavInfoLabel}>Courses Found</div>
+                    <div className={styles.studentNavInfoValue}>{courses.length}</div>
+                  </div>
+                  <div className={styles.studentNavInfoItem}>
+                    <div className={styles.studentNavInfoLabel}>Academic Year</div>
+                    <div className={styles.studentNavInfoValue}>{getAcademicYear(selectedAcademicPeriod)}</div>
+                  </div>
                 </div>
               </div>
               
@@ -946,7 +993,9 @@ const FacultyGrades = () => {
                       </div>
                     ))
                   ) : (
-                    <div className={styles.noCoursesMessage}>No courses found.</div>
+                    <div className={styles.noCoursesMessage}>
+                      {selectedAcademicPeriod ? 'No courses found for this academic period.' : 'Select an academic period to view courses.'}
+                    </div>
                   )}
                 </div>
               </div>
@@ -972,16 +1021,9 @@ const FacultyGrades = () => {
                   )}
                 </div>
                 <div className={styles.headerControls}>
-                  <select 
-                    value={selectedSectionFilter} 
-                    onChange={(e) => setSelectedSectionFilter(e.target.value)} 
-                    className={styles.filterSelect} 
-                    disabled={!selectedProgram}
-                  >
-                    {programSections.map((section) => (
-                      <option key={section} value={section}>{section}</option>
-                    ))}
-                  </select>
+                  <div className={styles.academicPeriodIndicator}>
+                    {selectedAcademicPeriod || 'No academic period selected'}
+                  </div>
                   <input 
                     type="text" 
                     placeholder="Search Students..." 
@@ -993,13 +1035,7 @@ const FacultyGrades = () => {
                 </div>
               </div>
               
-              {/* Current Section Display */}
-              {selectedCourse && (
-                <div className={styles.sectionInfo}>
-                  <h3>Section: {selectedCourse.section} - {selectedCourse.course}</h3>
-                  <p>Students: {selectedCourse.students?.length || 0} enrolled</p>
-                </div>
-              )}
+           
               
               <div className={styles.tableContainer}>
                 <table className={styles.gradesTable}>
