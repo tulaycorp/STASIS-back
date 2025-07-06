@@ -26,8 +26,7 @@ const StudentManagement = () => {
   const [availableCurriculums, setAvailableCurriculums] = useState([]);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionForm, setSectionForm] = useState({
-    yearLevel: '',
-    sectionNumber: '',
+    sectionName: '',
     programId: ''
   });
   const [showDeleteSectionModal, setShowDeleteSectionModal] = useState(false);
@@ -233,8 +232,7 @@ const StudentManagement = () => {
 
   const showAddSectionForm = () => {
     setSectionForm({
-      yearLevel: '',
-      sectionNumber: '',
+      sectionName: '',
       programId: ''
     });
     setShowAddSectionModal(true);
@@ -243,8 +241,7 @@ const StudentManagement = () => {
   const closeAddSectionModal = () => {
     setShowAddSectionModal(false);
     setSectionForm({
-      yearLevel: '',
-      sectionNumber: '',
+      sectionName: '',
       programId: ''
     });
   };
@@ -275,7 +272,7 @@ const StudentManagement = () => {
   // Updated handleAddSection to use API with duplicate detection
   const handleAddSection = async () => {
     // Validate required fields
-    if (!sectionForm.yearLevel || !sectionForm.sectionNumber || !sectionForm.programId) {
+    if (!sectionForm.sectionName || !sectionForm.programId) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
@@ -303,7 +300,7 @@ const StudentManagement = () => {
       }
 
       const sectionData = {
-        sectionName: generatedSectionName,
+        sectionName: sectionForm.sectionName,
         program: selectedProgramObj,
         status: 'ACTIVE',
       };
@@ -1117,28 +1114,28 @@ const StudentManagement = () => {
                     </div>
                     <div className="multi-action-buttons">
                       <button 
-                        className="btn btn-secondary btn-multi-edit"
+                        className="btn-multi-edit"
                         onClick={showMultiEditForm}
                         title="Edit selected students"
                       >
                         ✏️
                       </button>
-                      {/* <button 
-                        className="btn btn-warning btn-multi-promote"
+                      <button 
+                        className="btn-multi-promote"
                         onClick={handleMultiPromote}
                         title="Promote selected students"
                       >
                         ⬆️
-                      </button> */}
+                      </button>
                       <button 
-                        className="btn btn-danger btn-multi-delete"
+                        className="btn-multi-delete"
                         onClick={handleMultiDelete}
                         title="Delete selected students"
                       >
                         🗑️
                       </button>
                       <button 
-                        className="btn btn-secondary btn-clear-selection"
+                        className="btn-clear-selection"
                         onClick={clearSelection}
                         title="Clear selection"
                       >
@@ -1201,6 +1198,7 @@ const StudentManagement = () => {
                                 onClick={() => showEditStudentForm(student)}
                                 title="Edit Student"
                               >
+                                ✏️
                               </button>
                               {/* <button
                                 className="btn-action btn-promote"
@@ -1214,6 +1212,7 @@ const StudentManagement = () => {
                                 onClick={() => openDeleteStudentModal(student)} // Change this line
                                 title="Delete Student"
                               >
+                                🗑️  
                               </button>
                             </div>
                           </td>
@@ -1428,34 +1427,14 @@ const StudentManagement = () => {
             <div className="modal-body">
               <div className="modal-grid">
                 <div className="form-group">
-                  <label className="form-label">Year Level *</label>
-                  <select
+                  <label className="form-label">Section Name *</label>
+                  <input
+                    type="text"
                     className="form-input"
-                    value={sectionForm.yearLevel}
-                    onChange={(e) => handleSectionFormChange('yearLevel', e.target.value)}
-                  >
-                    <option value="">Select Year Level</option>
-                    <option value="1">Year 1</option>
-                    <option value="2">Year 2</option>
-                    <option value="3">Year 3</option>
-                    <option value="4">Year 4</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Section Number *</label>
-                  <select
-                    className="form-input"
-                    value={sectionForm.sectionNumber}
-                    onChange={(e) => handleSectionFormChange('sectionNumber', e.target.value)}
-                  >
-                    <option value="">Select Section Number</option>
-                    <option value="1">Section 1</option>
-                    <option value="2">Section 2</option>
-                    <option value="3">Section 3</option>
-                    <option value="4">Section 4</option>
-                    <option value="5">Section 5</option>
-                  </select>
+                    placeholder="Enter section name (e.g., BSIT-1A, Year 1 - Section A)"
+                    value={sectionForm.sectionName}
+                    onChange={(e) => handleSectionFormChange('sectionName', e.target.value)}
+                  />
                 </div>
 
                 <div className="form-group">
@@ -1473,22 +1452,6 @@ const StudentManagement = () => {
                     ))}
                   </select>
                 </div>
-
-                {sectionForm.yearLevel && sectionForm.sectionNumber && (
-                  <div className="form-group">
-                    <label className="form-label">Generated Section Name</label>
-                    <div style={{ 
-                      padding: '10px 12px', 
-                      backgroundColor: '#f8f9fa', 
-                      border: '1px solid #e9ecef', 
-                      borderRadius: '6px',
-                      color: '#495057',
-                      fontWeight: '500'
-                    }}>
-                      {sectionForm.yearLevel}-{sectionForm.sectionNumber}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 

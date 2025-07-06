@@ -445,11 +445,6 @@ body {
   background-color: #1e7e34;
 }
 
-.btn-edit::before {
-  content: "✏️";
-  font-size: 14px;
-}
-
 .btn-delete {
   padding: 6px 8px;
   background-color: #dc3545;
@@ -469,11 +464,6 @@ body {
 
 .btn-delete:hover {
   background-color: #c82333;
-}
-
-.btn-delete::before {
-  content: "🗑️";
-  font-size: 14px;
 }
 
 /* Table Footer */
