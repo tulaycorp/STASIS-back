@@ -640,28 +640,6 @@ const CourseManagement = () => {
                 )}
               </div>
 
-              {/* Pagination controls */}
-              {totalPages > 1 && (
-                <div className="pagination-controls">
-                  <button 
-                    className="pagination-button" 
-                    onClick={previousPage}
-                    disabled={currentPage === 1}
-                  >
-                    &laquo; Previous
-                  </button>
-                  <span className="pagination-info">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button 
-                    className="pagination-button" 
-                    onClick={nextPage}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next &raquo;
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
