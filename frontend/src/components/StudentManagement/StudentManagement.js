@@ -35,6 +35,9 @@ const StudentManagement = () => {
     sectionId: ''
   });
   const [availableSectionsForDelete, setAvailableSectionsForDelete] = useState([]);
+  const [showDeleteStudentModal, setShowDeleteStudentModal] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState(null); 
+  const [deleteStudentError, setDeleteStudentError] = useState('');
 
   const [studentForm, setStudentForm] = useState({
     firstName: '',
@@ -490,20 +493,37 @@ const StudentManagement = () => {
     }
   };
 
-  const handleDeleteStudent = async (studentId) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      try {
-        await studentAPI.deleteStudent(studentId);
-        showToast('Student deleted successfully!', 'success');
-        loadInitialData(); // Reload student list
-      } catch (error) {
-        console.error('Error deleting student:', error);
-        if (error.response?.status === 404) {
-          showToast('Student not found!', 'error');
-        } else {
-          showToast('Failed to delete student. Please try again.', 'error');
-        }
-      }
+  const openDeleteStudentModal = (student) => {
+    setStudentToDelete(student); // Store the entire student object
+    setDeleteStudentError('');   // Clear any previous errors
+    setShowDeleteStudentModal(true); // Show the modal
+  };
+
+  const closeDeleteStudentModal = () => {
+    setShowDeleteStudentModal(false);
+    setStudentToDelete(null);
+    setDeleteStudentError('');
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!studentToDelete) return; // Safety check
+
+    try {
+      // Use the ID from the stored student object
+      await studentAPI.deleteStudent(studentToDelete.id);
+
+      showToast('Student deleted successfully!', 'success');
+      loadInitialData(); // Refresh the student list
+      closeDeleteStudentModal(); // Close the modal on success
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      // Create a user-friendly error message
+      const errorMessage = error.response?.status === 404
+        ? 'Student not found. They may have already been deleted.'
+        : 'Failed to delete student. Please try again.';
+    
+      setDeleteStudentError(errorMessage); // Display the error inside the modal
+      showToast(errorMessage, 'error');    // Also show a toast notification
     }
   };
 
@@ -824,12 +844,11 @@ const StudentManagement = () => {
                               >
                                 ⬆️
                               </button>
-                              <button // Delete Student
+                              <button
                                 className="btn-action btn-delete"
-                                onClick={() => handleDeleteStudent(student.id)}
+                                onClick={() => openDeleteStudentModal(student)} // Change this line
                                 title="Delete Student"
-                              >
-                              </button>
+                              ></button>
                             </div>
                           </td>
                         </tr>
@@ -1178,6 +1197,46 @@ const StudentManagement = () => {
                 onClick={() => setShowCredentialsModal(false)}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteStudentModal && studentToDelete && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Delete Student</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                Are you sure you want to delete the student:{' '}
+                <strong>
+                  {studentToDelete.firstName} {studentToDelete.lastName}
+                </strong>
+                ?
+                <br/>
+                <span style={{fontSize: '14px', color: '#6c757d'}}>
+                  (Student No: {studentToDelete.username || 'N/A'})
+                </span>
+              </p>
+              <div style={{ color: 'red', marginTop: 12 }}>
+                Warning: Deleting a student is permanent and cannot be undone.
+              </div>
+              {deleteStudentError && (
+                <div style={{ color: 'red', marginTop: 10, fontWeight: 500 }}>{deleteStudentError}</div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeDeleteStudentModal}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteStudent}
+              >
+                Delete Student
               </button>
             </div>
           </div>
