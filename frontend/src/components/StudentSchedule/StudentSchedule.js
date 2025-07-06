@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './StudentSchedule.module.css';
-import Sidebar from './StudentSidebar';
-import Loading from './Loading';
-import { useStudentData } from '../hooks/useStudentData';
-import { enrolledCourseAPI } from '../services/api';
+import Sidebar from '../StudentSidebar';
+import Loading from '../Loading';
+import { useStudentData } from '../../hooks/useStudentData';
+import { enrolledCourseAPI } from '../../services/api';
 
 const StudentSchedule = () => {
   const { studentData, loading: studentLoading, error: studentError } = useStudentData();
@@ -228,25 +228,37 @@ const StudentSchedule = () => {
           {/* Stats Cards */}
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-label">Total Classes</div>
-              <div className="stat-value">{totalSchedules}</div>
+              <div className="stat-icon blue">📚 </div>
+              <div className="stat-content">
+                <div className="stat-title">Total Classes</div>
+                <div className="stat-value">{totalSchedules}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Today's Classes</div>
-              <div className="stat-value">{todaySchedules}</div>
+              <div className="stat-icon blue">⏰</div>
+              <div className="stat-content">
+                <div className="stat-title">Today's Classes</div>
+                <div className="stat-value">{todaySchedules}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Weekly Classes</div>
-              <div className="stat-value">{weekSchedules}</div>
+              <div className="stat-icon blue">📆</div>
+              <div className="stat-content">
+                <div className="stat-title">Weekly Classes</div>
+                <div className="stat-value">{weekSchedules}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Instructors</div>
-              <div className="stat-value">{uniqueInstructors}</div>
+              <div className="stat-icon blue">👨‍🏫 </div>
+              <div className="stat-content">
+                <div className="stat-title">Today's Classes</div>
+                <div className="stat-value">{uniqueInstructors}</div>
+              </div>
             </div>
           </div>
 
           {/* Schedule List */}
-          <div className="schedule-list-container">
+          <div className="schedules-list-container">
             <div className="list-header">
               <div className="list-controls">
                 <h2 className="list-title">Class Schedule</h2>

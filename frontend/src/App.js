@@ -12,7 +12,7 @@ import CourseManagement from './components/CourseManagement/CourseManagement';
 import ScheduleManagement from './components/ScheduleManagement/ScheduleManagement';
 import AdminTools from './components/AdminTools/AdminTools';
 import StudentDashboard from './components/StudentDashboard';
-import StudentSchedule from './components/StudentSchedule';
+import StudentSchedule from './components/StudentSchedule/StudentSchedule';
 import StudentSettings from './components/StudentSettings';
 import StudentGrades from './components/StudentGrades';
 import FacultyDashboard from './components/FacultyDashboard/FacultyDashboard';

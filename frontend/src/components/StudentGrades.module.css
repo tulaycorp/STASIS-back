@@ -14,7 +14,7 @@
 .mainContent {
   flex: 1;
   position: fixed;
-  left: 256px;
+  left: 280px;
   right: 0;
   top: 0;
   bottom: 0;
@@ -26,11 +26,11 @@
 }
 
 .contentWrapper {
-  width: 100%;
-  max-width: none; /* Allow full width stretching */
-  margin: 0;
-  padding: 0;
-  min-width: 0;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+    min-width: 0;
 }
 
 /* Breadcrumb Navigation */
@@ -43,7 +43,7 @@
 }
 
 .breadcrumbLink {
-  color: #3b82f6;
+  color: #ef4444;
   text-decoration: none;
   cursor: pointer;
   transition: color 0.2s ease;
@@ -97,7 +97,7 @@
 .listHeader {
   padding: 24px 32px;
   border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: white;
 }
 
 .listControls {
@@ -351,7 +351,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 32px;
-  background-color: #f8fafc;
+  background-color: white;
   border-top: 1px solid #e2e8f0;
   font-size: 14px;
 }
