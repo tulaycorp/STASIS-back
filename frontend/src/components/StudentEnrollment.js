@@ -912,20 +912,32 @@ function StudentEnrollment(props) {
           {/* Stats Cards */}
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-label">Available Courses</div>
-              <div className="stat-value">{totalAvailableCourses}</div>
+              <div className="stat-icon blue">⏰</div>
+              <div className="stat-content">
+                <div className="stat-title">Available Classes</div>
+                <div className="stat-value">{totalAvailableCourses}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Enrolled Courses</div>
-              <div className="stat-value">{activeEnrollments.length}</div>
+              <div className="stat-icon blue">🎒</div> 
+              <div className="stat-content">
+                <div className="stat-title">Enrolled Courses</div>
+                <div className="stat-value">{activeEnrollments.length}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Total Credits</div>
-              <div className="stat-value">{myTotalCredits}</div>
+              <div className="stat-icon blue">🎓</div>
+              <div className="stat-content">
+                <div className="stat-title">Total Credits</div>
+                <div className="stat-value">{myTotalCredits}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Unique Courses</div>
-              <div className="stat-value">{uniqueCoursesEnrolled}</div>
+              <div className="stat-icon blue">📖</div>
+              <div className="stat-content">
+                <div className="stat-title">Courses</div>
+                <div className="stat-value">{uniqueCoursesEnrolled}</div>
+              </div>
             </div>
             {enrolledWithDirectCourse > 0 && (
               <div className="stat-card">
