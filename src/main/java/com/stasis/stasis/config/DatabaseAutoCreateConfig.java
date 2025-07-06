@@ -24,12 +24,12 @@ public class DatabaseAutoCreateConfig implements BeanFactoryPostProcessor, Envir
     private Environment environment;
 
     @Override
-    public void setEnvironment(Environment environment) {
+    public void setEnvironment(@org.springframework.lang.NonNull Environment environment) {
         this.environment = environment;
     }
 
     @Override
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+    public void postProcessBeanFactory(@org.springframework.lang.NonNull ConfigurableListableBeanFactory beanFactory) throws BeansException {
         createDatabaseIfNotExists();
     }
 
