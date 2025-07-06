@@ -291,7 +291,24 @@ const FacultyManagement = () => {
   const handleDeleteFaculty = async (facultyId) => {
     if (window.confirm('Are you sure you want to delete this faculty member?')) {
       try {
+        // Find the faculty member to get their details for the event
+        const facultyToDelete = facultyList.find(f => f.facultyID === facultyId);
+        
         await facultyAPI.deleteFaculty(facultyId);
+
+        // Emit user deletion event for AdminTools to listen
+        if (facultyToDelete) {
+          const deletionEvent = new CustomEvent('userDeleted', {
+            detail: {
+              userId: facultyId,
+              userType: 'faculty',
+              userName: `${facultyToDelete.firstName} ${facultyToDelete.lastName}`,
+              timestamp: new Date().toISOString()
+            }
+          });
+          window.dispatchEvent(deletionEvent);
+        }
+
         showToast('Faculty deleted successfully!', 'success');
         loadFaculty();
       } catch (error) {

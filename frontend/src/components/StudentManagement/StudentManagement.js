@@ -554,6 +554,17 @@ const StudentManagement = () => {
       // Use the ID from the stored student object
       await studentAPI.deleteStudent(studentToDelete.id);
 
+      // Emit user deletion event for AdminTools to listen
+      const deletionEvent = new CustomEvent('userDeleted', {
+        detail: {
+          userId: studentToDelete.id,
+          userType: 'student',
+          userName: `${studentToDelete.firstName} ${studentToDelete.lastName}`,
+          timestamp: new Date().toISOString()
+        }
+      });
+      window.dispatchEvent(deletionEvent);
+
       showToast('Student deleted successfully!', 'success');
       loadInitialData(); // Refresh the student list
       closeDeleteStudentModal(); // Close the modal on success
