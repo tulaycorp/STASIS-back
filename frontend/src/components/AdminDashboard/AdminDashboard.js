@@ -629,7 +629,7 @@ const AdminDashboard = () => {
         {/* Stats Cards */}
         <div className="dashboard-stats-grid">
           <div className="dashboard-stat-card">
-              <div className="stat-icon blue">👩‍🎓</div>
+              <div className="stat-icon blue">👥</div>
               <div className="stat-content">
                 <div className="dashboard-stat-title">Total Students</div>
                 <div className="dashboard-stat-value">{studentCount.toLocaleString()}</div>

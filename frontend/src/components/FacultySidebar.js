@@ -84,17 +84,6 @@ const FacultySidebar = ({ onNavigate, userInfo, sections }) => {
             </div>
           </div>
         </div>
-        <div className="nav-section">
-          <div className="nav-label">System</div>
-          <div className="nav-items">
-            <div
-              className={`nav-item${activePage === 'FacultySettings' ? ' active-page' : ''}`}
-              onClick={() => showSection('FacultySettings')}
-            >
-              ⚙️ Settings
-            </div>
-          </div>
-        </div>
       </div>
       <div className="sidebar-footer">
         <button className="logout-button" onClick={async () => {

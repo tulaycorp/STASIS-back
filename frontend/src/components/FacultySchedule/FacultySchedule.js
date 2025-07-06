@@ -232,20 +232,32 @@ const FacultySchedule = () => {
           {/* Stats Cards */}
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-label">Total Classes</div>
-              <div className="stat-value">{totalSchedules}</div>
+              <div className="stat-icon blue">📚 </div>
+              <div className="stat-content">
+                <div className="stat-title">Total Classes</div>
+                <div className="stat-value">{totalSchedules}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Today's Classes</div>
-              <div className="stat-value">{todaySchedules}</div>
+              <div className="stat-icon blue">📆 </div>
+              <div className="stat-content">
+                <div className="stat-title">Today's Classes</div>
+                <div className="stat-value">{todaySchedules}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Unique Sections</div>
-              <div className="stat-value">{uniqueSections}</div>
+              <div className="stat-icon blue">📂</div>
+              <div className="stat-content">
+                <div className="stat-title">Sections</div>
+                <div className="stat-value">{uniqueSections}</div>
+              </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Unique Courses</div>
-              <div className="stat-value">{uniqueCourses}</div>
+              <div className="stat-icon blue">📖</div>
+              <div className="stat-content">
+                <div className="stat-title">Courses</div>
+                <div className="stat-value">{uniqueCourses}</div>
+              </div>
             </div>
           </div>
 
