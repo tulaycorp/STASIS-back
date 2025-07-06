@@ -619,7 +619,13 @@ const ScheduleManagement = () => {
         section.programName === programName ||
         section.program?.programName === programName
       );
-      setSelectedProgramSections(programSections);
+      // Sort sections in ascending order
+      const sortedProgramSections = programSections.sort((a, b) => {
+        const sectionA = a.sectionName || '';
+        const sectionB = b.sectionName || '';
+        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+      setSelectedProgramSections(sortedProgramSections);
     }
   };
 
@@ -808,7 +814,14 @@ const ScheduleManagement = () => {
                     <span className="student-nav-icon">📋</span>
                     All Sections
                   </div>
-                  {(selectedProgram === 'All Programs' ? sectionsList : selectedProgramSections).map((section) => (
+                  {(selectedProgram === 'All Programs' 
+                    ? [...sectionsList].sort((a, b) => {
+                        const sectionA = a.sectionName || '';
+                        const sectionB = b.sectionName || '';
+                        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+                      })
+                    : selectedProgramSections
+                  ).map((section) => (
                     <div
                       key={section.sectionID}
                       className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}

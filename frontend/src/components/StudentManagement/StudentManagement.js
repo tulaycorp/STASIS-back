@@ -256,7 +256,23 @@ const StudentManagement = () => {
     }));
   };
 
-  // Updated handleAddSection to use API
+  // Check if section already exists for the program
+  const checkSectionExists = async (programObj, sectionName) => {
+    try {
+      const sectionsResponse = await courseSectionAPI.getAllSections();
+      const existingSections = sectionsResponse.data.filter(section => 
+        (section.program?.programID === programObj.programID || 
+         section.programId === programObj.programID) &&
+        section.sectionName === sectionName
+      );
+      return existingSections.length > 0;
+    } catch (error) {
+      console.error('Error checking existing sections:', error);
+      return false; // If we can't check, allow creation (API will handle duplicates)
+    }
+  };
+
+  // Updated handleAddSection to use API with duplicate detection
   const handleAddSection = async () => {
     // Validate required fields
     if (!sectionForm.yearLevel || !sectionForm.sectionNumber || !sectionForm.programId) {
@@ -277,6 +293,14 @@ const StudentManagement = () => {
 
       // Generate section name in format "year-section" (e.g., "1-2")
       const generatedSectionName = `${sectionForm.yearLevel}-${sectionForm.sectionNumber}`;
+
+      // Check if section already exists
+      const sectionExists = await checkSectionExists(selectedProgramObj, generatedSectionName);
+      
+      if (sectionExists) {
+        showToast(`Section ${generatedSectionName} already exists for ${selectedProgramObj.programName}. Please choose a different section number.`, 'error');
+        return;
+      }
 
       const sectionData = {
         sectionName: generatedSectionName,
@@ -580,7 +604,13 @@ const StudentManagement = () => {
         section.programName === programName ||
         section.program?.programName === programName
       );
-      setSelectedProgramSections(programSections);
+      // Sort sections in ascending order
+      const sortedProgramSections = programSections.sort((a, b) => {
+        const sectionA = a.sectionName || '';
+        const sectionB = b.sectionName || '';
+        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+      setSelectedProgramSections(sortedProgramSections);
     }
   };
 
@@ -1009,20 +1039,26 @@ const StudentManagement = () => {
 
                   {selectedProgram === 'All Programs'
                     ? // If "All Programs" is selected, show all sections from all programs
-                    sectionsList.map((section) => (
-                      <div
-                        key={section.sectionID}
-                        className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
-                        onClick={() => handleSectionSelect(section.sectionName)}
-                      >
-                        <span className="student-nav-icon">📋</span>
-                        {section.sectionName}
-                        {/* Show program name for context */}
-                        <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '4px' }}>
-                          ({section.program?.programName || section.programName || 'No Program'})
-                        </span>
-                      </div>
-                    ))
+                    [...sectionsList]
+                      .sort((a, b) => {
+                        const sectionA = a.sectionName || '';
+                        const sectionB = b.sectionName || '';
+                        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+                      })
+                      .map((section) => (
+                        <div
+                          key={section.sectionID}
+                          className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
+                          onClick={() => handleSectionSelect(section.sectionName)}
+                        >
+                          <span className="student-nav-icon">📋</span>
+                          {section.sectionName}
+                          {/* Show program name for context */}
+                          <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '4px' }}>
+                            ({section.program?.programName || section.programName || 'No Program'})
+                          </span>
+                        </div>
+                      ))
                     : // If specific program is selected, show only that program's sections
                     selectedProgramSections.map((section) => (
                       <div
@@ -1336,11 +1372,17 @@ const StudentManagement = () => {
                     disabled={!studentForm.programId}
                   >
                     <option value="">Select Section</option>
-                    {availableSectionsForStudent.map((section) => (
-                      <option key={section.sectionID} value={section.sectionID}>
-                        {section.sectionName}
-                      </option>
-                    ))}
+                    {[...availableSectionsForStudent]
+                      .sort((a, b) => {
+                        const sectionA = a.sectionName || '';
+                        const sectionB = b.sectionName || '';
+                        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+                      })
+                      .map((section) => (
+                        <option key={section.sectionID} value={section.sectionID}>
+                          {section.sectionName}
+                        </option>
+                      ))}
                   </select>
                   {studentForm.programId && availableSectionsForStudent.length === 0 && (
                     <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
@@ -1497,11 +1539,17 @@ const StudentManagement = () => {
                     disabled={!deleteSectionForm.programId}
                   >
                     <option value="">Select Section</option>
-                    {availableSectionsForDelete.map((section) => (
-                      <option key={section.sectionID} value={section.sectionID}>
-                        {section.sectionName}
-                      </option>
-                    ))}
+                    {[...availableSectionsForDelete]
+                      .sort((a, b) => {
+                        const sectionA = a.sectionName || '';
+                        const sectionB = b.sectionName || '';
+                        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+                      })
+                      .map((section) => (
+                        <option key={section.sectionID} value={section.sectionID}>
+                          {section.sectionName}
+                        </option>
+                      ))}
                   </select>
                 </div>
               </div>
@@ -1583,11 +1631,17 @@ const StudentManagement = () => {
                     disabled={!multiEditForm.programId}
                   >
                     <option value="">Keep current section</option>
-                    {availableSectionsForStudent.map((section) => (
-                      <option key={section.sectionID} value={section.sectionID}>
-                        {section.sectionName}
-                      </option>
-                    ))}
+                    {[...availableSectionsForStudent]
+                      .sort((a, b) => {
+                        const sectionA = a.sectionName || '';
+                        const sectionB = b.sectionName || '';
+                        return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+                      })
+                      .map((section) => (
+                        <option key={section.sectionID} value={section.sectionID}>
+                          {section.sectionName}
+                        </option>
+                      ))}
                   </select>
                   {multiEditForm.programId && availableSectionsForStudent.length === 0 && (
                     <p style={{ color: '#6c757d', fontSize: '12px', marginTop: '5px' }}>
