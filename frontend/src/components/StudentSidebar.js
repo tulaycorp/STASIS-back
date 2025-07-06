@@ -17,8 +17,6 @@ const getActivePageFromURL = () => {
     return 'StudentGrades';
   } else if (path === '/student-curriculum') {
     return 'StudentCurriculum';
-  } else if (path === '/student-settings') {
-    return 'StudentSettings';
   }
   return '';
 };
@@ -40,9 +38,6 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
         break;
       case 'StudentGrades':
         navigate('/student-grades');
-        break;
-      case 'StudentSettings':
-        navigate('/student-settings');
         break;
       default:
         // No action for unknown sections
@@ -96,17 +91,6 @@ const StudentSidebar = ({ onNavigate, userInfo }) => {
               onClick={() => showSection('Enrollment')}
             >
               📝 Enrollment
-            </div>
-          </div>
-        </div>
-        <div className="nav-section">
-          <div className="nav-label">System</div>
-          <div className="nav-items">
-            <div
-              className={`nav-item${activePage === 'StudentSettings' ? ' active-page' : ''}`}
-              onClick={() => showSection('StudentSettings')}
-            >
-              ⚙️ Settings
             </div>
           </div>
         </div>
