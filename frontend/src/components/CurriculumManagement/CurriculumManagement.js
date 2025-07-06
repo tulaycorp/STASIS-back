@@ -1096,7 +1096,7 @@ const CurriculumManagement = () => {
                 <div className="form-group auto-create-sections-group">
                   <div className="auto-create-sections-header">
                     <label className="form-label auto-create-checkbox-label">
-                      Auto Create Sections
+                      <span>Create Sections</span>
                       <input
                         type="checkbox"
                         name="autoCreateSections"
