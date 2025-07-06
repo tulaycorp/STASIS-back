@@ -24,7 +24,10 @@ const ScheduleManagement = () => {
   const [sectionsList, setSectionsList] = useState([]);
   const [selectedProgram, setSelectedProgram] = useState('All Programs');
   const [selectedSection, setSelectedSection] = useState('All Sections');
+  const [selectedYear, setSelectedYear] = useState('All Years');
   const [selectedProgramSections, setSelectedProgramSections] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [selectionMode, setSelectionMode] = useState('individual'); // 'individual' or 'year'
 
   // Form state
   const [scheduleForm, setScheduleForm] = useState({
@@ -150,6 +153,14 @@ const ScheduleManagement = () => {
       // Set programs and sections
       setProgramsList(programsResponse.data);
       setSectionsList(sectionsResponse.data);
+
+      // Extract available years from sections
+      const years = [...new Set(sectionsResponse.data.map(section => {
+        const sectionName = section.sectionName || '';
+        const yearMatch = sectionName.match(/^(\d+)-/);
+        return yearMatch ? parseInt(yearMatch[1]) : null;
+      }).filter(year => year !== null))].sort((a, b) => a - b);
+      setAvailableYears(years);
 
       // Load status options from the transformed list
       const uniqueStatuses = [...new Set(transformedSchedules.map(s => s.status).filter(Boolean))];
@@ -607,8 +618,10 @@ const ScheduleManagement = () => {
   // Handle program selection
   const handleProgramSelect = (programName) => {
     setSelectedProgram(programName);
-    // Always reset to "All Sections" when changing programs
+    // Reset selections when changing programs
     setSelectedSection('All Sections');
+    setSelectedYear('All Years');
+    setSelectionMode('individual');
 
     if (programName === 'All Programs') {
       // When "All Programs" is selected, we don't need to filter sections by program
@@ -630,22 +643,49 @@ const ScheduleManagement = () => {
   };
 
   // Handle section selection
-  const handleSectionSelect = (sectionName) => {
+  const handleSectionSelect = (sectionName, sectionObj = null) => {
     setSelectedSection(sectionName);
+    setSelectedYear('All Years'); // Reset year when selecting individual section
+    setSelectionMode('individual');
 
-    // Optional: If a specific section is selected while "All Programs" is active,
-    // you might want to automatically filter to show only the program that has this section
-    if (selectedProgram === 'All Programs' && sectionName !== 'All Sections') {
-      // Find which program this section belongs to
-      const sectionProgram = sectionsList.find(section => section.sectionName === sectionName);
-      if (sectionProgram && sectionProgram.program?.programName) {
-        // Optionally auto-select the program (uncomment if desired)
-        // setSelectedProgram(sectionProgram.program.programName);
+    // If a specific section is selected while "All Programs" is active,
+    // automatically filter to show only the program that has this section
+    if (selectedProgram === 'All Programs' && sectionName !== 'All Sections' && sectionObj) {
+      if (sectionObj.program?.programName) {
+        setSelectedProgram(sectionObj.program.programName);
+        // Filter sections for the selected program
+        const programSections = sectionsList.filter(section =>
+          section.programName === sectionObj.program.programName ||
+          section.program?.programName === sectionObj.program.programName
+        );
+        const sortedProgramSections = programSections.sort((a, b) => {
+          const sectionA = a.sectionName || '';
+          const sectionB = b.sectionName || '';
+          return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+        setSelectedProgramSections(sortedProgramSections);
       }
     }
   };
 
-  // Filter schedules with section filtering only
+  // Handle year selection
+  const handleYearSelect = (year) => {
+    setSelectedYear(year);
+    setSelectedSection('All Sections'); // Reset individual section when selecting year
+    setSelectionMode('year');
+  };
+
+  // Get sections for the selected year and program
+  const getSectionsForYear = (year) => {
+    const sectionsToFilter = selectedProgram === 'All Programs' ? sectionsList : selectedProgramSections;
+    return sectionsToFilter.filter(section => {
+      const sectionName = section.sectionName || '';
+      const yearMatch = sectionName.match(/^(\d+)-/);
+      return yearMatch && parseInt(yearMatch[1]) === year;
+    });
+  };
+
+  // Enhanced filtering logic that supports program, individual and year-based selection
   const filteredSchedules = scheduleList.filter(schedule => {
     const courseName = schedule.courseName || schedule.course || '';
     const courseId = schedule.courseId || '';
@@ -660,10 +700,28 @@ const ScheduleManagement = () => {
                          (filter.type === 'day' && schedule.day === filter.value) ||
                          (filter.type === 'instructor' && schedule.instructor === filter.value);
 
-    // Only filter by section, not by program
-    const matchesSection = selectedSection === 'All Sections' || schedule.section === selectedSection;
+    // Program-based filtering
+    let matchesProgram = true;
+    if (selectedProgram !== 'All Programs') {
+      matchesProgram = schedule.program === selectedProgram;
+    }
+
+    // Enhanced section/year filtering
+    let matchesSelection = true;
     
-    return matchesSearch && matchesFilter && matchesSection;
+    if (selectionMode === 'year' && selectedYear !== 'All Years') {
+      // Year-based filtering: show all sections for the selected year
+      const sectionName = schedule.section || '';
+      const yearMatch = sectionName.match(/^(\d+)-/);
+      const scheduleYear = yearMatch ? parseInt(yearMatch[1]) : null;
+      matchesSelection = scheduleYear === selectedYear;
+    } else if (selectionMode === 'individual' && selectedSection !== 'All Sections') {
+      // Individual section filtering
+      matchesSelection = schedule.section === selectedSection;
+    }
+    // If "All Sections" and "All Years" are selected, show everything (matchesSelection remains true)
+    
+    return matchesSearch && matchesFilter && matchesProgram && matchesSelection;
   });
 
   // Calculate dynamic statistics
@@ -799,10 +857,41 @@ const ScheduleManagement = () => {
                 </div>
               </div>
 
+              {/* Year Level Navigation Card */}
+              <div className="student-nav-section">
+                <div className="student-nav-header">
+                  <h3 className="student-nav-title">Year Levels</h3>
+                </div>
+                <div className="student-nav-list">
+                  <div
+                    className={`student-nav-item ${selectedYear === 'All Years' ? 'student-nav-item-active' : ''}`}
+                    onClick={() => handleYearSelect('All Years')}
+                  >
+                    <span className="student-nav-icon">🎓</span>
+                    All Years
+                  </div>
+                  {availableYears.map((year) => (
+                    <div
+                      key={year}
+                      className={`student-nav-item ${selectedYear === year ? 'student-nav-item-active' : ''}`}
+                      onClick={() => handleYearSelect(year)}
+                    >
+                      <span className="student-nav-icon">🎓</span>
+                      Year {year}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Section Navigation Card */}
               <div className="student-nav-section">
                 <div className="student-nav-header">
                   <h3 className="student-nav-title">Sections</h3>
+                  {selectedYear !== 'All Years' && (
+                    <div className="student-nav-subtitle">
+                      Year {selectedYear} sections
+                    </div>
+                  )}
                 </div>
                 <div className="student-nav-list">
                   <div
@@ -819,16 +908,24 @@ const ScheduleManagement = () => {
                         return sectionA.localeCompare(sectionB, undefined, { numeric: true, sensitivity: 'base' });
                       })
                     : selectedProgramSections
-                  ).map((section) => (
-                    <div
-                      key={section.sectionID}
-                      className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
-                      onClick={() => handleSectionSelect(section.sectionName)}
-                    >
-                      <span className="student-nav-icon">📋</span>
-                      {section.sectionName}
-                    </div>
-                  ))}
+                  ).map((section) => {
+                    // Create unique key combining section name and program
+                    const uniqueKey = `${section.sectionID}-${section.program?.programID || 'no-program'}`;
+                    const displayName = selectedProgram === 'All Programs' 
+                      ? `${section.sectionName} (${section.program?.programName || 'No Program'})`
+                      : section.sectionName;
+                    
+                    return (
+                      <div
+                        key={uniqueKey}
+                        className={`student-nav-item ${selectedSection === section.sectionName ? 'student-nav-item-active' : ''}`}
+                        onClick={() => handleSectionSelect(section.sectionName, section)}
+                      >
+                        <span className="student-nav-icon">📋</span>
+                        <span className="section-name-text">{displayName}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -837,11 +934,26 @@ const ScheduleManagement = () => {
             <div className="student-main-section">
               <div className="student-section-header">
                 <h2 className="student-section-title">
-                  {selectedProgram === 'All Programs' ? 'All Schedules' : `${selectedProgram} Schedules`}
-                  {selectedSection !== 'All Sections' && ` - ${selectedSection}`}
+                  {(() => {
+                    let title = selectedProgram === 'All Programs' ? 'All Schedules' : `${selectedProgram} Schedules`;
+                    
+                    if (selectionMode === 'year' && selectedYear !== 'All Years') {
+                      title += ` - Year ${selectedYear}`;
+                    } else if (selectionMode === 'individual' && selectedSection !== 'All Sections') {
+                      title += ` - ${selectedSection}`;
+                    }
+                    
+                    return title;
+                  })()}
                 </h2>
                 <p className="student-section-desc">
                   {filteredSchedules.length} schedule{filteredSchedules.length !== 1 ? 's' : ''} found
+                  {selectionMode === 'year' && selectedYear !== 'All Years' && (
+                    <span className="selection-mode-indicator"> (Year-level view)</span>
+                  )}
+                  {selectionMode === 'individual' && selectedSection !== 'All Sections' && (
+                    <span className="selection-mode-indicator"> (Individual section)</span>
+                  )}
                 </p>
               </div>
 
