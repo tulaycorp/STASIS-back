@@ -1114,65 +1114,12 @@ const CurriculumManagement = () => {
                                 )}
                               </div>
                             ))}
-                          
-                          {/* Show unassigned courses in current tab */}
-                          {filteredAvailableCourses
-                            .filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1')
-                            .map(course => (
-                              <div key={course.id} className="course-card-selection unassigned">
-                                <div className="course-card-header">
-                                  <label className="course-checkbox-label">
-                                    <input
-                                      type="checkbox"
-                                      checked={formData.selectedCourses.includes(course.id)}
-                                      onChange={() => handleCourseSelection(course.id)}
-                                      className="course-checkbox"
-                                    />
-                                    <div className="course-card-info">
-                                      <div className="course-code-selection">{course.courseCode}</div>
-                                      <div className="course-name-selection">{course.courseDescription}</div>
-                                      <div className="course-credits">({course.credits} credits)</div>
-                                    </div>
-                                  </label>
-                                </div>
-                                
-                                {formData.selectedCourses.includes(course.id) && (
-                                  <div className="course-details-inline">
-                                    <div className="course-detail-group-inline">
-                                      <label className="detail-label-inline">Year:</label>
-                                      <select
-                                        value={formData.courseYearLevels[course.id] || 1}
-                                        onChange={(e) => handleCourseYearChange(course.id, e.target.value)}
-                                        className="detail-select-inline"
-                                      >
-                                        <option value={1}>1</option>
-                                        <option value={2}>2</option>
-                                        <option value={3}>3</option>
-                                        <option value={4}>4</option>
-                                      </select>
-                                    </div>
-                                    <div className="course-detail-group-inline">
-                                      <label className="detail-label-inline">Semester:</label>
-                                      <select
-                                        value={formData.courseSemesters[course.id] || "1"}
-                                        onChange={(e) => handleCourseSemesterChange(course.id, e.target.value)}
-                                        className="detail-select-inline"
-                                      >
-                                        <option value="1">1st</option>
-                                        <option value="2">2nd</option>
-                                        <option value="Summer">Summer</option>
-                                      </select>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
                         </div>
                         
                         {filteredAvailableCourses.filter(course => {
                           const courseSemester = formData.courseSemesters[course.id] || "1";
                           return courseSemester === formData.activeSemesterTab;
-                        }).length === 0 && filteredAvailableCourses.filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1').length === 0 && (
+                        }).length === 0 && (
                           <div className="no-courses-semester">
                             <p>No courses assigned to {formData.activeSemesterTab === '1' ? '1st' : formData.activeSemesterTab === '2' ? '2nd' : 'Summer'} semester.</p>
                           </div>

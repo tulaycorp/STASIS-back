@@ -116,6 +116,10 @@ public class StudentService {
                     throw new IllegalArgumentException("Email already exists in the system");
                 }
                 
+                // Get the user record BEFORE updating the student (using old name)
+                Optional<Users> userOpt = userService.getUserByStudentInfo(student.getFirstName(), student.getLastName());
+                
+                // Update student information
                 student.setFirstName(studentDetails.getFirstName());
                 student.setLastName(studentDetails.getLastName());
                 student.setEmail(studentDetails.getEmail());
@@ -124,7 +128,22 @@ public class StudentService {
                 student.setProgram(studentDetails.getProgram());
                 student.setSection(studentDetails.getSection());
                 student.setCurriculum(studentDetails.getCurriculum());
-                return studentRepository.save(student);
+                
+                Student updatedStudent = studentRepository.save(student);
+                
+                // Update the associated user record if it exists
+                if (userOpt.isPresent()) {
+                    Users user = userOpt.get();
+                    user.setFirstName(studentDetails.getFirstName());
+                    user.setLastName(studentDetails.getLastName());
+                    user.setEmail(studentDetails.getEmail());
+                    userService.updateUser(user);
+                    
+                    // Set the username on the student object for the response
+                    updatedStudent.setUsername(user.getUsername());
+                }
+                
+                return updatedStudent;
             })
             .orElseThrow(() -> new RuntimeException("Student not found with id " + id));
     }
@@ -165,7 +184,16 @@ public class StudentService {
                 if (student.getYear_level() < 4) {
                     student.setYear_level(student.getYear_level() + 1);
                 }
-                return studentRepository.save(student);
+                
+                Student promotedStudent = studentRepository.save(student);
+                
+                // Populate username for consistency with getAllStudents() and getStudentById()
+                Optional<Users> user = userService.getUserByStudentInfo(promotedStudent.getFirstName(), promotedStudent.getLastName());
+                if (user.isPresent()) {
+                    promotedStudent.setUsername(user.get().getUsername());
+                }
+                
+                return promotedStudent;
             })
             .orElseThrow(() -> new RuntimeException("Student not found with id: " + id));
     }
