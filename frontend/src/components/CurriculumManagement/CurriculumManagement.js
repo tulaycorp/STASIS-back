@@ -955,7 +955,8 @@ const CurriculumManagement = () => {
                                     editCurriculum(curriculum.id);
                                   }}
                                   title="Edit"
-                                >              
+                                > 
+                                ✏️             
                                 </button>
                                 <button 
                                   className="btn-action btn-delete" 
@@ -964,7 +965,8 @@ const CurriculumManagement = () => {
                                     deleteCurriculum(curriculum.id);
                                   }}
                                   title="Delete"
-                                >                       
+                                >   
+                                🗑️                    
                                 </button>
                               </div>
                             </td>

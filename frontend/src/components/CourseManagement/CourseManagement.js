@@ -589,12 +589,14 @@ const CourseManagement = () => {
                               onClick={() => showEditCourseForm(course)}
                               title="Edit Course"
                             >
+                              ✏️
                             </button>
                             <button //Delete Button
                               className="btn-action btn-delete"
                               onClick={() => handleDeleteCourse(course.id)}
                               title="Delete Course"
                             >
+                              🗑️
                             </button>
                           </div>
                         </td>

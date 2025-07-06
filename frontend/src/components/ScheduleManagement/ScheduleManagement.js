@@ -848,7 +848,7 @@ const ScheduleManagement = () => {
               <div className="student-section-content">
                 {/* Search and Filter */}
                 <div className="student-filters">
-                  <div className="student-search-group">
+                  <div className="schedule-search-group">
                     <input
                       type="text"
                       className="student-search-input"
