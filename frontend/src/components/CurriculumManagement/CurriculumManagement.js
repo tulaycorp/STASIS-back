@@ -38,7 +38,7 @@ const CurriculumManagement = () => {
     courseSemesters: {},   // Maps courseId to Semester
     activeSemesterTab: '1' // Default to 1st semester tab
   });
-
+  const [courseSearchTerm, setCourseSearchTerm] = useState('');
   const [toasts, setToasts] = useState([]);
 
   const showToast = (message, type = 'success') => {
@@ -222,7 +222,7 @@ const CurriculumManagement = () => {
   // Filter data based on search and program
   const filteredData = curriculumData.filter(curriculum => {
     const matchesSearch = curriculum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      curriculum.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (curriculum.code && curriculum.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
       curriculum.program.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesProgram = selectedProgramFilter === '' || 
@@ -298,6 +298,7 @@ const CurriculumManagement = () => {
       activeSemesterTab: '1'
     });
     setAvailableCourses([]); // Clear available courses
+    setCourseSearchTerm(''); // Clear course search term
   };
 
   // Edit curriculum
@@ -513,6 +514,7 @@ const CurriculumManagement = () => {
 
     // Load courses when program is selected
     if (name === 'programId' && value) {
+      setCourseSearchTerm('');
       try {
         const program = programsList.find(p => p.programID.toString() === value);
         if (program) {
@@ -534,6 +536,7 @@ const CurriculumManagement = () => {
     } else if (name === 'programId' && !value) {
       // Clear courses when no program is selected
       setAvailableCourses([]);
+      setCourseSearchTerm('');
     }
   };
 
@@ -660,6 +663,12 @@ const CurriculumManagement = () => {
       </div>
     );
   }
+
+    // <<< ADDED: Filtering logic for courses in modal
+  const filteredAvailableCourses = availableCourses.filter(course =>
+    course.courseCode.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+    course.courseDescription.toLowerCase().includes(courseSearchTerm.toLowerCase())
+  );
 
   return (
     <div className="container">
@@ -930,12 +939,12 @@ const CurriculumManagement = () => {
       {/* Modal */}
       {isModalOpen && (
         <div className="modal">
-          <div className="modal-content">
+          <div className="modal-contentt">
             <div className="modal-header">
               <h2 className="modal-title">
                 {editingId ? 'Edit Curriculum' : 'Create New Curriculum'}
               </h2>
-              <span className="close" onClick={closeModal}>&times;</span>
+              <span className="close" onClick={closeModal}>x</span>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -1009,9 +1018,20 @@ const CurriculumManagement = () => {
                 />
               </div>
 
+              {/* <<< MODIFIED: Available Courses Section with Search */}
               {formData.programId && (
                 <div className="form-group">
-                  <label className="form-label">Available Courses</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>Available Courses</label>
+                    <input
+                      type="text"
+                      placeholder="Search courses..."
+                      value={courseSearchTerm}
+                      onChange={(e) => setCourseSearchTerm(e.target.value)}
+                      className="form-input"
+                      style={{ width: '40%' }}
+                    />
+                  </div>
                   <div className="semester-tabs">
                     <div className="tab-headers">
                       <button 
@@ -1040,7 +1060,7 @@ const CurriculumManagement = () => {
                     <div className="tab-content">
                       <div className="courses-semester-section">
                         <div className="courses-grid-semester">
-                          {availableCourses
+                          {filteredAvailableCourses
                             .filter(course => {
                               const courseSemester = formData.courseSemesters[course.id] || "1";
                               return courseSemester === formData.activeSemesterTab;
@@ -1096,7 +1116,7 @@ const CurriculumManagement = () => {
                             ))}
                           
                           {/* Show unassigned courses in current tab */}
-                          {availableCourses
+                          {filteredAvailableCourses
                             .filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1')
                             .map(course => (
                               <div key={course.id} className="course-card-selection unassigned">
@@ -1149,10 +1169,10 @@ const CurriculumManagement = () => {
                             ))}
                         </div>
                         
-                        {availableCourses.filter(course => {
+                        {filteredAvailableCourses.filter(course => {
                           const courseSemester = formData.courseSemesters[course.id] || "1";
                           return courseSemester === formData.activeSemesterTab;
-                        }).length === 0 && availableCourses.filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1').length === 0 && (
+                        }).length === 0 && filteredAvailableCourses.filter(course => !formData.courseSemesters[course.id] && formData.activeSemesterTab === '1').length === 0 && (
                           <div className="no-courses-semester">
                             <p>No courses assigned to {formData.activeSemesterTab === '1' ? '1st' : formData.activeSemesterTab === '2' ? '2nd' : 'Summer'} semester.</p>
                           </div>
@@ -1161,6 +1181,9 @@ const CurriculumManagement = () => {
                     </div>
                   </div>
                   
+                  {availableCourses.length > 0 && filteredAvailableCourses.length === 0 && (
+                     <p className="no-courses">No courses match your search.</p>
+                  )}
                   {availableCourses.length === 0 && (
                     <p className="no-courses">No courses available for this program.</p>
                   )}
