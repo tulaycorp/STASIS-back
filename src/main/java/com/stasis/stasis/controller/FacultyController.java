@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/faculty")
-@CrossOrigin(origins = "http://localhost:3000") // Add CORS support
 public class FacultyController {
 
     @Autowired

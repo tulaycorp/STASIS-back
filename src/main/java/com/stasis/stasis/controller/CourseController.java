@@ -10,8 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/courses")
-@CrossOrigin(origins = "http://localhost:3000") // Add CORS support for React frontend
-
 public class CourseController {
 
     @Autowired

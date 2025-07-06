@@ -11,7 +11,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/curriculum-details")
-@CrossOrigin(origins = "http://localhost:3000")
 public class CurriculumDetailController {
 
     @Autowired

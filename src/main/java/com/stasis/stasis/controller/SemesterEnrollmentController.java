@@ -11,7 +11,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/semester-enrollments")
-@CrossOrigin(origins = "http://localhost:3000")
 public class SemesterEnrollmentController {
 
     @Autowired

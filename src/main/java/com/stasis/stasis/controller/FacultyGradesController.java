@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/faculty-grades")
-@CrossOrigin(origins = "http://localhost:3000")
 public class FacultyGradesController {
 
     @Autowired
