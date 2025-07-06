@@ -331,7 +331,7 @@ body {
 
 .schedule-header-actions {
   display: flex;
-  gap: 10px;
+  gap: 5px;
 }
 
 /* === FORM ELEMENTS === */

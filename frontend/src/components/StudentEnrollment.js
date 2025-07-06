@@ -907,10 +907,6 @@ function StudentEnrollment(props) {
           {/* Header */}
           <div className="page-header">
             <h1 className="page-title">Course Enrollment</h1>
-            <div className="student-info">
-              <p><strong>Program:</strong> {studentData?.program?.programName || 'N/A'}</p>
-              <p><strong>Year Level:</strong> {studentData?.year_level}</p>
-            </div>
           </div>
 
           {/* Stats Cards */}
@@ -953,12 +949,14 @@ function StudentEnrollment(props) {
             >
               Available Courses
             </button>
+           
             <button 
               className={`page-btn ${selectedTab === 'enrolled' ? 'active' : ''}`}
               onClick={() => setSelectedTab('enrolled')}
             >
               My Enrollments ({activeEnrollments.length})
             </button>
+                
           </div>
 
           {/* Course List */}
@@ -968,6 +966,10 @@ function StudentEnrollment(props) {
                 <h2 className="list-title">
                   {selectedTab === 'available' ? 'Available Courses' : 'My Enrollments'}
                 </h2>
+               <div className="student-info">
+              <p><strong>Program:</strong> {studentData?.program?.programName || 'N/A'}</p>
+              <p><strong>Year Level:</strong> {studentData?.year_level}</p>
+              </div>  
                 {selectedTab === 'available' && (
                   <div className="controls">
                     <select 
@@ -995,6 +997,7 @@ function StudentEnrollment(props) {
                     >
                       {loading ? '⏳' : '🔄'} Refresh
                     </button>
+                 
                   </div>
                 )}
               </div>

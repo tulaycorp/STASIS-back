@@ -728,9 +728,7 @@ const ScheduleManagement = () => {
           
           <div className="dashboard-header">
             <h1 className="dashboard-welcome-title">Schedule Management</h1>
-            <button className="btn btn-primary" onClick={showAddScheduleForm}>
-              + Add New Schedule
-            </button>
+         
           </div>
 
           {/* Stats Cards */}
@@ -869,6 +867,9 @@ const ScheduleManagement = () => {
                         <option key={instructor} value={`instructor:${instructor}`}>{instructor}</option>
                       ))}
                     </select>
+                       <button className="btn btn-primary" onClick={showAddScheduleForm}>
+              + Add New Schedule
+            </button>
                   </div>
                 </div>
 
