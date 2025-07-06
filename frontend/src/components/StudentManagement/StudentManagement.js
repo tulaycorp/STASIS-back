@@ -26,7 +26,8 @@ const StudentManagement = () => {
   const [availableCurriculums, setAvailableCurriculums] = useState([]);
   const [showAddSectionModal, setShowAddSectionModal] = useState(false);
   const [sectionForm, setSectionForm] = useState({
-    sectionName: '',
+    yearLevel: '',
+    sectionNumber: '',
     programId: ''
   });
   const [showDeleteSectionModal, setShowDeleteSectionModal] = useState(false);
@@ -232,7 +233,8 @@ const StudentManagement = () => {
 
   const showAddSectionForm = () => {
     setSectionForm({
-      sectionName: '',
+      yearLevel: '',
+      sectionNumber: '',
       programId: ''
     });
     setShowAddSectionModal(true);
@@ -241,7 +243,8 @@ const StudentManagement = () => {
   const closeAddSectionModal = () => {
     setShowAddSectionModal(false);
     setSectionForm({
-      sectionName: '',
+      yearLevel: '',
+      sectionNumber: '',
       programId: ''
     });
   };
@@ -256,7 +259,7 @@ const StudentManagement = () => {
   // Updated handleAddSection to use API
   const handleAddSection = async () => {
     // Validate required fields
-    if (!sectionForm.sectionName || !sectionForm.programId) {
+    if (!sectionForm.yearLevel || !sectionForm.sectionNumber || !sectionForm.programId) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
@@ -272,8 +275,11 @@ const StudentManagement = () => {
         return;
       }
 
+      // Generate section name in format "year-section" (e.g., "1-2")
+      const generatedSectionName = `${sectionForm.yearLevel}-${sectionForm.sectionNumber}`;
+
       const sectionData = {
-        sectionName: sectionForm.sectionName,
+        sectionName: generatedSectionName,
         program: selectedProgramObj,
         status: 'ACTIVE',
       };
@@ -1380,14 +1386,34 @@ const StudentManagement = () => {
             <div className="modal-body">
               <div className="modal-grid">
                 <div className="form-group">
-                  <label className="form-label">Section Name *</label>
-                  <input
-                    type="text"
+                  <label className="form-label">Year Level *</label>
+                  <select
                     className="form-input"
-                    placeholder="Enter section name (e.g., BSIT-1A, Year 1 - Section A)"
-                    value={sectionForm.sectionName}
-                    onChange={(e) => handleSectionFormChange('sectionName', e.target.value)}
-                  />
+                    value={sectionForm.yearLevel}
+                    onChange={(e) => handleSectionFormChange('yearLevel', e.target.value)}
+                  >
+                    <option value="">Select Year Level</option>
+                    <option value="1">Year 1</option>
+                    <option value="2">Year 2</option>
+                    <option value="3">Year 3</option>
+                    <option value="4">Year 4</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Section Number *</label>
+                  <select
+                    className="form-input"
+                    value={sectionForm.sectionNumber}
+                    onChange={(e) => handleSectionFormChange('sectionNumber', e.target.value)}
+                  >
+                    <option value="">Select Section Number</option>
+                    <option value="1">Section 1</option>
+                    <option value="2">Section 2</option>
+                    <option value="3">Section 3</option>
+                    <option value="4">Section 4</option>
+                    <option value="5">Section 5</option>
+                  </select>
                 </div>
 
                 <div className="form-group">
@@ -1405,6 +1431,22 @@ const StudentManagement = () => {
                     ))}
                   </select>
                 </div>
+
+                {sectionForm.yearLevel && sectionForm.sectionNumber && (
+                  <div className="form-group">
+                    <label className="form-label">Generated Section Name</label>
+                    <div style={{ 
+                      padding: '10px 12px', 
+                      backgroundColor: '#f8f9fa', 
+                      border: '1px solid #e9ecef', 
+                      borderRadius: '6px',
+                      color: '#495057',
+                      fontWeight: '500'
+                    }}>
+                      {sectionForm.yearLevel}-{sectionForm.sectionNumber}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
