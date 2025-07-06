@@ -209,7 +209,8 @@
 
 .course-search-group {
   flex: 1;
-  min-width: 200px;
+  min-width: 130px;
+  max-width: 400px;
 }
 
 .course-search-input {

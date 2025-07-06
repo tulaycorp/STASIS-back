@@ -311,12 +311,13 @@ body {
 
 .schedule-search-group {
   flex: 1;
-  min-width: 200px;
+  min-width: 130px;
+  max-width: 400px;
 }
 
 .schedule-search-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 14px;

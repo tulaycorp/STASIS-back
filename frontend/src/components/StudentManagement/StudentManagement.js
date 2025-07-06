@@ -1161,13 +1161,6 @@ const StudentManagement = () => {
                               >
                                 ✏️
                               </button>
-                              {/* <button
-                                className="btn-action btn-promote"
-                                onClick={() => handlePromoteStudent(student.id)}
-                                title="Promote Student"
-                              >
-                                ⬆️
-                              </button> */}
                               <button
                                 className="btn-action btn-delete"
                                 onClick={() => openDeleteStudentModal(student)} // Change this line
