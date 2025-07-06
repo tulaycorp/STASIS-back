@@ -453,12 +453,14 @@ const FacultyManagement = () => {
                           onClick={() => showEditFacultyForm(faculty)}
                           title="Edit Faculty"
                         >
+                          ✏️
                         </button>
                         <button
                           className="btn-delete"
                           onClick={() => handleDeleteFaculty(faculty.facultyID)}
                           title="Delete Faculty"
                         >
+                          🗑️
                         </button>
                       </td>
                     </tr>
