@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Settings.css';
-import Sidebar from './Sidebar';
-import { useAdminData } from '../hooks/useAdminData';
+import Sidebar from '../Sidebar';
+import { useAdminData } from '../../hooks/useAdminData';
 
 const Settings = () => {
   const { getUserInfo } = useAdminData();

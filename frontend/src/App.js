@@ -10,7 +10,6 @@ import StudentManagement from './components/StudentManagement/StudentManagement'
 import FacultyManagement from './components/FacultyManagement/FacultyManagement';
 import CourseManagement from './components/CourseManagement/CourseManagement';
 import ScheduleManagement from './components/ScheduleManagement/ScheduleManagement';
-import Settings from './components/Settings';
 import AdminTools from './components/AdminTools/AdminTools';
 import StudentDashboard from './components/StudentDashboard';
 import StudentSchedule from './components/StudentSchedule';
@@ -49,8 +48,6 @@ function App() {
         <Route path="/course-management" element={<CourseManagement />} />
 
         <Route path="/schedule-management" element={<ScheduleManagement />} />
-
-        <Route path="/settings" element={<Settings />} />
 
         <Route path="/admin-tools" element={<AdminTools />} />
 

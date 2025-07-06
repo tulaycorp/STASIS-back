@@ -741,11 +741,9 @@
   align-items: center;
 }
 
-.btn-multi-edit,
-.btn-multi-promote,
-.btn-multi-delete,
 .btn-clear-selection {
   padding: 6px 12px;
+  background: grey;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
@@ -757,38 +755,8 @@
   gap: 4px;
 }
 
-.btn-multi-edit {
-  background-color: #17a2b8;
-  color: white;
-}
-
-.btn-multi-edit:hover {
-  background-color: #138496;
-  transform: translateY(-1px);
-}
-
-.btn-multi-promote {
-  background-color: #28a745;
-  color: white;
-}
-
-.btn-multi-promote:hover {
-  background-color: #218838;
-  transform: translateY(-1px);
-}
-
-.btn-multi-delete {
-  background-color: #dc3545;
-  color: white;
-}
-
-.btn-multi-delete:hover {
-  background-color: #c82333;
-  transform: translateY(-1px);
-}
-
 .btn-clear-selection {
-  background-color: #6c757d;
+  background-color: grey;
   color: white;
 }
 

@@ -18,8 +18,6 @@ const getActivePageFromURL = () => {
     return 'Faculty';
   } else if (path === '/course-management') {
     return 'Courses';
-  } else if (path === '/settings') {
-    return 'Settings';
   } else if (path === '/admin-tools') {
     return 'AdminTools';
   }
@@ -57,9 +55,6 @@ const Sidebar = ({ userInfo }) => {
         break;
       case 'Courses':
         navigate('/course-management');
-        break;
-      case 'Settings':
-        navigate('/settings');
         break;
       case 'AdminTools':
         navigate('/admin-tools');
@@ -133,12 +128,6 @@ const Sidebar = ({ userInfo }) => {
         <div className="nav-section">
           <div className="nav-label">System</div>
           <div className="nav-items">
-            <div
-              className={`nav-item${activePage === 'Settings' ? ' active-page' : ''}`}
-              onClick={() => handleNavigate('Settings')}
-            >
-              ⚙️ Settings
-            </div>
             <div
               className={`nav-item${activePage === 'AdminTools' ? ' active-page' : ''}`}
               onClick={() => handleNavigate('AdminTools')}
