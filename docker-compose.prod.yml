@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  stasisback:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        JAVA_OPTS: "-Xmx512m -Xms256m"
+    container_name: stasis-backend
+    restart: unless-stopped
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DATABASE_URL=${DATABASE_URL:-jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres}
+      - DATABASE_USERNAME=${DATABASE_USERNAME:-postgres.pozbytnqdvelbsbrblle}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-rbbEbSyTuoK6kEew}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    ports:
+      - "8080:8080"
+    networks:
+      - stasis-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:alpine
+    container_name: stasis-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - stasis-network
+    depends_on:
+      - stasisback
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot:
+    image: certbot/certbot
+    container_name: stasis-certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt:rw
+      - ./certbot/www:/var/www/certbot:rw
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  stasis-network:
+    driver: bridge
+
+volumes:
+  certbot_conf:
+  certbot_www:
