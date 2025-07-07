@@ -93,8 +93,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow specific origins instead of wildcard for better security
-        configuration.setAllowedOrigins(Arrays.asList("http://134.209.100.46/"));
+        // Allow multiple origins including different ports
+        configuration.setAllowedOrigins(Arrays.asList(
+       "http://139.59.100.105"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
