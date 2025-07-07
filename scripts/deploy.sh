@@ -57,6 +57,8 @@ log "🚀 Starting STASIS Backend deployment..."
 # Build the application
 log "🔨 Building Spring Boot application..."
 if [ -f "mvnw" ]; then
+    # Ensure mvnw has execute permissions
+    chmod +x mvnw
     ./mvnw clean package -DskipTests
 else
     mvn clean package -DskipTests
