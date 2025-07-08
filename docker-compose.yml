@@ -5,13 +5,14 @@ services:
     build: .
     container_name: stasis-api
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"  # Bind to localhost only for security (nginx will proxy)
     environment:
       - SPRING_PROFILES_ACTIVE=production
       - DATABASE_URL=jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?user=postgres.pozbytnqdvelbsbrblle&password=rbbEbSyTuoK6kEew
       - DATABASE_USERNAME=postgres.pozbytnqdvelbsbrblle
       - DATABASE_PASSWORD=rbbEbSyTuoK6kEew
       - PORT=8080
+      - SERVER_FORWARD_HEADERS_STRATEGY=framework  # Handle X-Forwarded headers properly
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
@@ -21,6 +22,11 @@ services:
       start_period: 60s
     networks:
       - stasis-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   stasis-network:

@@ -29,7 +29,21 @@ docker-compose --version
 ./deploy.sh
 ```
 
-## Step 3: Configure Firewall (Optional but Recommended)
+## Step 3: Set Up SSL/HTTPS (Recommended for Production)
+
+```bash
+# Run the SSL setup script (requires sudo)
+sudo ./setup-ssl.sh
+```
+
+This will:
+- Install and configure nginx as a reverse proxy
+- Obtain SSL certificate from Let's Encrypt
+- Set up automatic certificate renewal
+- Configure security headers and gzip compression
+- Redirect all HTTP traffic to HTTPS
+
+## Step 4: Configure Firewall (Optional but Recommended)
 
 ```bash
 # Enable firewall
@@ -49,7 +63,7 @@ sudo ufw allow 8080
 sudo ufw status
 ```
 
-## Step 4: Test Your Deployment
+## Step 5: Test Your Deployment
 
 ```bash
 # Check if the application is running
@@ -59,16 +73,18 @@ curl http://localhost:8080/actuator/health
 docker-compose logs -f stasis-backend
 ```
 
-## Step 5: Access Your API
+## Step 6: Access Your API
 
 Your API will be available at:
-- `http://139.59.100.105:8080` (your server IP)
-- `http://api.stasis-edu.tech:8080` (once DNS is configured)
+- `https://api.stasis-edu.tech` (with SSL - recommended)
+- `http://139.59.100.105:8080` (direct server access)
 
 ### Important Endpoints:
-- Health Check: `/actuator/health`
-- API Base: `/api/`
-- Authentication: `/api/auth/`
+- Health Check: `https://api.stasis-edu.tech/actuator/health`
+- API Base: `https://api.stasis-edu.tech/api/`
+- Authentication: `https://api.stasis-edu.tech/api/auth/`
+
+**Note:** After SSL setup, all HTTP traffic is automatically redirected to HTTPS.
 
 ## Troubleshooting
 
