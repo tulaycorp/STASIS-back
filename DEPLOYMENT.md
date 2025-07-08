@@ -5,7 +5,7 @@ This guide explains how to deploy the STASIS backend API to Digital Ocean using 
 ## Prerequisites
 
 - Digital Ocean Droplet with Ubuntu 20.04+ or similar Linux distribution
-- Docker and Docker Compose installed
+- Root or sudo access
 - Domain `api.stasis-edu.tech` pointing to your server IP
 - At least 2GB RAM and 1 CPU core recommended
 
@@ -17,15 +17,48 @@ This guide explains how to deploy the STASIS backend API to Digital Ocean using 
    cd STASIS-back
    ```
 
-2. **Make the deployment script executable**:
+2. **Install Docker and Docker Compose** (if not already installed):
    ```bash
-   chmod +x deploy.sh
+   sudo ./install-docker.sh
+   ```
+   
+   After installation, log out and log back in, then verify:
+   ```bash
+   docker --version
+   docker-compose --version
    ```
 
 3. **Run the deployment script**:
    ```bash
    ./deploy.sh
    ```
+
+## Docker Installation
+
+If Docker is not installed on your server, use the provided installation script:
+
+```bash
+# Make the script executable
+chmod +x install-docker.sh
+
+# Run the installation (requires sudo/root)
+sudo ./install-docker.sh
+
+# Log out and log back in for group changes to take effect
+exit
+# SSH back into your server
+
+# Verify installation
+docker --version
+docker-compose --version
+```
+
+The installation script will:
+- Install Docker Engine
+- Install Docker Compose
+- Add your user to the docker group
+- Start and enable Docker service
+- Test the installation
 
 ## Manual Deployment
 
