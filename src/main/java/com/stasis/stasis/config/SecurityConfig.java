@@ -95,7 +95,13 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow multiple origins including different ports
         configuration.setAllowedOrigins(Arrays.asList(
-       "http://139.59.100.105"));
+            "http://139.59.100.105",
+            "https://139.59.100.105",
+            "http://api.stasis-edu.tech",
+            "https://api.stasis-edu.tech",
+            "http://stasis-edu.tech",
+            "https://stasis-edu.tech"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

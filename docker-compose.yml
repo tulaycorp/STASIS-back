@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  stasis-backend:
+    build: .
+    container_name: stasis-api
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=production
+      - DATABASE_URL=jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?user=postgres.pozbytnqdvelbsbrblle&password=rbbEbSyTuoK6kEew
+      - DATABASE_USERNAME=postgres.pozbytnqdvelbsbrblle
+      - DATABASE_PASSWORD=rbbEbSyTuoK6kEew
+      - PORT=8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - stasis-network
+
+networks:
+  stasis-network:
+    driver: bridge

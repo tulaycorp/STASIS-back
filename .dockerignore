@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+target/
+build/
+out/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Node modules (if any)
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Docker files (not needed in container)
+docker-compose.yml
+docker-compose.override.yml
+Dockerfile
+
+# Test files
+src/test/
+
+# Maven wrapper jar (we copy it explicitly)
+!.mvn/wrapper/maven-wrapper.jar
