@@ -138,12 +138,42 @@ print_status "Checking if STASIS backend is running..."
 if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
     print_success "STASIS backend is running"
 else
-    print_warning "STASIS backend is not responding. Make sure it's running before SSL setup."
-    print_status "You can start it with: docker-compose up -d"
-    read -p "Continue with SSL setup anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+    print_warning "STASIS backend is not responding on localhost:8080"
+    print_status "This might be due to port binding configuration."
+    print_status "Attempting to restart the application with correct port binding..."
+    
+    # Try to restart with correct configuration
+    if command -v docker-compose &> /dev/null; then
+        print_status "Restarting application..."
+        docker-compose down
+        docker-compose up -d
+        
+        # Wait for application to start
+        print_status "Waiting for application to start (60 seconds)..."
+        sleep 60
+        
+        # Check again
+        if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
+            print_success "STASIS backend is now running and healthy"
+        else
+            print_error "STASIS backend is still not responding"
+            print_status "Please check:"
+            echo "  1. Run: docker-compose ps"
+            echo "  2. Check logs: docker-compose logs -f"
+            echo "  3. Test manually: curl http://localhost:8080/actuator/health"
+            read -p "Continue with SSL setup anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        fi
+    else
+        print_error "docker-compose not found. Please ensure the application is running on port 8080"
+        read -p "Continue with SSL setup anyway? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
     fi
 fi
 
