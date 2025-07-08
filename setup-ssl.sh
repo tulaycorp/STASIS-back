@@ -147,6 +147,10 @@ else
     fi
 fi
 
+# Create webroot directory for Let's Encrypt
+print_status "Creating webroot directory for Let's Encrypt..."
+mkdir -p /var/www/html
+
 # Obtain SSL certificate
 print_status "Obtaining SSL certificate from Let's Encrypt..."
 print_warning "This will modify your nginx configuration automatically"
@@ -154,6 +158,99 @@ print_warning "This will modify your nginx configuration automatically"
 # Run certbot
 if certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@stasis-edu.tech --redirect; then
     print_success "SSL certificate obtained and configured successfully!"
+    
+    # Create enhanced HTTPS configuration
+    print_status "Creating enhanced HTTPS configuration..."
+    cat > /etc/nginx/sites-available/stasis-api << 'EOF'
+server {
+    listen 80;
+    server_name api.stasis-edu.tech;
+    
+    # Redirect all HTTP requests to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name api.stasis-edu.tech;
+    
+    # SSL configuration (managed by certbot)
+    ssl_certificate /etc/letsencrypt/live/api.stasis-edu.tech/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.stasis-edu.tech/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied expired no-cache no-store private auth;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
+    
+    # Proxy configuration
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $server_name;
+        
+        # WebSocket support (if needed)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # Buffer settings
+        proxy_buffering on;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+    }
+    
+    # Health check endpoint
+    location /actuator/health {
+        proxy_pass http://localhost:8080/actuator/health;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    
+    # Static files (if any)
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+    
+    # Test and reload nginx with new configuration
+    print_status "Testing enhanced nginx configuration..."
+    if nginx -t; then
+        print_status "Reloading nginx with enhanced configuration..."
+        systemctl reload nginx
+        print_success "Enhanced HTTPS configuration applied!"
+    else
+        print_warning "Enhanced configuration has issues, keeping certbot's default configuration"
+    fi
+    
 else
     print_error "Failed to obtain SSL certificate"
     print_status "Common issues:"
