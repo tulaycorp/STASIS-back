@@ -5,7 +5,7 @@ services:
     build: .
     container_name: stasis-api
     ports:
-      - "127.0.0.1:8080:8080"  # Bind to localhost only for security (nginx will proxy)
+      - "8080:8080"  # Bind to all interfaces so nginx can access it
     environment:
       - SPRING_PROFILES_ACTIVE=production
       - DATABASE_URL=jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?user=postgres.pozbytnqdvelbsbrblle&password=rbbEbSyTuoK6kEew
