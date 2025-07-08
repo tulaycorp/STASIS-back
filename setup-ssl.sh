@@ -71,39 +71,19 @@ apt-get install -y nginx
 print_status "Installing certbot and nginx plugin..."
 apt-get install -y certbot python3-certbot-nginx
 
-# Create nginx configuration for the API
-print_status "Creating nginx configuration..."
+# Create initial HTTP-only nginx configuration for certificate generation
+print_status "Creating initial HTTP nginx configuration..."
 cat > /etc/nginx/sites-available/stasis-api << 'EOF'
 server {
     listen 80;
     server_name api.stasis-edu.tech;
     
-    # Redirect all HTTP requests to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    http2 on;
-    server_name api.stasis-edu.tech;
+    # Allow Let's Encrypt challenges
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
     
-    # SSL configuration will be added by certbot
-    
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
-    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
-    
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private auth;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
-    
-    # Proxy configuration
+    # Proxy all other requests to the backend
     location / {
         proxy_pass http://localhost:8080;
         proxy_set_header Host $host;
@@ -127,26 +107,6 @@ server {
         proxy_buffer_size 128k;
         proxy_buffers 4 256k;
         proxy_busy_buffers_size 256k;
-    }
-    
-    # Health check endpoint (bypass proxy for faster response)
-    location /actuator/health {
-        proxy_pass http://localhost:8080/actuator/health;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # Cache health checks for 30 seconds
-        proxy_cache_valid 200 30s;
-    }
-    
-    # Static files (if any)
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
     }
 }
 EOF
